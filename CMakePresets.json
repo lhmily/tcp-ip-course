@@ -1,0 +1,64 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TCPIP_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "student",
+      "inherits": "base",
+      "cacheVariables": {
+        "TCPIP_USE_SOLUTIONS": "OFF"
+      }
+    },
+    {
+      "name": "reference",
+      "inherits": "base",
+      "cacheVariables": {
+        "TCPIP_USE_SOLUTIONS": "ON"
+      }
+    },
+    {
+      "name": "sanitize",
+      "inherits": "reference",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "TCPIP_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {"name": "student", "configurePreset": "student"},
+    {"name": "reference", "configurePreset": "reference"},
+    {"name": "sanitize", "configurePreset": "sanitize"}
+  ],
+  "testPresets": [
+    {
+      "name": "student",
+      "configurePreset": "student",
+      "output": {"outputOnFailure": true}
+    },
+    {
+      "name": "reference",
+      "configurePreset": "reference",
+      "output": {"outputOnFailure": true}
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize",
+      "output": {"outputOnFailure": true},
+      "environment": {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1"}
+    }
+  ]
+}
