@@ -79,6 +79,10 @@ This lesson performs no allocation and uses no global mutable state. It does not
 
 An explicit non-goal is building a general-purpose or internet-facing echo daemon. The fixed-capacity, one-connection server exists only to make framing and lifecycle behavior observable and deterministic.
 
+## Linux implementation connection
+
+The optional [epoll Event Loop lab](../../linux_labs/01_epoll_event_loop/README.md) follows ordinary descriptors through Linux readiness and lifecycle boundaries. [`include/uapi/linux/socket.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/socket.h) is pinned v6.6 UAPI for the user/kernel contract. [`net/socket.c`](https://github.com/torvalds/linux/blob/v6.6/net/socket.c) is internal kernel implementation, not a stable API and not source to copy into this MIT-licensed course. The lab remains unprivileged and loopback-only while using these links to explain where partial I/O, readiness, and lifecycle behavior cross the boundary.
+
 ## Further experiments
 
 Try shrinking socket send buffers to induce more partial writes, sending an empty frame, placing three frames in one write, or delaying each byte while remaining inside the same deadline. Add a discard helper for oversized frames and document how stream synchronization is restored. Compare level-triggered `poll` with nonblocking edge-triggered event loops, but retain the same framing state machine and status contract.

@@ -1,5 +1,5 @@
 site_name: TCP/IP Course in C17
-site_description: Learn TCP/IP from bytes to diagnostics in 12 tested C17 lessons using CMake, CTest, and POSIX sockets.
+site_description: Learn TCP/IP in 12 portable C17 core lessons and 4 optional Linux implementation labs.
 site_url: https://lhmily.github.io/tcp-ip-course/
 edit_uri: ""
 docs_dir: .site-docs

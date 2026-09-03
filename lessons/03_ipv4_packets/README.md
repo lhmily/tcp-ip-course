@@ -87,6 +87,10 @@ Do not cast packet bytes to a C structure: padding, alignment, aliasing, and hos
 
 All operations are bounded, in-memory transformations. This lesson uses no network, raw sockets, capture, or external commands. It performs no allocation and owns no mutable globals. An explicit non-goal is fragment reassembly, packet transmission, route selection, or deciding whether source addresses are trustworthy. Parsing success establishes only this lesson's structural and checksum invariants; it is not an authentication or authorization decision.
 
+## Linux implementation connection
+
+The optional [Userspace Mini-Stack lab](../../linux_labs/03_userspace_mini_stack/README.md) connects this bounded parser to Linux's local I/O boundary by carrying authored IPv4 frames over a deterministic Unix datagram pair. In the pinned Linux v6.6 tree, [`include/uapi/linux/ip.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/ip.h) is UAPI: it describes types and constants visible across the user/kernel boundary, but it is not permission to overlay untrusted packet bytes on a C struct. By contrast, [`net/ipv4/ip_input.c`](https://github.com/torvalds/linux/blob/v6.6/net/ipv4/ip_input.c) is internal implementation source, not a stable application API. Read it to compare validation order and ownership, not to copy kernel code or depend on private symbols.
+
 ## Further experiments
 
 Create valid headers at every IHL value from five through fifteen. Try unknown option octets and observe that this layer checks their bounded span rather than interpreting every option grammar. Compare full checksum recomputation with the RFC-style incremental TTL update, then prove they produce identical results. Build fixtures with the more-fragments flag and nonzero offset, but keep reassembly in a separately bounded component. Explore whether an application prefers strict rejection or explicit reporting of trailing containing bytes.

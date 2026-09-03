@@ -5,13 +5,14 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping improve the C17 TCP/IP course. Do not include sensitive traffic or third-party packet captures.
+      value: Thanks for helping improve the 12 portable C17 lessons and 4 optional Linux labs. Do not include sensitive traffic or third-party packet captures.
   - type: dropdown
     id: area
     attributes:
       label: Area
       options:
-        - Lesson starter or public header
+        - Core lesson starter or public header
+        - Optional Linux lab
         - Reference solution
         - Native test or CMake
         - Documentation or course site
@@ -21,8 +22,8 @@ body:
   - type: input
     id: lesson
     attributes:
-      label: Lesson
-      description: Give the numbered lesson directory, if applicable.
+      label: Lesson or Linux lab
+      description: Give the numbered core lesson or optional Linux lab directory, if applicable.
   - type: textarea
     id: description
     attributes:

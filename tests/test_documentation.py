@@ -14,11 +14,27 @@ from xml.etree import ElementTree
 import pytest
 
 from scripts.build_site import DEFAULT_OUTPUT, SITE_URL, prepare
-from scripts.course_catalog import LESSONS
+from scripts.course_catalog import LESSONS, LINUX_LABS
 
 ROOT = Path(__file__).parents[1]
 LESSON_DOCUMENTS = [ROOT / "lessons" / lesson.source / "README.md" for lesson in LESSONS]
+LINUX_LAB_DOCUMENTS = [ROOT / "linux_labs" / lab.source / "README.md" for lab in LINUX_LABS]
 DOCUMENTS = [ROOT / "README.md", *LESSON_DOCUMENTS]
+
+
+def linux_lab_documents_exist() -> bool:
+    return all(path.is_file() for path in LINUX_LAB_DOCUMENTS)
+
+
+def site_pages(output: Path) -> list[Path]:
+    pages = [
+        output / "index.html",
+        *(output / "lessons" / lesson.slug / "index.html" for lesson in LESSONS),
+        output / "linux-labs" / "index.html",
+    ]
+    if linux_lab_documents_exist():
+        pages.extend(output / "linux-labs" / lab.slug / "index.html" for lab in LINUX_LABS)
+    return pages
 
 
 def require_lesson_documents() -> None:
@@ -90,12 +106,20 @@ def test_relative_links_and_images_resolve_locally():
                 continue
             resolved = (document.parent / target).resolve()
             assert resolved.is_relative_to(ROOT.resolve()), (document, target)
+            if (
+                target.startswith(("linux_labs/", "../../linux_labs/"))
+                and not linux_lab_documents_exist()
+            ):
+                continue
             assert resolved.exists(), (document, target)
 
 
-def test_root_links_to_all_lessons_in_catalog_order():
-    linked = re.findall(r"\(lessons/(\d{2}_[^/]+)/README\.md\)", (ROOT / "README.md").read_text())
+def test_root_links_to_all_tracks_in_catalog_order():
+    text = (ROOT / "README.md").read_text()
+    linked = re.findall(r"\(lessons/(\d{2}_[^/]+)/README\.md\)", text)
     assert linked == [lesson.source for lesson in LESSONS]
+    linux_linked = re.findall(r"\(linux_labs/(\d{2}_[^/]+)/README\.md\)", text)
+    assert linux_linked == [lab.source for lab in LINUX_LABS]
 
 
 def test_generated_assets_are_reproducible_and_accessible():
@@ -130,6 +154,7 @@ def test_mkdocs_navigation_is_not_duplicated_in_yaml():
     assert "hooks:\n  - scripts/mkdocs_hooks.py" in config
     assert not re.search(r"^nav:", config, re.MULTILINE)
     assert all(f"lessons/{lesson.slug}/index.md" not in config for lesson in LESSONS)
+    assert all(f"linux-labs/{lab.slug}/index.md" not in config for lab in LINUX_LABS)
 
 
 def test_built_site_metadata_sitemap_manifest_and_links(tmp_path):
@@ -137,10 +162,7 @@ def test_built_site_metadata_sitemap_manifest_and_links(tmp_path):
     output = tmp_path / "site"
     result = build_site(output)
     assert result.returncode == 0, result.stdout + result.stderr
-    pages = [
-        output / "index.html",
-        *(output / "lessons" / lesson.slug / "index.html" for lesson in LESSONS),
-    ]
+    pages = site_pages(output)
     titles: set[str] = set()
     for page in pages:
         text = page.read_text()
@@ -180,7 +202,13 @@ def test_built_site_metadata_sitemap_manifest_and_links(tmp_path):
     namespace = {"sitemap": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     sitemap = ElementTree.parse(output / "sitemap.xml")
     locations = {node.text for node in sitemap.findall("sitemap:url/sitemap:loc", namespace)}
-    expected = {SITE_URL, *(f"{SITE_URL}lessons/{lesson.slug}/" for lesson in LESSONS)}
+    expected = {
+        SITE_URL,
+        *(f"{SITE_URL}lessons/{lesson.slug}/" for lesson in LESSONS),
+        f"{SITE_URL}linux-labs/",
+    }
+    if linux_lab_documents_exist():
+        expected.update(f"{SITE_URL}{lab.route}" for lab in LINUX_LABS)
     assert expected <= locations
 
     broken: list[tuple[Path, str]] = []
@@ -200,15 +228,34 @@ def test_built_site_metadata_sitemap_manifest_and_links(tmp_path):
     assert not broken
 
 
+def test_linux_track_pages_routes_navigation_and_links_when_present(tmp_path):
+    if not linux_lab_documents_exist():
+        pytest.skip("numbered Linux lab documentation is supplied by parallel lab branches")
+    output = tmp_path / "site"
+    result = build_site(output)
+    assert result.returncode == 0, result.stdout + result.stderr
+    overview = output / "linux-labs" / "index.html"
+    assert overview.is_file()
+    overview_text = overview.read_text()
+    assert "Optional Linux track" in overview_text
+    for index, lab in enumerate(LINUX_LABS):
+        page = output / "linux-labs" / lab.slug / "index.html"
+        text = page.read_text()
+        assert lab.title in text
+        assert f'<link rel="canonical" href="{SITE_URL}{lab.route}">' in text
+        assert "static.cloudflareinsights.com/beacon.min.js" not in text
+        if index:
+            assert f"../{LINUX_LABS[index - 1].slug}/" in text
+        if index + 1 < len(LINUX_LABS):
+            assert f"../{LINUX_LABS[index + 1].slug}/" in text
+
+
 def test_cloudflare_analytics_is_optional_and_escaped(tmp_path):
     require_lesson_documents()
     output = tmp_path / "site"
     result = build_site(output, token="synthetic-test-token")
     assert result.returncode == 0, result.stdout + result.stderr
-    pages = [
-        output / "index.html",
-        *(output / "lessons" / lesson.slug / "index.html" for lesson in LESSONS),
-    ]
+    pages = site_pages(output)
     for page in pages:
         beacons = re.findall(
             r'<script defer src="https://static\.cloudflareinsights\.com/beacon\.min\.js"\s+'

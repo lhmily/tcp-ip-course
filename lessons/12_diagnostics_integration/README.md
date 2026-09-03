@@ -111,6 +111,10 @@ All fixtures are deterministic arrays created in the test process. The code perf
 
 An explicit non-goal is production-grade packet inspection. The implementation does not reassemble IPv4 fragments or TCP streams, decrypt TLS, normalize every HTTP variation, recursively resolve arbitrary DNS compression graphs, or verify that Ethernet padding belongs to an upper-layer message. Those features require state and policy beyond a single-frame lesson.
 
+## Linux implementation connection
+
+The optional [Kernel Source Walkthrough lab](../../linux_labs/04_kernel_source_walkthrough/README.md) compares this report pipeline with Linux's internal ingress and egress paths while keeping all navigation metadata offline. [`include/uapi/linux/inet_diag.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/inet_diag.h) is pinned v6.6 UAPI intended for user/kernel communication. [`net/ipv4/inet_diag.c`](https://github.com/torvalds/linux/blob/v6.6/net/ipv4/inet_diag.c) is internal implementation source, not an application API or a source snapshot to vendor. The distinction keeps the lab authored, unprivileged, and free of packet capture while still showing how Linux narrows and reports networking state.
+
 ## Further experiments
 
 Add a fixture with IPv4 options and prove that transport parsing begins at the IHL-derived boundary. Try a UDP packet with checksum zero and compare its checksum counters. Generate every truncation prefix of a valid DNS frame and assert that sanitizers remain silent. Extend formatting with symbolic diagnostic names while preserving size-query behavior. Finally, consider a caller-provided policy that can choose whether checksum mismatches are warnings or fatal errors without changing the parser.

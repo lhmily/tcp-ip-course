@@ -90,6 +90,10 @@ This lesson is a pure in-memory simulation. It performs no system networking, al
 
 An explicit non-goal is implementing a production router, firewall, carrier-grade NAT, or operating-system packet-forwarding path. The model does not rewrite packet bytes or checksums, handle fragments, reserve policy-specific ports, implement hairpinning, synchronize threads, defend against deliberate state exhaustion, or persist mappings.
 
+## Linux implementation connection
+
+The optional [Userspace Mini-Stack lab](../../linux_labs/03_userspace_mini_stack/README.md) composes this in-memory routing model with authored TCP, IPv4, Ethernet, and diagnostic frames without configuring a real router. In the pinned v6.6 source, [`include/uapi/linux/rtnetlink.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/rtnetlink.h) is UAPI for user-visible routing messages. [`net/ipv4/fib_trie.c`](https://github.com/torvalds/linux/blob/v6.6/net/ipv4/fib_trie.c) and [`net/netfilter/nf_nat_core.c`](https://github.com/torvalds/linux/blob/v6.6/net/netfilter/nf_nat_core.c) are internal implementations, not stable application APIs. The lab uses those links for provenance and comparison only, with no copied GPL code and no namespace, privilege, or interface mutation.
+
 ## Further experiments
 
 Add randomized canonical route tables and compare selection with a slow bit-by-bit oracle. Explore endpoint-independent versus endpoint-dependent mapping keys and document the security trade-off. Add a caller-provided port-selection policy while retaining collision checks. Model separate protocol port spaces, then explain how the inbound lookup key remains unambiguous. Test timestamp rollover assumptions by replacing absolute timestamps with a deliberately bounded clock model. For concurrency study, design an external lock policy without putting hidden synchronization into this API.

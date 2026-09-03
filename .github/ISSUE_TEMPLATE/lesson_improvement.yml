@@ -1,13 +1,13 @@
-name: Lesson improvement
-description: Propose a focused improvement to one C17 lesson
+name: Lesson or Linux lab improvement
+description: Propose a focused improvement to one of 12 core lessons or 4 optional Linux labs
 title: "[Lesson]: "
 labels: [enhancement]
 body:
   - type: input
     id: lesson
     attributes:
-      label: Lesson directory
-      placeholder: 06_tcp_segments
+      label: Lesson or Linux lab directory
+      placeholder: lessons/06_tcp_segments or linux_labs/02_tcp_info
     validations:
       required: true
   - type: textarea
@@ -35,5 +35,7 @@ body:
           required: true
         - label: Documentation keeps all required headings, a unique Mermaid diagram, C example, table, non-goal, and What to notice callout.
           required: true
-        - label: The proposal does not require privileged capture, raw sockets, external traffic, or shell execution.
+        - label: The proposal does not require privileges, namespaces, capture, raw or packet sockets, TUN/TAP, external traffic, process execution, or fork/clone.
+          required: true
+        - label: Linux source references are pinned to v6.6, distinguish UAPI from internals, and copy no GPL kernel code.
           required: true

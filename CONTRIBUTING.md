@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for improving the TCP/IP Course. Keep changes focused, portable, safe, and useful to someone learning both C17 and networking fundamentals.
+Thanks for improving the TCP/IP Course: 12 portable core lessons plus 4 optional Linux implementation labs. Keep changes focused, portable where the track requires it, safe, and useful to someone learning both C17 and networking fundamentals.
 
 ## Development setup
 
@@ -26,13 +26,19 @@ Every numbered lesson directory must contain exactly these required learning fil
 
 The starter and solution must implement the same declarations. Do not hide alternate implementations behind generated code or environment variables.
 
+## Optional Linux lab contract
+
+The four numbered `linux_labs/` directories use the same six-file shape but may call Linux-only, unprivileged APIs. Develop them on Linux with `linux-student`, `linux-reference`, and `linux-sanitize`; the existing core presets and Linux/macOS support remain independent. Linux references must point to the pinned `torvalds/linux` `v6.6` tree and identify UAPI contracts separately from internal implementation files.
+
+Linux is GPL-2.0-only. Write original course explanations and code: do not copy kernel code, comments, tables, or source snapshots into this MIT-licensed repository. A kernel version bump requires reviewing every lab and core-lesson annotation.
+
 ## Documentation contract
 
 A lesson README needs all required headings listed in the issue form and repository tests, at least one unique Mermaid diagram, a C code block, a useful table, an explicit non-goal, and a `**What to notice:**` callout. Explain byte offsets and state transitions rather than relying on packed structs or compiler-specific layouts. Keep links and images local when practical.
 
 ## Safety rules
 
-Use fixed in-memory fixtures for packet parsing. Native socket tests must use loopback and an operating-system-assigned ephemeral port. The course does not use raw sockets, packet-capture tools or libraries, privileged operations, shell execution, external network endpoints, or wildcard listening addresses. Never cast a wire buffer to a protocol struct, use packed layout directives, or depend on C bitfield layout.
+Use fixed in-memory fixtures for packet parsing. Native socket tests must use loopback and an operating-system-assigned ephemeral port. Both tracks reject raw or packet sockets, packet-capture tools or libraries, privileged or namespace operations, process or shell execution, external numeric endpoints, wildcard listening addresses, TUN/TAP devices, and `fork`/`clone`. Never cast a wire buffer to a protocol struct, use packed layout directives, or depend on C bitfield layout.
 
 ## Validation
 
@@ -41,6 +47,10 @@ Before submitting a change, run the checks relevant to it:
 ```sh
 cmake --preset student && cmake --build --preset student
 cmake --preset reference && cmake --build --preset reference && ctest --preset reference
+# Linux track changes only:
+cmake --preset linux-student && cmake --build --preset linux-student
+cmake --preset linux-reference && cmake --build --preset linux-reference && ctest --preset linux-reference
+cmake --preset linux-sanitize && cmake --build --preset linux-sanitize && ctest --preset linux-sanitize
 uv run pytest tests/test_repository_contract.py tests/test_documentation.py
 uv run ruff check .
 uv run ruff format --check .

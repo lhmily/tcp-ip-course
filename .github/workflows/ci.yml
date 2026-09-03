@@ -30,6 +30,28 @@ jobs:
       - name: Run reference tests
         run: ctest --preset reference
 
+  linux-labs:
+    name: Optional Linux labs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Compile Linux lab student exercises
+        run: |
+          cmake --preset linux-student
+          cmake --build --preset linux-student
+      - name: Build Linux lab reference implementations
+        run: |
+          cmake --preset linux-reference
+          cmake --build --preset linux-reference
+      - name: Run Linux lab reference tests
+        run: ctest --preset linux-reference --label-regex linux
+      - name: Run Linux lab sanitizers
+        run: |
+          cmake --preset linux-sanitize
+          cmake --build --preset linux-sanitize
+          ctest --preset linux-sanitize --label-regex linux
+
   sanitizers:
     name: Clang sanitizers
     runs-on: ubuntu-latest

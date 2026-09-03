@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500" role="img">
   <title>TCP/IP Course layer progression</title>
-  <desc>A twelve-lesson C17 course progresses from bytes and local links through Internet and transport protocols to applications and diagnostics.</desc>
+  <desc>Twelve portable C17 core lessons progress from bytes to diagnostics, followed by four optional Linux implementation labs.</desc>
   <rect width="1200" height="500" rx="24" fill="#07111f"/>
   <text x="600" y="65" text-anchor="middle" font-family="system-ui,sans-serif" font-size="40" font-weight="700" fill="#f8fafc">TCP/IP from bytes to diagnostics</text>
-  <text x="600" y="102" text-anchor="middle" font-family="system-ui,sans-serif" font-size="20" fill="#a7bdd4">12 tested lessons · portable C17 · CMake + CTest · POSIX sockets</text>
+  <text x="600" y="102" text-anchor="middle" font-family="system-ui,sans-serif" font-size="20" fill="#a7bdd4">12 portable core lessons · 4 optional Linux labs · C17 · CMake + CTest</text>
   <g font-family="system-ui,sans-serif">
     <rect x="45" y="145" width="200" height="170" rx="18" fill="#0c2a3f" stroke="#38bdf8" stroke-width="2"/><text x="145" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#7dd3fc">LESSONS 1–2</text><text x="145" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Foundations</text><text x="145" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">Bytes · checksum</text><text x="145" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">Ethernet · ARP</text>
     <rect x="285" y="145" width="200" height="170" rx="18" fill="#14284a" stroke="#818cf8" stroke-width="2"/><text x="385" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#a5b4fc">LESSONS 3–4</text><text x="385" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Internet</text><text x="385" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">IPv4 packets</text><text x="385" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">ICMP messages</text>
@@ -11,5 +11,6 @@
     <rect x="765" y="145" width="200" height="170" rx="18" fill="#422b17" stroke="#f59e0b" stroke-width="2"/><text x="865" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#fbbf24">LESSONS 8–10</text><text x="865" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Applications</text><text x="865" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">Sockets · DNS</text><text x="865" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">HTTP framing</text>
     <rect x="1005" y="145" width="150" height="170" rx="18" fill="#3e2135" stroke="#f472b6" stroke-width="2"/><text x="1080" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#f9a8d4">11–12</text><text x="1080" y="225" text-anchor="middle" font-size="20" font-weight="700" fill="#f8fafc">Practice</text><text x="1080" y="261" text-anchor="middle" font-size="14" fill="#a7bdd4">Routing · NAT</text><text x="1080" y="286" text-anchor="middle" font-size="14" fill="#a7bdd4">Diagnostics</text>
   </g>
-  <text x="600" y="430" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="600" fill="#dbeafe">Offline byte buffers first · loopback only for native socket exercises · no privileged capture</text>
+  <rect x="275" y="350" width="650" height="46" rx="23" fill="#10263b" stroke="#38bdf8"/><text x="600" y="379" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="700" fill="#dbeafe">OPTIONAL LINUX LABS 1–4 · INTERFACES · TCP · SOCKETS · ROUTING</text>
+  <text x="600" y="450" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="600" fill="#dbeafe">Offline buffers first · loopback only · unprivileged · no copied kernel code</text>
 </svg>

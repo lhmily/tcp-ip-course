@@ -95,6 +95,10 @@ All buffers have explicit capacities, inputs are `const`, and outputs are caller
 
 An explicit non-goal is implementing a production TCP stack. Congestion control, retransmission timers, checksums, receive-window sliding, urgent data, reset handling, and the complete RFC state machine are intentionally omitted.
 
+## Linux implementation connection
+
+The optional [TCP_INFO lab](../../linux_labs/02_tcp_info/README.md) compares this small state model with safe information Linux exposes to applications. [`include/uapi/linux/inet_diag.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/inet_diag.h) in the pinned v6.6 tree is a UAPI contract for diagnostics, whereas [`net/ipv4/tcp_input.c`](https://github.com/torvalds/linux/blob/v6.6/net/ipv4/tcp_input.c) is internal TCP implementation source rather than an application interface. Neither replaces this lesson's explicit invariants. The lab treats those links as provenance and writes original explanatory code instead of copying GPL kernel source.
+
 ## Further experiments
 
 Add a non-mutating query that reports the next contiguous length, then let callers size a read before committing it. Explore a sliding window that reuses consumed storage while preserving modulo sequence comparisons. Add property tests that permute non-conflicting segments and prove the final byte stream is order-independent.

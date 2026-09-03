@@ -9,15 +9,28 @@ import shutil
 from pathlib import Path
 
 try:
-    from scripts.course_catalog import LESSONS
+    from scripts.course_catalog import (
+        LESSONS,
+        LINUX_LABS,
+        CatalogPage,
+        route_document,
+        source_document,
+    )
 except ModuleNotFoundError:  # Direct script execution adds scripts/, not the repository root.
-    from course_catalog import LESSONS
+    from course_catalog import (  # type: ignore[no-redef]
+        LESSONS,
+        LINUX_LABS,
+        CatalogPage,
+        route_document,
+        source_document,
+    )
 
 ROOT = Path(__file__).parents[1]
 DEFAULT_OUTPUT = ROOT / ".site-docs"
 SITE_URL = "https://lhmily.github.io/tcp-ip-course/"
 GITHUB_URL = "https://github.com/lhmily/tcp-ip-course"
-SOURCE_TO_ROUTE = {lesson.source: lesson.route for lesson in LESSONS}
+CATALOG_PAGES = (*LESSONS, *LINUX_LABS)
+SOURCE_TO_ROUTE = {(page.source_root, page.source): page.route for page in CATALOG_PAGES}
 
 
 def front_matter(title: str, description: str, resource_type: str) -> str:
@@ -33,30 +46,119 @@ def front_matter(title: str, description: str, resource_type: str) -> str:
     )
 
 
-def rewrite_markdown(text: str, *, lesson=None) -> str:
-    for source, route in SOURCE_TO_ROUTE.items():
-        target = f"../{route.removeprefix('lessons/')}index.md" if lesson else f"{route}index.md"
-        text = re.sub(rf"(?:\.\./|lessons/){re.escape(source)}/README\.md", target, text)
+def _page_link(current: CatalogPage | None, target: CatalogPage) -> str:
+    if current is None:
+        return f"{target.route}index.md"
+    if current.route_root == target.route_root:
+        return f"../{target.slug}/index.md"
+    return f"../../{target.route_root}/{target.slug}/index.md"
+
+
+def _rewrite_linux_overview(text: str) -> str:
+    for lab in LINUX_LABS:
+        text = text.replace(f"{lab.source}/README.md", f"{lab.slug}/index.md")
+    return text
+
+
+def _remove_missing_lab_links(text: str) -> str:
+    for lab in LINUX_LABS:
+        text = re.sub(
+            rf"^.*\((?:linux_labs/|\.\./\.\./linux_labs/)?{re.escape(lab.source)}/README\.md\).*$\n?",
+            "",
+            text,
+            flags=re.MULTILINE,
+        )
+        text = re.sub(
+            rf"^.*\((?:\.\./)*linux-labs/{re.escape(lab.slug)}/index\.md\).*$\n?",
+            "",
+            text,
+            flags=re.MULTILINE,
+        )
+    text = text.replace(
+        "See the [Linux track overview](linux_labs/README.md) for exact commands and prerequisites.",
+        "See the Linux track overview for exact commands and prerequisites.",
+    )
+    return text
+
+
+def rewrite_markdown(
+    text: str, *, page: CatalogPage | None = None, linux_overview: bool = False
+) -> str:
+    if linux_overview:
+        overview_target = "index.md"
+    elif page is None:
+        overview_target = "linux-labs/index.md"
+    else:
+        overview_target = "../../linux-labs/index.md"
+    text = text.replace("linux_labs/README.md", overview_target)
+    for (source_root, source), _route in SOURCE_TO_ROUTE.items():
+        target_page = next(
+            item
+            for item in CATALOG_PAGES
+            if item.source_root == source_root and item.source == source
+        )
+        target = _page_link(page, target_page)
+        patterns = (
+            rf"(?:\.\./|{re.escape(source_root)}/){re.escape(source)}/README\.md",
+            rf"\.\./{re.escape(source)}/README\.md",
+        )
+        for pattern in patterns:
+            text = re.sub(pattern, target, text)
     text = text.replace("../../docs/assets/", "../../assets/")
     text = text.replace("(docs/assets/", "(assets/")
     text = text.replace('src="docs/assets/', 'src="assets/')
     for name in ("CONTRIBUTING.md", "CHANGELOG.md", "LICENSE"):
         text = text.replace(f"({name})", f"({GITHUB_URL}/blob/main/{name})")
-    if lesson is not None:
-        index = lesson.number - 1
-        links = ["[Course overview](../../index.md)"]
-        if index:
-            previous = LESSONS[index - 1]
-            links.append(
-                f"[← Lesson {previous.number}: {previous.title}](../{previous.slug}/index.md)"
-            )
-        if index + 1 < len(LESSONS):
-            following = LESSONS[index + 1]
-            links.append(
-                f"[Lesson {following.number}: {following.title} →](../{following.slug}/index.md)"
-            )
-        text += "\n\n---\n\n" + " · ".join(links) + "\n"
     return text
+
+
+def _append_track_navigation(
+    text: str,
+    *,
+    page: CatalogPage,
+    pages: tuple[CatalogPage, ...],
+    overview: str,
+    label: str,
+) -> str:
+    index = pages.index(page)
+    links = [
+        f"[{overview}](../../index.md)"
+        if page.route_root == "lessons"
+        else f"[{overview}](../index.md)"
+    ]
+    if index:
+        previous = pages[index - 1]
+        links.append(
+            f"[← {label} {previous.number}: {previous.title}](../{previous.slug}/index.md)"
+        )
+    if index + 1 < len(pages):
+        following = pages[index + 1]
+        links.append(
+            f"[{label} {following.number}: {following.title} →](../{following.slug}/index.md)"
+        )
+    return text + "\n\n---\n\n" + " · ".join(links) + "\n"
+
+
+def _stage_page(
+    output: Path,
+    page: CatalogPage,
+    *,
+    pages: tuple[CatalogPage, ...],
+    overview: str,
+    label: str,
+) -> None:
+    source = source_document(page, ROOT)
+    if not source.is_file():
+        raise FileNotFoundError(f"missing {label.lower()} document: {source.relative_to(ROOT)}")
+    destination = route_document(page, output)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    content = rewrite_markdown(source.read_text(), page=page)
+    if page.route_root == "lessons":
+        content = re.sub(r"(?:\.\./){4}(linux-labs/)", r"../../\1", content)
+    content = _append_track_navigation(
+        content, page=page, pages=pages, overview=overview, label=label
+    )
+    destination.write_text(front_matter(page.title, page.description, "LearningResource") + content)
 
 
 def prepare(output: Path = DEFAULT_OUTPUT) -> None:
@@ -65,22 +167,74 @@ def prepare(output: Path = DEFAULT_OUTPUT) -> None:
         shutil.rmtree(output)
     output.mkdir(parents=True)
 
-    homepage_description = "Learn TCP/IP from bytes to diagnostics in 12 tested C17 lessons using CMake, CTest, and POSIX sockets."
-    homepage = rewrite_markdown((ROOT / "README.md").read_text())
+    homepage_description = (
+        "Learn TCP/IP in 12 portable C17 core lessons and 4 optional Linux implementation labs."
+    )
+    lab_documents_present = all(source_document(lab, ROOT).is_file() for lab in LINUX_LABS)
+    homepage = (ROOT / "README.md").read_text()
+    if not lab_documents_present:
+        homepage = _remove_missing_lab_links(homepage)
+    homepage = rewrite_markdown(homepage)
     (output / "index.md").write_text(
         front_matter("TCP/IP Course in C17", homepage_description, "Course") + homepage
     )
 
+    lesson_pages: tuple[CatalogPage, ...] = LESSONS
     for lesson in LESSONS:
-        source = ROOT / "lessons" / lesson.source / "README.md"
-        if not source.is_file():
-            raise FileNotFoundError(f"missing lesson document: {source.relative_to(ROOT)}")
-        destination = output / "lessons" / lesson.slug / "index.md"
-        destination.parent.mkdir(parents=True)
-        destination.write_text(
-            front_matter(lesson.title, lesson.description, "LearningResource")
-            + rewrite_markdown(source.read_text(), lesson=lesson)
+        _stage_page(
+            output,
+            lesson,
+            pages=lesson_pages,
+            overview="Course overview",
+            label="Lesson",
         )
+
+    linux_overview = ROOT / "linux_labs" / "README.md"
+    if not linux_overview.is_file():
+        raise FileNotFoundError("missing Linux track overview: linux_labs/README.md")
+    linux_description = "Explore Linux networking implementation boundaries in four optional, unprivileged C17 labs."
+    overview_destination = output / "linux-labs" / "index.md"
+    overview_destination.parent.mkdir(parents=True, exist_ok=True)
+
+    linux_pages: tuple[CatalogPage, ...] = LINUX_LABS
+    missing_linux_labs = [
+        source_document(lab, ROOT).relative_to(ROOT)
+        for lab in LINUX_LABS
+        if not source_document(lab, ROOT).is_file()
+    ]
+    overview_text = linux_overview.read_text()
+    if not missing_linux_labs:
+        overview_text = _rewrite_linux_overview(overview_text)
+    if missing_linux_labs:
+        missing = ", ".join(map(str, missing_linux_labs))
+        print(f"skipping Linux lab pages; parallel files are absent: {missing}")
+        overview_text = _remove_missing_lab_links(overview_text)
+        overview_destination.write_text(
+            front_matter(
+                "Optional Linux implementation track", linux_description, "LearningResource"
+            )
+            + overview_text
+        )
+        for lesson in LESSONS:
+            staged = route_document(lesson, output)
+            staged.write_text(_remove_missing_lab_links(staged.read_text()))
+        homepage_staged = output / "index.md"
+        homepage_staged.write_text(_remove_missing_lab_links(homepage_staged.read_text()))
+    else:
+        overview_destination.write_text(
+            front_matter(
+                "Optional Linux implementation track", linux_description, "LearningResource"
+            )
+            + rewrite_markdown(overview_text, linux_overview=True)
+        )
+        for lab in LINUX_LABS:
+            _stage_page(
+                output,
+                lab,
+                pages=linux_pages,
+                overview="Linux track overview",
+                label="Linux lab",
+            )
 
     shutil.copytree(ROOT / "docs" / "assets", output / "assets")
     shutil.copytree(ROOT / "docs" / "stylesheets", output / "stylesheets")
@@ -107,7 +261,10 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     prepare(args.output)
-    print(f"prepared {len(LESSONS)} lessons in {args.output.resolve()}")
+    print(
+        f"prepared {len(LESSONS)} core lessons and the optional Linux track "
+        f"in {args.output.resolve()}"
+    )
     return 0
 
 

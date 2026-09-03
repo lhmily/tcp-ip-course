@@ -97,6 +97,10 @@ The implementation transforms in-memory byte spans only. It performs no network 
 
 An explicit non-goal is implementing a TCP connection. Handshake state, retransmission, congestion control, receive queues, timers, stream reassembly, and operating-system socket behavior are outside this segment-format lesson.
 
+## Linux implementation connection
+
+The optional [TCP_INFO lab](../../linux_labs/02_tcp_info/README.md) relates these segment fields to Linux without capturing traffic. In Linux v6.6, [`include/uapi/linux/tcp.h`](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/tcp.h) is UAPI and documents user-visible TCP definitions; it does not make compiler bitfields a portable wire decoder. [`net/ipv4/tcp_input.c`](https://github.com/torvalds/linux/blob/v6.6/net/ipv4/tcp_input.c) is internal implementation source and may change independently of applications. Use the pinned sources for provenance and conceptual comparison only; the lab contains authored code and copies no GPL kernel implementation.
+
 ## Further experiments
 
 Try zero, four, and forty option bytes and observe offsets 5, 6, and 15. Change only an IPv4 address and show that checksum validation fails despite identical TCP bytes. Explore pairs around `UINT32_MAX`, then test the deliberately ambiguous half-range pair. Build an odd payload to confirm conceptual zero padding. As an extension, write a separate, bounded iterator for option kinds without changing this parser's raw-span contract.

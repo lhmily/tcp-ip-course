@@ -1,6 +1,6 @@
 # TCP/IP Course in C17
 
-Learn TCP/IP by reading bytes, modeling protocol state, and writing small portable C17 programs. The 12 lessons move upward through the stack—from representation and local links to IPv4, transport, applications, routing, and integrated diagnostics. C is the course language; Python 3.14, uv, MkDocs Material, pytest, and Ruff exist only to build and validate the documentation and repository contracts.
+Learn TCP/IP by reading bytes, modeling protocol state, and writing small portable C17 programs. The 12 portable core lessons move upward through the stack—from representation and local links to IPv4, transport, applications, routing, and integrated diagnostics. Four optional Linux implementation labs then connect those models to pinned kernel interfaces and source boundaries. C is the course language; Python 3.14, uv, MkDocs Material, pytest, and Ruff exist only to build and validate the documentation and repository contracts.
 
 [Read the course site](https://lhmily.github.io/tcp-ip-course/) · [lhmily home](https://lhmily.github.io/) · [Source](https://github.com/lhmily/tcp-ip-course)
 
@@ -66,7 +66,7 @@ ctest --preset sanitize
 
 ## Safety and network boundaries
 
-The course is designed for safe, deterministic local study. Packet lessons operate on in-memory fixtures. Socket lessons bind only to loopback, use operating-system-assigned ephemeral ports, and communicate within one test process or machine. Exercises do not require internet access, elevated privileges, packet capture, raw sockets, or traffic sent to third-party hosts. Do not adapt examples to inspect or contact systems you do not own or have explicit permission to test.
+The course is designed for safe, deterministic local study. Packet lessons operate on in-memory fixtures. Socket lessons bind only to loopback, use operating-system-assigned ephemeral ports, and communicate within one test process or machine. Exercises do not require internet access, elevated privileges, packet capture, raw or packet sockets, process execution, wildcard listeners, TUN/TAP devices, network namespaces, `fork`/`clone`, or traffic sent to third-party hosts. Do not adapt examples to inspect or contact systems you do not own or have explicit permission to test.
 
 A deliberate non-goal is production networking software. The examples teach protocol representation, invariants, and defensive C techniques; they omit production concerns such as TLS, authentication, event-loop scale, adversarial deployment hardening, and broad platform abstraction.
 
@@ -98,6 +98,19 @@ A deliberate non-goal is production networking software. The examples teach prot
 
 11. [Routing and NAT](lessons/11_routing_nat/README.md) — longest-prefix match, forwarding decisions, mappings, and expiry.
 12. [Diagnostics and Integration](lessons/12_diagnostics_integration/README.md) — composing parsers and explaining failures across layers from offline fixtures.
+
+## Optional Linux implementation track
+
+The portable core above remains complete and unchanged on Linux and macOS. Linux learners may continue with four optional, unprivileged labs:
+
+1. [epoll Event Loop](linux_labs/01_epoll_event_loop/README.md)
+2. [TCP_INFO](linux_labs/02_tcp_info/README.md)
+3. [Userspace Mini-Stack](linux_labs/03_userspace_mini_stack/README.md)
+4. [Kernel Source Walkthrough](linux_labs/04_kernel_source_walkthrough/README.md)
+
+On Linux, build them with `linux-student`, `linux-reference`, or `linux-sanitize`. They require ordinary Linux UAPI headers but no root access, network namespaces, TUN/TAP devices, raw sockets, packet capture, or external network access. See the [Linux track overview](linux_labs/README.md) for exact commands and prerequisites.
+
+The Linux kernel is GPL-2.0-only. This MIT-licensed course links to pinned Linux v6.6 sources for provenance and explanation; it does not copy kernel code or vendor source snapshots. UAPI headers are user/kernel contracts, while linked internal files are implementation references rather than stable application APIs.
 
 ## Repository tooling
 
