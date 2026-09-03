@@ -4,6 +4,7 @@
 #include "../lessons/03_ipv4_packets/lesson.h"
 #include "../lessons/05_udp/lesson.h"
 #include "../lessons/09_dns/lesson.h"
+#include "../lessons/11_routing_nat/lesson.h"
 #include "../lessons/12_diagnostics_integration/lesson.h"
 
 #include <stddef.h>
@@ -23,8 +24,10 @@ static size_t make_dns_frame(uint8_t *frame, size_t capacity) {
   uint8_t dns[256];
   uint8_t udp[sizeof(dns) + 8U];
   uint8_t ip[20U + sizeof(udp)];
+  tcpip_l03_ipv4_header_fields ip_fields = {0};
   size_t dns_length = 0U;
   size_t udp_length = 0U;
+  size_t ip_header_length = 0U;
   size_t ip_length;
   size_t frame_length;
   uint16_t ip_checksum = 0U;
@@ -44,20 +47,25 @@ static size_t make_dns_frame(uint8_t *frame, size_t capacity) {
     return 0U;
   }
 
-  memset(ip, 0, ip_length);
-  ip[0] = UINT8_C(0x45);
+  ip_fields.identification = UINT16_C(0x4567);
+  ip_fields.flags_fragment = UINT16_C(0x4000);
+  ip_fields.ttl = UINT8_C(64);
+  ip_fields.protocol = UINT8_C(17);
+  memcpy(ip_fields.source, source_ip, sizeof(source_ip));
+  memcpy(ip_fields.destination, destination_ip, sizeof(destination_ip));
+  if (tcpip_l03_build_header(&ip_fields, ip, sizeof(ip), &ip_header_length) !=
+          TCPIP_L03_OK ||
+      ip_header_length != TCPIP_L03_MIN_HEADER_LENGTH) {
+    return 0U;
+  }
   put_u16(ip + 2U, (uint16_t)ip_length);
-  put_u16(ip + 4U, UINT16_C(0x4567));
-  put_u16(ip + 6U, UINT16_C(0x4000));
-  ip[8] = UINT8_C(64);
-  ip[9] = UINT8_C(17);
-  memcpy(ip + 12U, source_ip, sizeof(source_ip));
-  memcpy(ip + 16U, destination_ip, sizeof(destination_ip));
-  if (tcpip_l01_checksum16(ip, 20U, &ip_checksum) != TCPIP_L01_OK) {
+  ip[10U] = 0U;
+  ip[11U] = 0U;
+  if (tcpip_l01_checksum16(ip, ip_header_length, &ip_checksum) != TCPIP_L01_OK) {
     return 0U;
   }
   put_u16(ip + 10U, ip_checksum);
-  memcpy(ip + 20U, udp, udp_length);
+  memcpy(ip + ip_header_length, udp, udp_length);
 
   memcpy(frame, destination_mac, sizeof(destination_mac));
   memcpy(frame + 6U, source_mac, sizeof(source_mac));
@@ -73,6 +81,12 @@ int main(void) {
   tcpip_l02_ethernet_frame ethernet;
   tcpip_l03_ipv4_packet ipv4;
   tcpip_l05_datagram udp;
+  tcpip_l11_route routes[2] = {
+      {{0U, 0U, 0U, 0U}, 0U, {192U, 0U, 2U, 1U}, 1U, 100U},
+      {{198U, 51U, 100U, 0U}, 24U, {192U, 0U, 2U, 53U}, 2U, 10U},
+  };
+  static const uint8_t destination_ip[4] = {198U, 51U, 100U, 53U};
+  size_t route_index = SIZE_MAX;
   uint16_t udp_checksum = UINT16_MAX;
   tcpip_l12_report report;
   tcpip_l12_status status;
@@ -80,6 +94,12 @@ int main(void) {
   tcpip_test_begin(&test, "native cross-layer integration");
   frame_length = make_dns_frame(frame, sizeof(frame));
   TCPIP_EXPECT_TRUE(&test, frame_length > 0U);
+  TCPIP_EXPECT_U32(&test,
+                   (uint32_t)tcpip_l11_longest_prefix(
+                       routes, 2U, destination_ip, &route_index),
+                   (uint32_t)TCPIP_L11_OK);
+  TCPIP_EXPECT_SIZE(&test, route_index, 1U);
+  TCPIP_EXPECT_U32(&test, routes[route_index].interface_index, 2U);
 
   TCPIP_EXPECT_U32(&test,
                    (uint32_t)tcpip_l02_parse_ethernet(frame, frame_length, &ethernet),
