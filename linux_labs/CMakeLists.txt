@@ -1,6 +1,10 @@
 # Optional Linux implementation labs are registered here.
 
-# Labs 03-04: integration and source-navigation capstones.
+# Event-driven I/O and transport diagnostics.
+include(01_epoll_event_loop/CMakeLists.txt)
+include(02_tcp_info/CMakeLists.txt)
+
+# Integration and source-navigation capstones.
 tcpip_add_linux_lab(
   NUMBER 03
   SLUG userspace_mini_stack
