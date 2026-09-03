@@ -43,3 +43,20 @@ target_include_directories(tcpip_test_harness PUBLIC include)
 target_link_libraries(tcpip_test_harness PRIVATE tcpip_warnings tcpip_sanitizers)
 
 add_subdirectory(lessons)
+
+# Native cross-layer verification is intentionally separate from lesson selection.
+if(BUILD_TESTING AND TARGET tcpip_l01_solution AND TARGET tcpip_l02_solution
+   AND TARGET tcpip_l03_solution AND TARGET tcpip_l05_solution
+   AND TARGET tcpip_l09_solution AND TARGET tcpip_l12_solution)
+  add_executable(tcpip_integration_test tests/test_integration.c)
+  target_link_libraries(tcpip_integration_test PRIVATE
+    tcpip_l01_solution tcpip_l02_solution tcpip_l03_solution
+    tcpip_l05_solution tcpip_l09_solution tcpip_l12_solution
+    tcpip_test_harness tcpip_warnings tcpip_sanitizers
+  )
+  add_test(NAME native_cross_layer_integration COMMAND tcpip_integration_test)
+  set_tests_properties(native_cross_layer_integration PROPERTIES
+    LABELS "integration;native"
+    TIMEOUT 5
+  )
+endif()

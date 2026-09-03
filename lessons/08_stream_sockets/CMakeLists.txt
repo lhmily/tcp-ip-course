@@ -1,0 +1,5 @@
+set(_tcpip_l08_directory "${CMAKE_CURRENT_SOURCE_DIR}")
+get_filename_component(CMAKE_CURRENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
+tcpip_add_lesson(NUMBER 08 SLUG stream_sockets THREADS)
+set(CMAKE_CURRENT_SOURCE_DIR "${_tcpip_l08_directory}")
+unset(_tcpip_l08_directory)

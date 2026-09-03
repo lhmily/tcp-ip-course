@@ -1,7 +1,12 @@
-# Core packet-format lessons.
 include(01_bytes_addressing_checksum/CMakeLists.txt)
 include(02_ethernet_arp/CMakeLists.txt)
 include(03_ipv4_packets/CMakeLists.txt)
 include(04_icmp/CMakeLists.txt)
 include(05_udp/CMakeLists.txt)
 include(06_tcp_segments/CMakeLists.txt)
+include(07_tcp_state_reliability/CMakeLists.txt)
+include(08_stream_sockets/CMakeLists.txt)
+include(09_dns/CMakeLists.txt)
+include(10_http/CMakeLists.txt)
+include(11_routing_nat/CMakeLists.txt)
+include(12_diagnostics_integration/CMakeLists.txt)
