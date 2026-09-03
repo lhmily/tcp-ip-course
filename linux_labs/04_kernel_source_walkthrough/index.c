@@ -7,6 +7,10 @@ static void tcpip_linux_l04_usage(const char *program) {
   fprintf(stderr, "usage: %s --list | --ingress | --egress | SYMBOL_ID\n", program);
 }
 
+static int tcpip_linux_l04_is_option(const char *argument) {
+  return argument != NULL && argument[0] == '-';
+}
+
 static int tcpip_linux_l04_print_symbol(tcpip_linux_l04_symbol_id id) {
   const tcpip_linux_l04_symbol *symbol = NULL;
   char url[256];
@@ -58,6 +62,11 @@ int main(int argc, char **argv) {
   if (strcmp(argv[1], "--egress") == 0) {
     size_t count = 0U;
     return tcpip_linux_l04_print_path(tcpip_linux_l04_egress_path(&count), count);
+  }
+  if (tcpip_linux_l04_is_option(argv[1])) {
+    fprintf(stderr, "unknown option: %s\n", argv[1]);
+    tcpip_linux_l04_usage(argv[0]);
+    return 2;
   }
   for (index = 0U; index < TCPIP_LINUX_L04_SYMBOL_COUNT; index += 1U) {
     const tcpip_linux_l04_symbol *symbol = NULL;

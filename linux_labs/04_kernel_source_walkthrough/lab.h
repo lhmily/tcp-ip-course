@@ -8,9 +8,9 @@ extern "C" {
 #endif
 
 #define TCPIP_LINUX_L04_VERSION "v6.6"
-#define TCPIP_LINUX_L04_SYMBOL_COUNT 26U
-#define TCPIP_LINUX_L04_INGRESS_COUNT 13U
-#define TCPIP_LINUX_L04_EGRESS_COUNT 12U
+#define TCPIP_LINUX_L04_SYMBOL_COUNT 30U
+#define TCPIP_LINUX_L04_INGRESS_COUNT 16U
+#define TCPIP_LINUX_L04_EGRESS_COUNT 13U
 
 typedef enum tcpip_linux_l04_status {
   TCPIP_LINUX_L04_OK = 0,
@@ -25,10 +25,13 @@ typedef enum tcpip_linux_l04_symbol_id {
   TCPIP_LINUX_L04_NETIF_RECEIVE_SKB = 0,
   TCPIP_LINUX_L04_NETIF_RECEIVE_SKB_ONE_CORE,
   TCPIP_LINUX_L04_IP_RCV,
+  TCPIP_LINUX_L04_NF_INET_PRE_ROUTING,
   TCPIP_LINUX_L04_IP_RCV_FINISH,
   TCPIP_LINUX_L04_IP_ROUTE_INPUT_NOREF,
   TCPIP_LINUX_L04_IP_ROUTE_INPUT_SLOW,
+  TCPIP_LINUX_L04_DST_INPUT,
   TCPIP_LINUX_L04_IP_LOCAL_DELIVER,
+  TCPIP_LINUX_L04_NF_INET_LOCAL_IN,
   TCPIP_LINUX_L04_IP_LOCAL_DELIVER_FINISH,
   TCPIP_LINUX_L04_TCP_V4_RCV,
   TCPIP_LINUX_L04_INET_LOOKUP_SKB,
@@ -40,6 +43,7 @@ typedef enum tcpip_linux_l04_symbol_id {
   TCPIP_LINUX_L04_TCP_SENDMSG_LOCKED,
   TCPIP_LINUX_L04_TCP_WRITE_XMIT,
   TCPIP_LINUX_L04_TCP_TRANSMIT_SKB,
+  TCPIP_LINUX_L04_INET_QUEUE_XMIT,
   TCPIP_LINUX_L04_IP_ROUTE_OUTPUT_FLOW,
   TCPIP_LINUX_L04_IP_QUEUE_XMIT,
   TCPIP_LINUX_L04___IP_QUEUE_XMIT,
@@ -69,7 +73,13 @@ tcpip_linux_l04_status tcpip_linux_l04_validate_path(
     const tcpip_linux_l04_symbol_id *path,
     size_t path_length);
 
-/* Format an immutable HTTPS link pinned to the Linux v6.6 source tree. */
+/*
+ * Format an immutable HTTPS link pinned to Linux v6.6. On every call,
+ * non-null outputs with positive capacity are initialized to an empty string,
+ * and non-null written pointers are initialized to zero before validation.
+ * A zero-capacity call computes the required length and returns CAPACITY
+ * without writing; any other insufficient capacity likewise writes no prefix.
+ */
 tcpip_linux_l04_status tcpip_linux_l04_format_source_url(
     tcpip_linux_l04_symbol_id id,
     char *output,
