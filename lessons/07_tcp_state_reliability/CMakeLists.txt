@@ -1,5 +1,1 @@
-set(_tcpip_l07_directory "${CMAKE_CURRENT_SOURCE_DIR}")
-get_filename_component(CMAKE_CURRENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
 tcpip_add_lesson(NUMBER 07 SLUG tcp_state_reliability)
-set(CMAKE_CURRENT_SOURCE_DIR "${_tcpip_l07_directory}")
-unset(_tcpip_l07_directory)

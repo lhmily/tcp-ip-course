@@ -1,5 +1,1 @@
-set(_tcpip_l09_directory "${CMAKE_CURRENT_SOURCE_DIR}")
-get_filename_component(CMAKE_CURRENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
 tcpip_add_lesson(NUMBER 09 SLUG dns)
-set(CMAKE_CURRENT_SOURCE_DIR "${_tcpip_l09_directory}")
-unset(_tcpip_l09_directory)
