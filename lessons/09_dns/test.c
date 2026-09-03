@@ -56,6 +56,13 @@ static void test_encode_name(tcpip_test_context *test) {
   memset(output, 0xa5, sizeof(output));
   written = 99U;
   TCPIP_EXPECT_U32(
+      test, tcpip_l09_encode_name(NULL, 0U, output, sizeof(output), &written), TCPIP_L09_OK);
+  TCPIP_EXPECT_SIZE(test, written, 1U);
+  TCPIP_EXPECT_U32(test, output[0], 0U);
+
+  memset(output, 0xa5, sizeof(output));
+  written = 99U;
+  TCPIP_EXPECT_U32(
       test, tcpip_l09_encode_name("example.com", 11U, output, 12U, &written),
       TCPIP_L09_CAPACITY);
   TCPIP_EXPECT_SIZE(test, written, 0U);
@@ -192,6 +199,24 @@ static void test_decode_name(tcpip_test_context *test) {
       TCPIP_L09_INVALID_ARGUMENT);
   TCPIP_EXPECT_SIZE(test, next_offset, 0U);
   TCPIP_EXPECT_SIZE(test, written, 0U);
+
+  written = 99U;
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l09_decode_name(
+          tcpip_l09_response, sizeof(tcpip_l09_response), 12U, output, sizeof(output),
+          NULL, &written),
+      TCPIP_L09_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(test, written, 0U);
+
+  next_offset = 99U;
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l09_decode_name(
+          tcpip_l09_response, sizeof(tcpip_l09_response), 12U, output, sizeof(output),
+          &next_offset, NULL),
+      TCPIP_L09_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(test, next_offset, 0U);
 }
 
 static void test_query_and_header(tcpip_test_context *test) {
@@ -223,6 +248,22 @@ static void test_query_and_header(tcpip_test_context *test) {
       test,
       tcpip_l09_build_query(1U, "a", 1U, 0U, output, sizeof(output), &written),
       TCPIP_L09_INVALID_ARGUMENT);
+
+  {
+    static const uint8_t root_query[] = {
+        0x12U, 0x34U, 0x01U, 0x00U, 0x00U, 0x01U, 0x00U, 0x00U,
+        0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x01U, 0x00U,
+        0x01U};
+    memset(output, 0xa5, sizeof(output));
+    written = 99U;
+    TCPIP_EXPECT_U32(
+        test,
+        tcpip_l09_build_query(UINT16_C(0x1234), NULL, 0U, UINT16_C(1), output,
+                              sizeof(output), &written),
+        TCPIP_L09_OK);
+    TCPIP_EXPECT_SIZE(test, written, sizeof(root_query));
+    TCPIP_EXPECT_BYTES(test, output, written, root_query, sizeof(root_query));
+  }
 
   memset(&header, 0xa5, sizeof(header));
   TCPIP_EXPECT_U32(
@@ -321,6 +362,41 @@ static void test_first_a(tcpip_test_context *test) {
         tcpip_l09_first_a(modern_flags_response, sizeof(modern_flags_response), address, &ttl),
         TCPIP_L09_OK);
   }
+  {
+    static const uint8_t malformed_then_valid_a[] = {
+        0xbeU, 0xefU, 0x81U, 0x80U, 0x00U, 0x01U, 0x00U, 0x02U,
+        0x00U, 0x00U, 0x00U, 0x00U, 0x07U, 'e',   'x',   'a',
+        'm',   'p',   'l',   'e',   0x03U, 'c',   'o',   'm',
+        0x00U, 0x00U, 0x01U, 0x00U, 0x01U,
+        0xc0U, 0x0cU, 0x00U, 0x01U, 0x00U, 0x01U, 0x00U, 0x00U,
+        0x00U, 0x3cU, 0x00U, 0x05U, 192U, 0U, 2U, 1U, 0U,
+        0xc0U, 0x0cU, 0x00U, 0x01U, 0x00U, 0x01U, 0x00U, 0x00U,
+        0x00U, 0x3cU, 0x00U, 0x04U, 198U, 51U, 100U, 7U};
+    memset(address, 0xa5, sizeof(address));
+    ttl = UINT32_MAX;
+    TCPIP_EXPECT_U32(
+        test,
+        tcpip_l09_first_a(
+            malformed_then_valid_a, sizeof(malformed_then_valid_a), address, &ttl),
+        TCPIP_L09_MALFORMED);
+    TCPIP_EXPECT_U32(test, address[0], 0U);
+    TCPIP_EXPECT_U32(test, ttl, 0U);
+  }
+
+  ttl = UINT32_MAX;
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l09_first_a(tcpip_l09_response, sizeof(tcpip_l09_response), NULL, &ttl),
+      TCPIP_L09_INVALID_ARGUMENT);
+  TCPIP_EXPECT_U32(test, ttl, 0U);
+
+  memset(address, 0xa5, sizeof(address));
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l09_first_a(tcpip_l09_response, sizeof(tcpip_l09_response), address, NULL),
+      TCPIP_L09_INVALID_ARGUMENT);
+  TCPIP_EXPECT_U32(test, address[0], 0U);
+
   TCPIP_EXPECT_U32(
       test, tcpip_l09_first_a(NULL, sizeof(tcpip_l09_response), address, &ttl),
       TCPIP_L09_INVALID_ARGUMENT);

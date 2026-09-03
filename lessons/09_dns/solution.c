@@ -178,6 +178,11 @@ tcpip_l09_status tcpip_l09_encode_name(
   if (encoded_len > out_capacity) {
     return TCPIP_L09_CAPACITY;
   }
+  if (input_end == 0U) {
+    out[0] = 0U;
+    *written = 1U;
+    return TCPIP_L09_OK;
+  }
 
   label_start = 0U;
   for (input_index = 0U; input_index <= input_end; input_index += 1U) {
@@ -211,11 +216,15 @@ tcpip_l09_status tcpip_l09_decode_name(
   size_t decoded_len = 0U;
   tcpip_l09_status status;
 
+  if (next_offset != NULL) {
+    *next_offset = 0U;
+  }
+  if (written != NULL) {
+    *written = 0U;
+  }
   if (next_offset == NULL || written == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
-  *next_offset = 0U;
-  *written = 0U;
   if (message == NULL || (out_capacity != 0U && out == NULL)) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
@@ -317,11 +326,15 @@ tcpip_l09_status tcpip_l09_first_a(
   uint16_t index;
   uint8_t ignored_name[TCPIP_L09_MAX_TEXT_NAME + 1U];
 
+  if (out != NULL) {
+    memset(out, 0, 4U);
+  }
+  if (ttl != NULL) {
+    *ttl = 0U;
+  }
   if (out == NULL || ttl == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
-  memset(out, 0, 4U);
-  *ttl = 0U;
   if (message == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
@@ -385,7 +398,10 @@ tcpip_l09_status tcpip_l09_first_a(
     if ((size_t)data_len > message_len - cursor) {
       return TCPIP_L09_TRUNCATED;
     }
-    if (type == UINT16_C(1) && record_class == UINT16_C(1) && data_len == UINT16_C(4)) {
+    if (type == UINT16_C(1) && record_class == UINT16_C(1)) {
+      if (data_len != UINT16_C(4)) {
+        return TCPIP_L09_MALFORMED;
+      }
       memcpy(out, message + cursor, 4U);
       *ttl = record_ttl;
       return TCPIP_L09_OK;

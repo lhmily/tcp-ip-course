@@ -30,7 +30,8 @@ typedef struct tcpip_l09_dns_header {
 /*
  * Convert a dotted name to DNS wire form. name is not NUL-terminated unless
  * name_len includes such a byte (which is rejected). A trailing dot is
- * accepted. On success, written is the encoded size including the root byte.
+ * accepted; (NULL, 0) and (".", 1) both represent the root name. On success,
+ * written is the encoded size including the root byte.
  */
 tcpip_l09_status tcpip_l09_encode_name(
     const char *name,
@@ -42,7 +43,8 @@ tcpip_l09_status tcpip_l09_encode_name(
 /*
  * Decode one possibly compressed wire name. out receives dotted bytes and a
  * trailing NUL; written excludes that NUL. next_offset is the first byte after
- * the original encoded name, not after any followed pointer target.
+ * the original encoded name, not after any followed pointer target. Each
+ * non-NULL metadata output is cleared even when its required companion is NULL.
  */
 tcpip_l09_status tcpip_l09_decode_name(
     const uint8_t *message,
@@ -73,6 +75,8 @@ tcpip_l09_status tcpip_l09_parse_message(
  * Find the first IN A record in a successful, untruncated standard response.
  * The QR bit must identify a response, OPCODE and the reserved Z bit must be
  * zero, and RCODE must report success. Modern AD/CD flag bits are accepted.
+ * An IN A record with RDLENGTH other than four is malformed. Each non-NULL
+ * output is cleared even when its required companion is NULL.
  */
 tcpip_l09_status tcpip_l09_first_a(
     const uint8_t *message,

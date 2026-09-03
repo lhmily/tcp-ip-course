@@ -87,11 +87,15 @@ tcpip_l09_status tcpip_l09_decode_name(
     size_t out_capacity,
     size_t *next_offset,
     size_t *written) {
+  if (next_offset != NULL) {
+    *next_offset = 0U;
+  }
+  if (written != NULL) {
+    *written = 0U;
+  }
   if (next_offset == NULL || written == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
-  *next_offset = 0U;
-  *written = 0U;
   if (message == NULL || (out_capacity != 0U && out == NULL)) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
@@ -153,11 +157,15 @@ tcpip_l09_status tcpip_l09_first_a(
     size_t message_len,
     uint8_t out[4],
     uint32_t *ttl) {
+  if (out != NULL) {
+    memset(out, 0, 4U);
+  }
+  if (ttl != NULL) {
+    *ttl = 0U;
+  }
   if (out == NULL || ttl == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
-  memset(out, 0, 4U);
-  *ttl = 0U;
   if (message == NULL) {
     return TCPIP_L09_INVALID_ARGUMENT;
   }
