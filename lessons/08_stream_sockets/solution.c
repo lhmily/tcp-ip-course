@@ -3,6 +3,7 @@
 #include "lesson.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
 #include <stdint.h>
@@ -121,6 +122,39 @@ static tcpip_l08_status tcpip_l08_prepare_send(int fd) {
   (void)fd;
 #endif
   return TCPIP_L08_OK;
+}
+
+static tcpip_l08_status tcpip_l08_get_flags(int fd, int *flags) {
+  int result;
+
+  do {
+    result = fcntl(fd, F_GETFL);
+  } while (result < 0 && errno == EINTR);
+  if (result < 0) {
+    return TCPIP_L08_SYSTEM;
+  }
+  *flags = result;
+  return TCPIP_L08_OK;
+}
+
+static tcpip_l08_status tcpip_l08_set_flags(int fd, int flags) {
+  int result;
+
+  do {
+    result = fcntl(fd, F_SETFL, flags);
+  } while (result < 0 && errno == EINTR);
+  return result < 0 ? TCPIP_L08_SYSTEM : TCPIP_L08_OK;
+}
+
+static tcpip_l08_status tcpip_l08_restore_flags(
+    int fd, int original_flags, int changed, tcpip_l08_status status) {
+  tcpip_l08_status restore_status;
+
+  if (changed == 0) {
+    return status;
+  }
+  restore_status = tcpip_l08_set_flags(fd, original_flags);
+  return restore_status == TCPIP_L08_OK ? status : restore_status;
 }
 
 static tcpip_l08_status tcpip_l08_send_all_until(
@@ -316,7 +350,9 @@ tcpip_l08_status tcpip_l08_serve_one(int listen_fd, int timeout_ms) {
   struct timespec deadline;
   uint8_t payload[TCPIP_L08_SERVER_FRAME_CAPACITY];
   size_t payload_len = 0U;
-  int client_fd;
+  int original_flags = 0;
+  int changed_flags = 0;
+  int client_fd = -1;
   tcpip_l08_status status;
 
   if (listen_fd < 0 || timeout_ms < 0) {
@@ -326,23 +362,42 @@ tcpip_l08_status tcpip_l08_serve_one(int listen_fd, int timeout_ms) {
   if (status != TCPIP_L08_OK) {
     return status;
   }
-  status = tcpip_l08_wait(listen_fd, POLLIN, &deadline);
+  status = tcpip_l08_get_flags(listen_fd, &original_flags);
   if (status != TCPIP_L08_OK) {
     return status;
   }
+  if ((original_flags & O_NONBLOCK) == 0) {
+    status = tcpip_l08_set_flags(listen_fd, original_flags | O_NONBLOCK);
+    if (status != TCPIP_L08_OK) {
+      return status;
+    }
+    changed_flags = 1;
+  }
+
   for (;;) {
+    status = tcpip_l08_wait(listen_fd, POLLIN, &deadline);
+    if (status != TCPIP_L08_OK) {
+      break;
+    }
     client_fd = accept(listen_fd, NULL, NULL);
     if (client_fd >= 0) {
       break;
     }
-    if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
-      status = tcpip_l08_wait(listen_fd, POLLIN, &deadline);
-      if (status != TCPIP_L08_OK) {
-        return status;
-      }
-      continue;
+    if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+      status = TCPIP_L08_SYSTEM;
+      break;
     }
-    return TCPIP_L08_SYSTEM;
+  }
+  status = tcpip_l08_restore_flags(
+      listen_fd, original_flags, changed_flags, status);
+  if (client_fd < 0) {
+    return status;
+  }
+  if (status != TCPIP_L08_OK) {
+    if (close(client_fd) != 0) {
+      return TCPIP_L08_SYSTEM;
+    }
+    return status;
   }
 
   status = tcpip_l08_recv_frame_until(

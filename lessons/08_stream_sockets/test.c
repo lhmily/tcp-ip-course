@@ -4,11 +4,14 @@
 #include "tcpip/test.h"
 
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #define TEST_TIMEOUT_MS 1000
@@ -119,6 +122,12 @@ static void test_argument_contract(tcpip_test_context *test) {
                 TCPIP_L08_INVALID_ARGUMENT);
   expect_status(test, tcpip_l08_serve_one(-1, TEST_TIMEOUT_MS),
                 TCPIP_L08_INVALID_ARGUMENT);
+#if SIZE_MAX > UINT32_MAX
+  expect_status(test,
+                tcpip_l08_send_frame(0, &byte, (size_t)UINT32_MAX + 1U,
+                                     TEST_TIMEOUT_MS),
+                TCPIP_L08_MALFORMED);
+#endif
 }
 
 static void test_multiple_frames(tcpip_test_context *test) {
@@ -252,7 +261,17 @@ static void test_fragmented_loopback_echo(tcpip_test_context *test) {
     TCPIP_FAIL(test, "pthread_join failed for echo server");
   }
   expect_status(test, context.status, TCPIP_L08_OK);
+  TCPIP_EXPECT_TRUE(test, fcntl(context.listen_fd, F_GETFL) >= 0);
   close_if_open(&context.listen_fd);
+}
+
+static long elapsed_ms_since(const struct timespec *start) {
+  struct timespec end;
+  if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
+    return LONG_MAX;
+  }
+  return (long)(end.tv_sec - start->tv_sec) * 1000L
+      + (long)(end.tv_nsec - start->tv_nsec) / 1000000L;
 }
 
 static void test_server_status_propagation(tcpip_test_context *test) {
@@ -290,20 +309,38 @@ static void test_server_status_propagation(tcpip_test_context *test) {
 
 static void test_bounded_timeouts(tcpip_test_context *test) {
   struct sockaddr_in address;
+  struct timespec started;
   uint8_t byte = 0U;
   int sockets[2] = {-1, -1};
   int listen_fd = make_loopback_listener(test, &address);
 
   if (listen_fd >= 0) {
-    expect_status(test, tcpip_l08_serve_one(listen_fd, 20), TCPIP_L08_TIMEOUT);
+    const int original_flags = fcntl(listen_fd, F_GETFL);
+    TCPIP_EXPECT_TRUE(test, original_flags >= 0);
+    if (clock_gettime(CLOCK_MONOTONIC, &started) != 0) {
+      TCPIP_FAIL(test, "clock_gettime failed for listener timeout test");
+    } else {
+      expect_status(test, tcpip_l08_serve_one(listen_fd, 20), TCPIP_L08_TIMEOUT);
+      TCPIP_EXPECT_TRUE(test, elapsed_ms_since(&started) < 500L);
+    }
+    TCPIP_EXPECT_TRUE(test, fcntl(listen_fd, F_GETFL) >= 0);
+    if (original_flags >= 0) {
+      TCPIP_EXPECT_U32(test, (uint32_t)fcntl(listen_fd, F_GETFL),
+                       (uint32_t)original_flags);
+    }
     close_if_open(&listen_fd);
   }
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
     TCPIP_FAIL(test, "socketpair failed for timeout test");
     return;
   }
-  expect_status(test, tcpip_l08_recv_exact(sockets[0], &byte, 1U, 20),
-                TCPIP_L08_TIMEOUT);
+  if (clock_gettime(CLOCK_MONOTONIC, &started) != 0) {
+    TCPIP_FAIL(test, "clock_gettime failed for receive timeout test");
+  } else {
+    expect_status(test, tcpip_l08_recv_exact(sockets[0], &byte, 1U, 20),
+                  TCPIP_L08_TIMEOUT);
+    TCPIP_EXPECT_TRUE(test, elapsed_ms_since(&started) < 500L);
+  }
   close_if_open(&sockets[0]);
   close_if_open(&sockets[1]);
 }

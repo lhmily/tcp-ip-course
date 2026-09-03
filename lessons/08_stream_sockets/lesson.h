@@ -49,7 +49,8 @@ tcpip_l08_status tcpip_l08_recv_frame(
  * Wait for one connection on listen_fd, accept it, receive one frame no larger
  * than TCPIP_L08_SERVER_FRAME_CAPACITY, echo that frame, close the accepted fd,
  * and return the receive/send/close status. One absolute deadline covers accept,
- * receive, and send; the listening fd remains open and is never closed here.
+ * receive, and send; the listening fd remains open with its original file status
+ * flags restored and is never closed here.
  */
 tcpip_l08_status tcpip_l08_serve_one(int listen_fd, int timeout_ms);
 

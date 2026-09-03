@@ -86,7 +86,7 @@ tcpip_l10_status tcpip_l10_recv_message(
     size_t *received,
     tcpip_l10_message_view *message);
 
-/* Receives one request and sends a fixed deterministic HTTP/1.1 200 response. */
+/* Receives one request and sends a fixed response under one absolute deadline. */
 tcpip_l10_status tcpip_l10_serve_one(
     int fd,
     uint8_t *request_buffer,

@@ -77,9 +77,9 @@ Do not loosen validation to make a single test pass. In particular, preserve ini
 
 ## Test contract and invariants
 
-The same `test.c` links against the starter by default and the reference implementation when `TCPIP_USE_SOLUTIONS=ON`. The starter is expected to fail because valid operations return `TCPIP_L10_TODO`; the solution must pass. Tests cover exact request bytes, borrowed request and response views, invalid arguments, small buffers, truncated bodies, chunking, obsolete folding, conflicting and invalid lengths, excessive headers, and oversized headers or bodies.
+The same `test.c` links against the starter by default and the reference implementation when `TCPIP_USE_SOLUTIONS=ON`. The starter is expected to fail because valid operations return `TCPIP_L10_TODO`; the solution must pass. Tests cover exact request bytes, borrowed request and response views, invalid arguments, small buffers, truncated bodies, chunking, obsolete folding, conflicting and invalid lengths, excessive headers, oversized headers or bodies, and `serve_one` propagation of truncated, timeout, malformed, and capacity failures.
 
-Network tests launch a local server on `127.0.0.1:0`, allowing the kernel to choose an unused port. The server deliberately fragments writes and requests. Every readiness wait is bounded, every socket is closed, and every worker thread is joined. These invariants make failures terminate rather than hang.
+Network tests launch a local server on `127.0.0.1:0`, allowing the kernel to choose an unused port. The server deliberately fragments writes and requests. Test helper accepts are deadline-bounded and temporarily nonblocking, helper sends and exact receives use one absolute monotonic deadline per operation, every socket is closed, and every worker thread is joined. These invariants make failures terminate rather than hang.
 
 ## Common mistakes
 

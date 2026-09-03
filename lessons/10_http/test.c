@@ -5,31 +5,90 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #define TCPIP_L10_TEST_TIMEOUT_MS 500
 
+typedef enum tcpip_l10_server_mode {
+  TCPIP_L10_SERVER_FRAGMENTED_RESPONSE = 0,
+  TCPIP_L10_SERVER_SERVE = 1,
+  TCPIP_L10_SERVER_PARTIAL_RESPONSE = 2,
+  TCPIP_L10_SERVER_SERVE_SHORT_TIMEOUT = 3,
+  TCPIP_L10_SERVER_SERVE_SMALL_BUFFER = 4
+} tcpip_l10_server_mode;
+
 typedef struct tcpip_l10_server_context {
   int listener;
-  int mode;
+  tcpip_l10_server_mode mode;
   tcpip_l10_status status;
 } tcpip_l10_server_context;
 
-static int tcpip_l10_wait_test_fd(int fd, short events, int timeout_ms) {
+static int tcpip_l10_test_deadline_after(
+    int timeout_ms, struct timespec *deadline) {
+  if (clock_gettime(CLOCK_MONOTONIC, deadline) != 0) {
+    return 0;
+  }
+  deadline->tv_sec += (time_t)(timeout_ms / 1000);
+  deadline->tv_nsec += (long)(timeout_ms % 1000) * 1000000L;
+  if (deadline->tv_nsec >= 1000000000L) {
+    deadline->tv_sec += 1;
+    deadline->tv_nsec -= 1000000000L;
+  }
+  return 1;
+}
+
+static int tcpip_l10_test_remaining_ms(const struct timespec *deadline) {
+  struct timespec now;
+  if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+    return -1;
+  }
+  time_t seconds = deadline->tv_sec - now.tv_sec;
+  long nanoseconds = deadline->tv_nsec - now.tv_nsec;
+  if (nanoseconds < 0L) {
+    seconds -= 1;
+    nanoseconds += 1000000000L;
+  }
+  if (seconds < 0 || (seconds == 0 && nanoseconds <= 0L)) {
+    return 0;
+  }
+  if (seconds > (time_t)(INT_MAX / 1000)) {
+    return INT_MAX;
+  }
+  const long long milliseconds =
+      (long long)seconds * 1000LL + ((long long)nanoseconds + 999999LL) / 1000000LL;
+  return milliseconds > (long long)INT_MAX ? INT_MAX : (int)milliseconds;
+}
+
+static int tcpip_l10_wait_test_fd_until(
+    int fd, short events, const struct timespec *deadline) {
   struct pollfd descriptor;
   descriptor.fd = fd;
   descriptor.events = events;
   descriptor.revents = 0;
   for (;;) {
-    const int result = poll(&descriptor, 1, timeout_ms);
+    const int remaining_ms = tcpip_l10_test_remaining_ms(deadline);
+    if (remaining_ms <= 0) {
+      return 0;
+    }
+    descriptor.revents = 0;
+    const int result = poll(&descriptor, 1, remaining_ms);
     if (result > 0) {
-      return (descriptor.revents & events) != 0;
+      if ((descriptor.revents & POLLNVAL) != 0) {
+        return 0;
+      }
+      if ((descriptor.revents & (events | POLLERR | POLLHUP)) != 0) {
+        return 1;
+      }
+      continue;
     }
     if (result == 0 || errno != EINTR) {
       return 0;
@@ -97,14 +156,58 @@ static int tcpip_l10_connect_loopback(uint16_t port) {
   return fd;
 }
 
+static int tcpip_l10_get_flags(int fd, int *flags) {
+  int result;
+  do {
+    result = fcntl(fd, F_GETFL);
+  } while (result < 0 && errno == EINTR);
+  if (result < 0) {
+    return 0;
+  }
+  *flags = result;
+  return 1;
+}
+
+static int tcpip_l10_set_flags(int fd, int flags) {
+  int result;
+  do {
+    result = fcntl(fd, F_SETFL, flags);
+  } while (result < 0 && errno == EINTR);
+  return result == 0;
+}
+
 static int tcpip_l10_accept_bounded(int listener) {
-  if (!tcpip_l10_wait_test_fd(listener, POLLIN, TCPIP_L10_TEST_TIMEOUT_MS)) {
+  struct timespec deadline;
+  int original_flags = 0;
+  int changed_flags = 0;
+  int fd = -1;
+
+  if (!tcpip_l10_test_deadline_after(TCPIP_L10_TEST_TIMEOUT_MS, &deadline) ||
+      !tcpip_l10_get_flags(listener, &original_flags)) {
     return -1;
   }
-  int fd;
-  do {
+  if ((original_flags & O_NONBLOCK) == 0) {
+    if (!tcpip_l10_set_flags(listener, original_flags | O_NONBLOCK)) {
+      return -1;
+    }
+    changed_flags = 1;
+  }
+  for (;;) {
+    if (!tcpip_l10_wait_test_fd_until(listener, POLLIN, &deadline)) {
+      break;
+    }
     fd = accept(listener, NULL, NULL);
-  } while (fd < 0 && errno == EINTR);
+    if (fd >= 0) {
+      break;
+    }
+    if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+      break;
+    }
+  }
+  if (changed_flags != 0 && !tcpip_l10_set_flags(listener, original_flags)) {
+    tcpip_l10_close_fd(fd);
+    return -1;
+  }
   if (fd >= 0) {
     tcpip_l10_disable_sigpipe(fd);
   }
@@ -113,19 +216,55 @@ static int tcpip_l10_accept_bounded(int listener) {
 
 static int tcpip_l10_send_fragments(
     int fd, const uint8_t *data, size_t length, size_t fragment_size) {
+  struct timespec deadline;
   size_t offset = 0u;
+  if (!tcpip_l10_test_deadline_after(TCPIP_L10_TEST_TIMEOUT_MS, &deadline)) {
+    return 0;
+  }
   while (offset < length) {
-    if (!tcpip_l10_wait_test_fd(fd, POLLOUT, TCPIP_L10_TEST_TIMEOUT_MS)) {
+    if (!tcpip_l10_wait_test_fd_until(fd, POLLOUT, &deadline)) {
       return 0;
     }
     size_t amount = length - offset;
     if (amount > fragment_size) {
       amount = fragment_size;
     }
+#ifdef MSG_NOSIGNAL
+    const ssize_t count = send(fd, data + offset, amount, MSG_NOSIGNAL);
+#else
     const ssize_t count = send(fd, data + offset, amount, 0);
+#endif
     if (count > 0) {
       offset += (size_t)count;
-    } else if (count < 0 && errno == EINTR) {
+    } else if (count < 0 &&
+               (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) {
+      continue;
+    } else {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static int tcpip_l10_recv_exact_test(int fd, uint8_t *out, size_t length) {
+  struct timespec deadline;
+  size_t offset = 0u;
+  if (!tcpip_l10_test_deadline_after(TCPIP_L10_TEST_TIMEOUT_MS, &deadline)) {
+    return 0;
+  }
+  while (offset < length) {
+    if (!tcpip_l10_wait_test_fd_until(fd, POLLIN, &deadline)) {
+      return 0;
+    }
+#ifdef MSG_DONTWAIT
+    const ssize_t count = recv(fd, out + offset, length - offset, MSG_DONTWAIT);
+#else
+    const ssize_t count = recv(fd, out + offset, length - offset, 0);
+#endif
+    if (count > 0) {
+      offset += (size_t)count;
+    } else if (count < 0 &&
+               (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) {
       continue;
     } else {
       return 0;
@@ -142,7 +281,7 @@ static void *tcpip_l10_server_thread(void *opaque) {
     return NULL;
   }
 
-  if (context->mode == 0) {
+  if (context->mode == TCPIP_L10_SERVER_FRAGMENTED_RESPONSE) {
     static const uint8_t response[] =
         "HTTP/1.1 200 OK\r\n"
         "Content-Length: 5\r\n"
@@ -153,24 +292,32 @@ static void *tcpip_l10_server_thread(void *opaque) {
                           client, response, sizeof(response) - 1u, 3u)
                           ? TCPIP_L10_OK
                           : TCPIP_L10_SYSTEM;
-  } else if (context->mode == 1) {
-    uint8_t request_buffer[1024];
-    context->status = tcpip_l10_serve_one(
-        client, request_buffer, sizeof(request_buffer), TCPIP_L10_TEST_TIMEOUT_MS);
-  } else {
+  } else if (context->mode == TCPIP_L10_SERVER_PARTIAL_RESPONSE) {
     static const uint8_t partial[] =
         "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nab";
     context->status = tcpip_l10_send_fragments(
                           client, partial, sizeof(partial) - 1u, 2u)
                           ? TCPIP_L10_OK
                           : TCPIP_L10_SYSTEM;
+  } else {
+    uint8_t request_buffer[1024];
+    const int timeout_ms =
+        context->mode == TCPIP_L10_SERVER_SERVE_SHORT_TIMEOUT
+            ? 20
+            : TCPIP_L10_TEST_TIMEOUT_MS;
+    const size_t capacity =
+        context->mode == TCPIP_L10_SERVER_SERVE_SMALL_BUFFER
+            ? 32u
+            : sizeof(request_buffer);
+    context->status = tcpip_l10_serve_one(
+        client, request_buffer, capacity, timeout_ms);
   }
   tcpip_l10_close_fd(client);
   return NULL;
 }
 
 static int tcpip_l10_begin_server(
-    int mode,
+    tcpip_l10_server_mode mode,
     tcpip_l10_server_context *context,
     pthread_t *thread,
     int *client) {
@@ -343,7 +490,8 @@ static void tcpip_l10_test_fragmented_receive(tcpip_test_context *test) {
   tcpip_l10_server_context context;
   pthread_t thread;
   int client = -1;
-  if (!tcpip_l10_begin_server(0, &context, &thread, &client)) {
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_FRAGMENTED_RESPONSE, &context, &thread, &client)) {
     TCPIP_FAIL(test, "could not start fragmented loopback server");
     return;
   }
@@ -367,7 +515,8 @@ static void tcpip_l10_test_premature_eof(tcpip_test_context *test) {
   tcpip_l10_server_context context;
   pthread_t thread;
   int client = -1;
-  if (!tcpip_l10_begin_server(2, &context, &thread, &client)) {
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_PARTIAL_RESPONSE, &context, &thread, &client)) {
     TCPIP_FAIL(test, "could not start premature-EOF loopback server");
     return;
   }
@@ -401,13 +550,10 @@ static void tcpip_l10_test_socket_outcomes(tcpip_test_context *test) {
       TCPIP_L10_OK);
   TCPIP_EXPECT_SIZE(test, sent, sizeof(bytes) - 1u);
   uint8_t copy[sizeof(bytes) - 1u];
-  ssize_t count;
-  do {
-    count = recv(pair[1], copy, sizeof(copy), 0);
-  } while (count < 0 && errno == EINTR);
-  TCPIP_EXPECT_TRUE(test, count >= 0);
-  if (count >= 0) {
-    TCPIP_EXPECT_BYTES(test, copy, (size_t)count, bytes, sizeof(bytes) - 1u);
+  const int received_all = tcpip_l10_recv_exact_test(pair[1], copy, sizeof(copy));
+  TCPIP_EXPECT_TRUE(test, received_all);
+  if (received_all != 0) {
+    TCPIP_EXPECT_BYTES(test, copy, sizeof(copy), bytes, sizeof(bytes) - 1u);
   }
 
   uint8_t buffer[64];
@@ -437,7 +583,8 @@ static void tcpip_l10_test_serve_one(tcpip_test_context *test) {
   tcpip_l10_server_context context;
   pthread_t thread;
   int client = -1;
-  if (!tcpip_l10_begin_server(1, &context, &thread, &client)) {
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_SERVE, &context, &thread, &client)) {
     TCPIP_FAIL(test, "could not start serve-one loopback server");
     return;
   }
@@ -466,6 +613,80 @@ static void tcpip_l10_test_serve_one(tcpip_test_context *test) {
   TCPIP_EXPECT_SIZE(test, message.content_length, 2u);
 }
 
+static void tcpip_l10_finish_joined_server(
+    tcpip_test_context *test,
+    tcpip_l10_server_context *context,
+    pthread_t thread,
+    int client) {
+  if (pthread_join(thread, NULL) != 0) {
+    TCPIP_FAIL(test, "could not join serve-one server");
+  }
+  tcpip_l10_close_fd(client);
+  tcpip_l10_close_fd(context->listener);
+  context->listener = -1;
+}
+
+static void tcpip_l10_test_serve_one_failure_propagation(tcpip_test_context *test) {
+  static const uint8_t truncated[] =
+      "POST /demo HTTP/1.1\r\n"
+      "Host: localhost\r\n"
+      "Content-Length: 4\r\n"
+      "\r\n"
+      "pi";
+  static const uint8_t malformed[] =
+      "POST /demo HTTP/1.1\nHost: localhost\n\n";
+  static const uint8_t too_large_for_buffer[] =
+      "POST /demo HTTP/1.1\r\n"
+      "Host: localhost\r\n"
+      "Content-Length: 1\r\n"
+      "Connection: close\r\n"
+      "\r\n"
+      "x";
+
+  tcpip_l10_server_context context;
+  pthread_t thread;
+  int client = -1;
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_SERVE, &context, &thread, &client)) {
+    TCPIP_FAIL(test, "could not start truncated serve-one server");
+    return;
+  }
+  TCPIP_EXPECT_TRUE(test, tcpip_l10_send_fragments(
+                              client, truncated, sizeof(truncated) - 1u, 2u));
+  tcpip_l10_close_fd(client);
+  client = -1;
+  tcpip_l10_finish_server(&context, thread, client);
+  TCPIP_EXPECT_U32(test, context.status, TCPIP_L10_TRUNCATED);
+
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_SERVE_SHORT_TIMEOUT, &context, &thread, &client)) {
+    TCPIP_FAIL(test, "could not start timeout serve-one server");
+    return;
+  }
+  tcpip_l10_finish_joined_server(test, &context, thread, client);
+  TCPIP_EXPECT_U32(test, context.status, TCPIP_L10_TIMEOUT);
+
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_SERVE, &context, &thread, &client)) {
+    TCPIP_FAIL(test, "could not start malformed serve-one server");
+    return;
+  }
+  (void)tcpip_l10_send_fragments(
+      client, malformed, sizeof(malformed) - 1u, 2u);
+  tcpip_l10_finish_joined_server(test, &context, thread, client);
+  TCPIP_EXPECT_U32(test, context.status, TCPIP_L10_MALFORMED);
+
+  if (!tcpip_l10_begin_server(
+          TCPIP_L10_SERVER_SERVE_SMALL_BUFFER, &context, &thread, &client)) {
+    TCPIP_FAIL(test, "could not start capacity serve-one server");
+    return;
+  }
+  (void)tcpip_l10_send_fragments(
+      client, too_large_for_buffer, sizeof(too_large_for_buffer) - 1u, 3u);
+  tcpip_l10_finish_joined_server(test, &context, thread, client);
+  TCPIP_EXPECT_U32(test, context.status, TCPIP_L10_CAPACITY);
+}
+
 int main(void) {
   tcpip_test_context test;
   tcpip_test_begin(&test, "lesson 10 HTTP");
@@ -487,5 +708,6 @@ int main(void) {
   tcpip_l10_test_premature_eof(&test);
   tcpip_l10_test_socket_outcomes(&test);
   tcpip_l10_test_serve_one(&test);
+  tcpip_l10_test_serve_one_failure_propagation(&test);
   return tcpip_test_finish(&test);
 }
