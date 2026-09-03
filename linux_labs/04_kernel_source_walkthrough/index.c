@@ -21,7 +21,9 @@ static int tcpip_linux_l04_print_symbol(tcpip_linux_l04_symbol_id id) {
     return 1;
   }
   (void)written;
-  printf("%s\t%s\t%s\n", symbol->key, symbol->description, url);
+  if (printf("%s\t%s\t%s\n", symbol->key, symbol->description, url) < 0) {
+    return 1;
+  }
   return 0;
 }
 
@@ -35,9 +37,13 @@ static int tcpip_linux_l04_print_path(const tcpip_linux_l04_symbol_id *path, siz
     if (tcpip_linux_l04_symbol_by_id(path[index], &symbol) != TCPIP_LINUX_L04_OK) {
       return 1;
     }
-    printf("%s%s", index == 0U ? "" : " -> ", symbol->key);
+    if (printf("%s%s", index == 0U ? "" : " -> ", symbol->key) < 0) {
+      return 1;
+    }
   }
-  putchar('\n');
+  if (putchar('\n') == EOF || fflush(stdout) == EOF || ferror(stdout) != 0) {
+    return 1;
+  }
   return 0;
 }
 
@@ -57,11 +63,13 @@ int main(int argc, char **argv) {
   }
   if (strcmp(argv[1], "--ingress") == 0) {
     size_t count = 0U;
-    return tcpip_linux_l04_print_path(tcpip_linux_l04_ingress_path(&count), count);
+    const tcpip_linux_l04_symbol_id *path = tcpip_linux_l04_ingress_path(&count);
+    return tcpip_linux_l04_print_path(path, count);
   }
   if (strcmp(argv[1], "--egress") == 0) {
     size_t count = 0U;
-    return tcpip_linux_l04_print_path(tcpip_linux_l04_egress_path(&count), count);
+    const tcpip_linux_l04_symbol_id *path = tcpip_linux_l04_egress_path(&count);
+    return tcpip_linux_l04_print_path(path, count);
   }
   if (tcpip_linux_l04_is_option(argv[1])) {
     fprintf(stderr, "unknown option: %s\n", argv[1]);
