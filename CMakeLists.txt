@@ -9,9 +9,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(TCPIP_USE_SOLUTIONS "Link lesson tests against reference solutions" OFF)
 option(TCPIP_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(TCPIP_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+option(TCPIP_BUILD_LINUX_LABS "Build optional Linux implementation labs" OFF)
+
+if(TCPIP_BUILD_LINUX_LABS AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  message(FATAL_ERROR "TCPIP_BUILD_LINUX_LABS requires Linux")
+endif()
 
 include(CTest)
 include(cmake/TcpipLesson.cmake)
+include(cmake/TcpipLinuxLab.cmake)
 
 add_library(tcpip_warnings INTERFACE)
 if(MSVC)
@@ -43,6 +49,9 @@ target_include_directories(tcpip_test_harness PUBLIC include)
 target_link_libraries(tcpip_test_harness PRIVATE tcpip_warnings tcpip_sanitizers)
 
 add_subdirectory(lessons)
+if(TCPIP_BUILD_LINUX_LABS)
+  add_subdirectory(linux_labs)
+endif()
 
 # Native cross-layer verification is intentionally separate from lesson selection.
 if(BUILD_TESTING AND TARGET tcpip_l01_solution AND TARGET tcpip_l02_solution

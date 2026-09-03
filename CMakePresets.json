@@ -36,12 +36,36 @@
         "CMAKE_C_COMPILER": "clang",
         "TCPIP_ENABLE_SANITIZERS": "ON"
       }
+    },
+    {
+      "name": "linux-student",
+      "inherits": "student",
+      "cacheVariables": {
+        "TCPIP_BUILD_LINUX_LABS": "ON"
+      }
+    },
+    {
+      "name": "linux-reference",
+      "inherits": "reference",
+      "cacheVariables": {
+        "TCPIP_BUILD_LINUX_LABS": "ON"
+      }
+    },
+    {
+      "name": "linux-sanitize",
+      "inherits": "sanitize",
+      "cacheVariables": {
+        "TCPIP_BUILD_LINUX_LABS": "ON"
+      }
     }
   ],
   "buildPresets": [
     {"name": "student", "configurePreset": "student"},
     {"name": "reference", "configurePreset": "reference"},
-    {"name": "sanitize", "configurePreset": "sanitize"}
+    {"name": "sanitize", "configurePreset": "sanitize"},
+    {"name": "linux-student", "configurePreset": "linux-student"},
+    {"name": "linux-reference", "configurePreset": "linux-reference"},
+    {"name": "linux-sanitize", "configurePreset": "linux-sanitize"}
   ],
   "testPresets": [
     {
@@ -57,6 +81,22 @@
     {
       "name": "sanitize",
       "configurePreset": "sanitize",
+      "output": {"outputOnFailure": true},
+      "environment": {"ASAN_OPTIONS": "halt_on_error=1"}
+    },
+    {
+      "name": "linux-student",
+      "configurePreset": "linux-student",
+      "output": {"outputOnFailure": true}
+    },
+    {
+      "name": "linux-reference",
+      "configurePreset": "linux-reference",
+      "output": {"outputOnFailure": true}
+    },
+    {
+      "name": "linux-sanitize",
+      "configurePreset": "linux-sanitize",
       "output": {"outputOnFailure": true},
       "environment": {"ASAN_OPTIONS": "halt_on_error=1"}
     }
