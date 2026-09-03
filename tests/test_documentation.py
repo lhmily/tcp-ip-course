@@ -22,6 +22,14 @@ LINUX_LAB_DOCUMENTS = [ROOT / "linux_labs" / lab.source / "README.md" for lab in
 DOCUMENTS = [ROOT / "README.md", *LESSON_DOCUMENTS]
 
 
+def source_documents() -> list[Path]:
+    documents = list(DOCUMENTS)
+    if linux_lab_documents_exist():
+        documents.append(ROOT / "linux_labs" / "README.md")
+        documents.extend(LINUX_LAB_DOCUMENTS)
+    return documents
+
+
 def linux_lab_documents_exist() -> bool:
     return all(path.is_file() for path in LINUX_LAB_DOCUMENTS)
 
@@ -80,7 +88,7 @@ def build_site(output: Path, *, token: str | None = None) -> subprocess.Complete
 def test_documents_have_unique_valid_mermaid_diagrams():
     require_lesson_documents()
     seen: set[str] = set()
-    for path in DOCUMENTS:
+    for path in source_documents():
         blocks = mermaid_blocks(path.read_text())
         assert blocks, f"missing Mermaid diagram: {path}"
         for block in blocks:
@@ -95,7 +103,7 @@ def test_documents_have_unique_valid_mermaid_diagrams():
 
 def test_relative_links_and_images_resolve_locally():
     require_lesson_documents()
-    for document in DOCUMENTS:
+    for document in source_documents():
         for raw_target in markdown_targets(document.read_text()):
             target = raw_target.split("#", 1)[0]
             if not target:

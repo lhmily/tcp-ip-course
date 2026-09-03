@@ -2,6 +2,16 @@
 
 The portable core remains the complete 12-lesson course. These four optional Linux-only labs connect its explicit C17 models to selected Linux networking interfaces and implementation boundaries without turning kernel internals into a prerequisite.
 
+```mermaid
+flowchart LR
+    Core[Portable C17 core] --> Event[epoll readiness]
+    Event --> Observe[TCP_INFO observation]
+    Observe --> Sim[Userspace mini-stack]
+    Sim --> Kernel[Linux v6.6 source paths]
+```
+
+**What to notice:** the track moves from stable Linux user-space interfaces toward kernel internals. The runnable labs remain local and unprivileged; the final walkthrough studies source ownership and call paths without copying or executing kernel code.
+
 ## Prerequisites and workflow
 
 Use an Ubuntu or comparable Linux environment with GCC or Clang, CMake 3.25 or newer, CTest, and the system's Linux UAPI headers. No root access, network namespace, virtual interface, packet capture, raw socket, or internet connection is required. Build the starter and reference variants separately:
