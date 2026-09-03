@@ -16,7 +16,7 @@
         {% include "partials/search.html" %}
       {% endif %}
       {% if config.theme.palette %}{% include "partials/palette.html" %}{% endif %}
-      <a class="header-source" href="{{ config.repo_url }}" aria-label="View TCP/IP Course on GitHub">
+      <a class="header-source" href="{{ config.extra.repository_url }}" aria-label="View TCP/IP Course on GitHub">
         {% include ".icons/fontawesome/brands/github.svg" %}<span>Source</span>
       </a>
     </nav>
@@ -44,11 +44,16 @@
     <meta property="og:title" content="{{ page.meta.title }}">
     <meta property="og:description" content="{{ page.meta.description }}">
     <meta property="og:url" content="{{ canonical_url }}">
-    <meta property="og:image" content="{{ config.site_url }}assets/tcp-ip-social.svg">
+    <meta property="og:image" content="{{ config.site_url }}assets/tcp-ip-social.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="TCP/IP Course in C17 from bytes to diagnostics">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ page.meta.title }}">
     <meta name="twitter:description" content="{{ page.meta.description }}">
-    <meta name="twitter:image" content="{{ config.site_url }}assets/tcp-ip-social.svg">
+    <meta name="twitter:image" content="{{ config.site_url }}assets/tcp-ip-social.png">
+    <meta name="twitter:image:alt" content="TCP/IP Course in C17 from bytes to diagnostics">
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",

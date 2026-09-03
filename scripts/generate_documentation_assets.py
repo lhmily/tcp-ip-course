@@ -1,50 +1,144 @@
-"""Generate deterministic overview and social SVG assets."""
+"""Generate deterministic overview and social assets."""
 
 from __future__ import annotations
 
 import argparse
+import struct
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 ASSETS = ROOT / "docs" / "assets"
 
+GLYPHS = {
+    " ": ("00000",) * 7,
+    "/": ("00001", "00010", "00100", "01000", "10000", "00000", "00000"),
+    "-": ("00000", "00000", "00000", "11111", "00000", "00000", "00000"),
+    "+": ("00000", "00100", "00100", "11111", "00100", "00100", "00000"),
+    "·": ("00000", "00000", "00000", "00100", "00000", "00000", "00000"),
+    "0": ("01110", "10001", "10011", "10101", "11001", "10001", "01110"),
+    "1": ("00100", "01100", "00100", "00100", "00100", "00100", "01110"),
+    "2": ("01110", "10001", "00001", "00010", "00100", "01000", "11111"),
+    "7": ("11111", "00001", "00010", "00100", "01000", "01000", "01000"),
+    "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
+    "B": ("11110", "10001", "10001", "11110", "10001", "10001", "11110"),
+    "C": ("01111", "10000", "10000", "10000", "10000", "10000", "01111"),
+    "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+    "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+    "F": ("11111", "10000", "10000", "11110", "10000", "10000", "10000"),
+    "G": ("01111", "10000", "10000", "10111", "10001", "10001", "01111"),
+    "H": ("10001", "10001", "10001", "11111", "10001", "10001", "10001"),
+    "I": ("11111", "00100", "00100", "00100", "00100", "00100", "11111"),
+    "K": ("10001", "10010", "10100", "11000", "10100", "10010", "10001"),
+    "L": ("10000", "10000", "10000", "10000", "10000", "10000", "11111"),
+    "M": ("10001", "11011", "10101", "10101", "10001", "10001", "10001"),
+    "N": ("10001", "11001", "10101", "10011", "10001", "10001", "10001"),
+    "O": ("01110", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "P": ("11110", "10001", "10001", "11110", "10000", "10000", "10000"),
+    "R": ("11110", "10001", "10001", "11110", "10100", "10010", "10001"),
+    "S": ("01111", "10000", "10000", "01110", "00001", "00001", "11110"),
+    "T": ("11111", "00100", "00100", "00100", "00100", "00100", "00100"),
+    "U": ("10001", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "Y": ("10001", "10001", "01010", "00100", "00100", "00100", "00100"),
+}
 
-def overview_svg(*, social: bool = False) -> str:
-    width, height = (1200, 630) if social else (1200, 500)
-    subtitle_y = 118 if social else 102
-    box_y = 190 if social else 145
-    footer_y = 535 if social else 430
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img">
+
+def overview_svg() -> str:
+    return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500" role="img">
   <title>TCP/IP Course layer progression</title>
   <desc>A twelve-lesson C17 course progresses from bytes and local links through Internet and transport protocols to applications and diagnostics.</desc>
-  <rect width="{width}" height="{height}" rx="24" fill="#07111f"/>
+  <rect width="1200" height="500" rx="24" fill="#07111f"/>
   <text x="600" y="65" text-anchor="middle" font-family="system-ui,sans-serif" font-size="40" font-weight="700" fill="#f8fafc">TCP/IP from bytes to diagnostics</text>
-  <text x="600" y="{subtitle_y}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="20" fill="#a7bdd4">12 tested lessons · portable C17 · CMake + CTest · POSIX sockets</text>
+  <text x="600" y="102" text-anchor="middle" font-family="system-ui,sans-serif" font-size="20" fill="#a7bdd4">12 tested lessons · portable C17 · CMake + CTest · POSIX sockets</text>
   <g font-family="system-ui,sans-serif">
-    <rect x="45" y="{box_y}" width="200" height="170" rx="18" fill="#0c2a3f" stroke="#38bdf8" stroke-width="2"/>
-    <text x="145" y="{box_y + 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#7dd3fc">LESSONS 1–2</text><text x="145" y="{box_y + 83}" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Foundations</text><text x="145" y="{box_y + 119}" text-anchor="middle" font-size="15" fill="#a7bdd4">Bytes · checksum</text><text x="145" y="{box_y + 144}" text-anchor="middle" font-size="15" fill="#a7bdd4">Ethernet · ARP</text>
-    <path d="M255 {box_y + 85} H275" stroke="#64748b" stroke-width="4"/><path d="M268 {box_y + 76} L279 {box_y + 85} L268 {box_y + 94}" fill="none" stroke="#64748b" stroke-width="4"/>
-    <rect x="285" y="{box_y}" width="200" height="170" rx="18" fill="#14284a" stroke="#818cf8" stroke-width="2"/>
-    <text x="385" y="{box_y + 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#a5b4fc">LESSONS 3–4</text><text x="385" y="{box_y + 83}" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Internet</text><text x="385" y="{box_y + 119}" text-anchor="middle" font-size="15" fill="#a7bdd4">IPv4 packets</text><text x="385" y="{box_y + 144}" text-anchor="middle" font-size="15" fill="#a7bdd4">ICMP messages</text>
-    <path d="M495 {box_y + 85} H515" stroke="#64748b" stroke-width="4"/><path d="M508 {box_y + 76} L519 {box_y + 85} L508 {box_y + 94}" fill="none" stroke="#64748b" stroke-width="4"/>
-    <rect x="525" y="{box_y}" width="200" height="170" rx="18" fill="#12332f" stroke="#34d399" stroke-width="2"/>
-    <text x="625" y="{box_y + 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#6ee7b7">LESSONS 5–7</text><text x="625" y="{box_y + 83}" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Transport</text><text x="625" y="{box_y + 119}" text-anchor="middle" font-size="15" fill="#a7bdd4">UDP · TCP segments</text><text x="625" y="{box_y + 144}" text-anchor="middle" font-size="15" fill="#a7bdd4">State · reliability</text>
-    <path d="M735 {box_y + 85} H755" stroke="#64748b" stroke-width="4"/><path d="M748 {box_y + 76} L759 {box_y + 85} L748 {box_y + 94}" fill="none" stroke="#64748b" stroke-width="4"/>
-    <rect x="765" y="{box_y}" width="200" height="170" rx="18" fill="#422b17" stroke="#f59e0b" stroke-width="2"/>
-    <text x="865" y="{box_y + 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#fbbf24">LESSONS 8–10</text><text x="865" y="{box_y + 83}" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Applications</text><text x="865" y="{box_y + 119}" text-anchor="middle" font-size="15" fill="#a7bdd4">Sockets · DNS</text><text x="865" y="{box_y + 144}" text-anchor="middle" font-size="15" fill="#a7bdd4">HTTP framing</text>
-    <path d="M975 {box_y + 85} H995" stroke="#64748b" stroke-width="4"/><path d="M988 {box_y + 76} L999 {box_y + 85} L988 {box_y + 94}" fill="none" stroke="#64748b" stroke-width="4"/>
-    <rect x="1005" y="{box_y}" width="150" height="170" rx="18" fill="#3e2135" stroke="#f472b6" stroke-width="2"/>
-    <text x="1080" y="{box_y + 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#f9a8d4">11–12</text><text x="1080" y="{box_y + 80}" text-anchor="middle" font-size="20" font-weight="700" fill="#f8fafc">Practice</text><text x="1080" y="{box_y + 116}" text-anchor="middle" font-size="14" fill="#a7bdd4">Routing · NAT</text><text x="1080" y="{box_y + 141}" text-anchor="middle" font-size="14" fill="#a7bdd4">Diagnostics</text>
+    <rect x="45" y="145" width="200" height="170" rx="18" fill="#0c2a3f" stroke="#38bdf8" stroke-width="2"/><text x="145" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#7dd3fc">LESSONS 1–2</text><text x="145" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Foundations</text><text x="145" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">Bytes · checksum</text><text x="145" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">Ethernet · ARP</text>
+    <rect x="285" y="145" width="200" height="170" rx="18" fill="#14284a" stroke="#818cf8" stroke-width="2"/><text x="385" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#a5b4fc">LESSONS 3–4</text><text x="385" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Internet</text><text x="385" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">IPv4 packets</text><text x="385" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">ICMP messages</text>
+    <rect x="525" y="145" width="200" height="170" rx="18" fill="#12332f" stroke="#34d399" stroke-width="2"/><text x="625" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#6ee7b7">LESSONS 5–7</text><text x="625" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Transport</text><text x="625" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">UDP · TCP segments</text><text x="625" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">State · reliability</text>
+    <rect x="765" y="145" width="200" height="170" rx="18" fill="#422b17" stroke="#f59e0b" stroke-width="2"/><text x="865" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#fbbf24">LESSONS 8–10</text><text x="865" y="228" text-anchor="middle" font-size="23" font-weight="700" fill="#f8fafc">Applications</text><text x="865" y="264" text-anchor="middle" font-size="15" fill="#a7bdd4">Sockets · DNS</text><text x="865" y="289" text-anchor="middle" font-size="15" fill="#a7bdd4">HTTP framing</text>
+    <rect x="1005" y="145" width="150" height="170" rx="18" fill="#3e2135" stroke="#f472b6" stroke-width="2"/><text x="1080" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#f9a8d4">11–12</text><text x="1080" y="225" text-anchor="middle" font-size="20" font-weight="700" fill="#f8fafc">Practice</text><text x="1080" y="261" text-anchor="middle" font-size="14" fill="#a7bdd4">Routing · NAT</text><text x="1080" y="286" text-anchor="middle" font-size="14" fill="#a7bdd4">Diagnostics</text>
   </g>
-  <text x="600" y="{footer_y}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="600" fill="#dbeafe">Offline byte buffers first · loopback only for native socket exercises · no privileged capture</text>
+  <text x="600" y="430" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="600" fill="#dbeafe">Offline byte buffers first · loopback only for native socket exercises · no privileged capture</text>
 </svg>
 """
 
 
-def expected_assets() -> dict[Path, str]:
+def draw_rect(
+    pixels: bytearray, width: int, x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]
+) -> None:
+    for y in range(max(0, y0), min(630, y1)):
+        for x in range(max(0, x0), min(width, x1)):
+            offset = (y * width + x) * 3
+            pixels[offset : offset + 3] = bytes(color)
+
+
+def draw_text(
+    pixels: bytearray,
+    width: int,
+    x: int,
+    y: int,
+    text: str,
+    scale: int,
+    color: tuple[int, int, int],
+) -> None:
+    cursor = x
+    for character in text.upper():
+        glyph = GLYPHS.get(character, GLYPHS[" "])
+        for row, bits in enumerate(glyph):
+            for column, bit in enumerate(bits):
+                if bit == "1":
+                    draw_rect(
+                        pixels,
+                        width,
+                        cursor + column * scale,
+                        y + row * scale,
+                        cursor + (column + 1) * scale,
+                        y + (row + 1) * scale,
+                        color,
+                    )
+        cursor += 6 * scale
+
+
+def png_chunk(kind: bytes, data: bytes) -> bytes:
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+
+
+def social_png() -> bytes:
+    width, height = 1200, 630
+    pixels = bytearray((7, 17, 31) * (width * height))
+    colors = ((12, 42, 63), (20, 40, 74), (18, 51, 47), (66, 43, 23), (62, 33, 53))
+    accents = ((56, 189, 248), (129, 140, 248), (52, 211, 153), (245, 158, 11), (244, 114, 182))
+    draw_text(pixels, width, 68, 60, "TCP/IP COURSE", 12, (248, 250, 252))
+    draw_text(pixels, width, 72, 170, "C17 FROM BYTES TO DIAGNOSTICS", 5, (167, 189, 212))
+    for index, (fill, accent) in enumerate(zip(colors, accents, strict=True)):
+        left = 68 + index * 215
+        draw_rect(pixels, width, left, 285, left + 180, 455, fill)
+        draw_rect(pixels, width, left, 285, left + 180, 291, accent)
+    labels = ("BYTES", "IP", "TCP", "HTTP", "TOOLS")
+    for index, label in enumerate(labels):
+        draw_text(pixels, width, 91 + index * 215, 350, label, 4, (248, 250, 252))
+    draw_text(
+        pixels,
+        width,
+        70,
+        535,
+        "12 TESTED LESSONS · CMAKE + CTEST · LOOPBACK ONLY",
+        4,
+        (219, 234, 254),
+    )
+    raw = b"".join(b"\x00" + pixels[y * width * 3 : (y + 1) * width * 3] for y in range(height))
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", ihdr)
+        + png_chunk(b"IDAT", zlib.compress(raw, 9))
+        + png_chunk(b"IEND", b"")
+    )
+
+
+def expected_assets() -> dict[Path, bytes]:
     return {
-        ASSETS / "tcp-ip-overview.svg": overview_svg(),
-        ASSETS / "tcp-ip-social.svg": overview_svg(social=True),
+        ASSETS / "tcp-ip-overview.svg": overview_svg().encode(),
+        ASSETS / "tcp-ip-social.png": social_png(),
     }
 
 
@@ -55,11 +149,11 @@ def main() -> int:
     failures = []
     for path, expected in expected_assets().items():
         if args.check:
-            if not path.exists() or path.read_text() != expected:
+            if not path.exists() or path.read_bytes() != expected:
                 failures.append(path.relative_to(ROOT))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(expected)
+            path.write_bytes(expected)
             print(f"wrote {path.relative_to(ROOT)}")
     if failures:
         print("out-of-date assets:", ", ".join(map(str, failures)))

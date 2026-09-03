@@ -1,8 +1,6 @@
 site_name: TCP/IP Course in C17
 site_description: Learn TCP/IP from bytes to diagnostics in 12 tested C17 lessons using CMake, CTest, and POSIX sockets.
 site_url: https://lhmily.github.io/tcp-ip-course/
-repo_url: https://github.com/lhmily/tcp-ip-course
-repo_name: lhmily/tcp-ip-course
 edit_uri: ""
 docs_dir: .site-docs
 site_dir: site
@@ -25,6 +23,7 @@ validation:
 extra:
   cloudflare_web_analytics_token: !ENV [CLOUDFLARE_WEB_ANALYTICS_TOKEN, ""]
   homepage: https://lhmily.github.io/
+  repository_url: https://github.com/lhmily/tcp-ip-course
   social:
     - icon: material/home
       link: https://lhmily.github.io/
@@ -33,6 +32,7 @@ extra:
       link: https://github.com/lhmily/tcp-ip-course
       name: TCP/IP Course on GitHub
   generator: false
+  repo: false
 
 extra_css:
   - stylesheets/course.css

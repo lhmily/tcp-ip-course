@@ -1,7 +1,7 @@
 name: Lesson improvement
 description: Propose a focused improvement to one C17 lesson
 title: "[Lesson]: "
-labels: [lesson]
+labels: [enhancement]
 body:
   - type: input
     id: lesson

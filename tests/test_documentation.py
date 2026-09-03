@@ -103,9 +103,11 @@ def test_generated_assets_are_reproducible_and_accessible():
         result = run_generator(script)
         assert result.returncode == 0, result.stdout + result.stderr
 
-    for name in ("tcp-ip-overview.svg", "tcp-ip-social.svg"):
-        text = (ROOT / "docs" / "assets" / name).read_text()
-        assert "<title>" in text and "<desc>" in text
+    overview = (ROOT / "docs" / "assets" / "tcp-ip-overview.svg").read_text()
+    assert "<title>" in overview and "<desc>" in overview
+    social = (ROOT / "docs" / "assets" / "tcp-ip-social.png").read_bytes()
+    assert social.startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack(">II", social[16:24]) == (1200, 630)
 
     branding = ROOT / "docs" / "assets" / "branding"
     assert "<title>" in (branding / "lemon.svg").read_text()
@@ -157,6 +159,10 @@ def test_built_site_metadata_sitemap_manifest_and_links(tmp_path):
         assert "assets/branding/lemon.svg" in text
         assert "site.webmanifest" in text
         assert "og:title" in text and "twitter:card" in text
+        assert "assets/tcp-ip-social.png" in text
+        assert 'property="og:image:type" content="image/png"' in text
+        assert 'property="og:image:width" content="1200"' in text
+        assert 'property="og:image:height" content="630"' in text
         assert structured
         data = json.loads(structured.group(1))
         assert data["@type"] in {"Course", "LearningResource"}
