@@ -75,46 +75,60 @@ static void tcpip_l03_test_parse_options(tcpip_test_context *ctx) {
   TCPIP_EXPECT_SIZE(ctx, parsed.payload_length, 4U);
 }
 
+static void tcpip_l03_expect_parse_failure(
+    tcpip_test_context *ctx,
+    const uint8_t *packet,
+    size_t packet_length,
+    tcpip_l03_status expected_status) {
+  tcpip_l03_ipv4_packet parsed;
+  tcpip_l03_ipv4_packet zero;
+
+  memset(&parsed, UINT8_C(0xa5), sizeof(parsed));
+  memset(&zero, 0, sizeof(zero));
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l03_parse_ipv4(packet, packet_length, &parsed), expected_status);
+  TCPIP_EXPECT_BYTES(
+      ctx,
+      (const uint8_t *)&parsed,
+      sizeof(parsed),
+      (const uint8_t *)&zero,
+      sizeof(zero));
+}
+
 static void tcpip_l03_test_parse_errors(tcpip_test_context *ctx) {
   tcpip_l03_ipv4_packet parsed;
+  tcpip_l03_ipv4_packet zero;
   uint8_t changed[sizeof(tcpip_l03_options_packet)];
 
-  memset(&parsed, 0xa5, sizeof(parsed));
-  TCPIP_EXPECT_U32(
-      ctx, tcpip_l03_parse_ipv4(tcpip_l03_packet, 19U, &parsed), TCPIP_L03_TRUNCATED);
-  TCPIP_EXPECT_U16(ctx, parsed.total_length, 0U);
-  TCPIP_EXPECT_SIZE(ctx, parsed.payload_length, 0U);
+  tcpip_l03_expect_parse_failure(
+      ctx, tcpip_l03_packet, 19U, TCPIP_L03_TRUNCATED);
 
   memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
   changed[0U] = 0x65U;
-  TCPIP_EXPECT_U32(
-      ctx, tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_packet), &parsed), TCPIP_L03_MALFORMED);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_packet), TCPIP_L03_MALFORMED);
 
   memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
   changed[0U] = 0x44U;
-  TCPIP_EXPECT_U32(
-      ctx, tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_packet), &parsed), TCPIP_L03_MALFORMED);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_packet), TCPIP_L03_MALFORMED);
 
   memcpy(changed, tcpip_l03_options_packet, sizeof(tcpip_l03_options_packet));
   changed[0U] = 0x48U;
-  TCPIP_EXPECT_U32(
-      ctx,
-      tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_options_packet), &parsed),
-      TCPIP_L03_TRUNCATED);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_options_packet), TCPIP_L03_TRUNCATED);
 
   memcpy(changed, tcpip_l03_options_packet, sizeof(tcpip_l03_options_packet));
   changed[2U] = 0x00U;
   changed[3U] = 0x14U;
-  TCPIP_EXPECT_U32(
-      ctx,
-      tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_options_packet), &parsed),
-      TCPIP_L03_MALFORMED);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_options_packet), TCPIP_L03_MALFORMED);
 
   memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
   changed[2U] = 0x00U;
   changed[3U] = 0x19U;
-  TCPIP_EXPECT_U32(
-      ctx, tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_packet), &parsed), TCPIP_L03_TRUNCATED);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_packet), TCPIP_L03_TRUNCATED);
 
   memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
   changed[23U] ^= 0x01U;
@@ -123,11 +137,25 @@ static void tcpip_l03_test_parse_errors(tcpip_test_context *ctx) {
 
   memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
   changed[8U] ^= 0x01U;
-  TCPIP_EXPECT_U32(
-      ctx, tcpip_l03_parse_ipv4(changed, sizeof(tcpip_l03_packet), &parsed), TCPIP_L03_MALFORMED);
-  TCPIP_EXPECT_U32(ctx, parsed.version, 0U);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_packet), TCPIP_L03_MALFORMED);
 
+  memcpy(changed, tcpip_l03_packet, sizeof(tcpip_l03_packet));
+  changed[6U] |= UINT8_C(0x80);
+  changed[10U] = UINT8_C(0xbc);
+  changed[11U] = UINT8_C(0x3b);
+  tcpip_l03_expect_parse_failure(
+      ctx, changed, sizeof(tcpip_l03_packet), TCPIP_L03_MALFORMED);
+
+  memset(&parsed, UINT8_C(0xa5), sizeof(parsed));
+  memset(&zero, 0, sizeof(zero));
   TCPIP_EXPECT_U32(ctx, tcpip_l03_parse_ipv4(NULL, 0U, &parsed), TCPIP_L03_INVALID_ARGUMENT);
+  TCPIP_EXPECT_BYTES(
+      ctx,
+      (const uint8_t *)&parsed,
+      sizeof(parsed),
+      (const uint8_t *)&zero,
+      sizeof(zero));
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l03_parse_ipv4(tcpip_l03_packet, sizeof(tcpip_l03_packet), NULL),
@@ -173,6 +201,24 @@ static void tcpip_l03_test_build(tcpip_test_context *ctx) {
   TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), untouched, sizeof(untouched));
 }
 
+static void tcpip_l03_expect_build_failure(
+    tcpip_test_context *ctx,
+    const tcpip_l03_ipv4_header_fields *fields,
+    tcpip_l03_status expected_status) {
+  uint8_t output[64];
+  uint8_t untouched[64];
+  size_t output_length = 99U;
+
+  memset(output, UINT8_C(0x5a), sizeof(output));
+  memcpy(untouched, output, sizeof(untouched));
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l03_build_header(fields, output, sizeof(output), &output_length),
+      expected_status);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), untouched, sizeof(untouched));
+}
+
 static void tcpip_l03_test_build_options(tcpip_test_context *ctx) {
   static const uint8_t options[4] = {0x01U, 0x01U, 0x00U, 0x00U};
   static const uint8_t expected[24] = {
@@ -202,24 +248,19 @@ static void tcpip_l03_test_build_options(tcpip_test_context *ctx) {
   TCPIP_EXPECT_BYTES(ctx, output, output_length, expected, sizeof(expected));
 
   fields.options_length = 3U;
-  output_length = 99U;
-  TCPIP_EXPECT_U32(
-      ctx,
-      tcpip_l03_build_header(&fields, output, sizeof(output), &output_length),
-      TCPIP_L03_MALFORMED);
-  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  tcpip_l03_expect_build_failure(ctx, &fields, TCPIP_L03_MALFORMED);
+
   fields.options = NULL;
   fields.options_length = 4U;
-  TCPIP_EXPECT_U32(
-      ctx,
-      tcpip_l03_build_header(&fields, output, sizeof(output), &output_length),
-      TCPIP_L03_MALFORMED);
+  tcpip_l03_expect_build_failure(ctx, &fields, TCPIP_L03_MALFORMED);
+
+  fields.options = options;
+  fields.options_length = TCPIP_L03_MAX_OPTIONS_LENGTH + 1U;
+  tcpip_l03_expect_build_failure(ctx, &fields, TCPIP_L03_MALFORMED);
+
   fields.options_length = 0U;
   fields.flags_fragment = 0x8000U;
-  TCPIP_EXPECT_U32(
-      ctx,
-      tcpip_l03_build_header(&fields, output, sizeof(output), &output_length),
-      TCPIP_L03_MALFORMED);
+  tcpip_l03_expect_build_failure(ctx, &fields, TCPIP_L03_MALFORMED);
 }
 
 static void tcpip_l03_test_decrement_ttl(tcpip_test_context *ctx) {

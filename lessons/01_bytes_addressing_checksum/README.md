@@ -29,11 +29,11 @@ flowchart LR
 |---|---|---|
 | `tcpip_l01_read_be16` | Two octets at `offset` | Host `uint16_t` |
 | `tcpip_l01_write_be16` | Host `uint16_t` | Two network-order octets |
-| `tcpip_l01_parse_ipv4` | Exactly `text_len` characters | Four copied address octets |
-| `tcpip_l01_prefix_contains` | Two IPv4 addresses and `/0` through `/32` | Membership boolean |
+| `tcpip_l01_parse_ipv4(text, text_len, out_address, out_address_capacity)` | Exactly `text_len` characters and an explicitly sized output | Four copied address octets |
+| `tcpip_l01_prefix_contains(address, address_length, network, network_length, prefix_length, out_contains)` | Two explicitly sized IPv4 addresses and `/0` through `/32` | Membership boolean |
 | `tcpip_l01_checksum16` | Arbitrary byte span | One's-complement checksum |
 
-Text is not required to be NUL-terminated. Empty checksum input is valid and produces `0xffff`; a `NULL` input is accepted only when its length is zero.
+Text is not required to be NUL-terminated. The parser reports `CAPACITY` unless `out_address_capacity` is at least four, and prefix matching reports `TRUNCATED` unless both address lengths are at least four. Empty checksum input is valid and produces `0xffff`; a `NULL` input is accepted only when its length is zero.
 
 ## Algorithm and state transitions
 
@@ -65,7 +65,7 @@ Complete each `TODO(lesson 01)` in `exercise.c`. Preserve validation and output 
 
 ## Test contract and invariants
 
-The test executable links either `exercise.c` or `solution.c`, selected by `TCPIP_USE_SOLUTIONS`. It checks exact big-endian values, too-short reads, capacity failures with unchanged destination bytes, valid and malformed IPv4 text, prefix boundaries `/0` and `/32`, and empty, even-length, and odd-length checksums. In student mode, unresolved functions return `TCPIP_L01_TODO`, causing a nonzero test result. The solution must pass every deterministic fixture.
+The test executable links either `exercise.c` or `solution.c`, selected by `TCPIP_USE_SOLUTIONS`. It checks exact big-endian values, too-short reads, offsets beyond the span including `SIZE_MAX`, capacity failures with unchanged destination bytes, short IPv4 output and input arrays, valid and malformed IPv4 text, prefix boundaries `/0` and `/32`, a differing `/25` bit, and empty, even-length, and odd-length checksums. In student mode, unresolved functions return `TCPIP_L01_TODO`, causing a nonzero test result. The solution must pass every deterministic fixture.
 
 ## Common mistakes
 

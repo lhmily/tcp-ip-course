@@ -13,6 +13,9 @@ tcpip_l02_status tcpip_l02_parse_ethernet(
   if (data_len < TCPIP_L02_ETHERNET_HEADER_LENGTH) {
     return TCPIP_L02_TRUNCATED;
   }
+  if ((((uint16_t)data[12U] << 8U) | (uint16_t)data[13U]) < UINT16_C(0x0600)) {
+    return TCPIP_L02_MALFORMED;
+  }
 
   /* TODO(lesson 02): copy MAC addresses, decode EtherType, and describe the payload span. */
   return TCPIP_L02_TODO;
@@ -35,9 +38,12 @@ tcpip_l02_status tcpip_l02_parse_arp(
 }
 
 tcpip_l02_status tcpip_l02_build_arp_request(
-    const uint8_t sender_mac[TCPIP_L02_MAC_LENGTH],
-    const uint8_t sender_ip[TCPIP_L02_IPV4_LENGTH],
-    const uint8_t target_ip[TCPIP_L02_IPV4_LENGTH],
+    const uint8_t *sender_mac,
+    size_t sender_mac_length,
+    const uint8_t *sender_ip,
+    size_t sender_ip_length,
+    const uint8_t *target_ip,
+    size_t target_ip_length,
     uint8_t *out_frame,
     size_t out_capacity,
     size_t *out_length) {
@@ -47,6 +53,11 @@ tcpip_l02_status tcpip_l02_build_arp_request(
   if (sender_mac == NULL || sender_ip == NULL || target_ip == NULL ||
       out_frame == NULL || out_length == NULL) {
     return TCPIP_L02_INVALID_ARGUMENT;
+  }
+  if (sender_mac_length < TCPIP_L02_MAC_LENGTH ||
+      sender_ip_length < TCPIP_L02_IPV4_LENGTH ||
+      target_ip_length < TCPIP_L02_IPV4_LENGTH) {
+    return TCPIP_L02_TRUNCATED;
   }
   if (out_capacity < TCPIP_L02_ARP_REQUEST_FRAME_LENGTH) {
     return TCPIP_L02_CAPACITY;

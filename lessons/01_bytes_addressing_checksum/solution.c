@@ -33,16 +33,24 @@ tcpip_l01_status tcpip_l01_write_be16(
 }
 
 tcpip_l01_status tcpip_l01_parse_ipv4(
-    const char *text, size_t text_len, uint8_t out_address[4]) {
+    const char *text,
+    size_t text_len,
+    uint8_t *out_address,
+    size_t out_address_capacity) {
   uint8_t parsed[4] = {0U, 0U, 0U, 0U};
   size_t position = 0U;
   size_t part = 0U;
 
   if (out_address != NULL) {
-    memset(out_address, 0, 4U);
+    size_t initialized_length = out_address_capacity < sizeof(parsed) ?
+        out_address_capacity : sizeof(parsed);
+    memset(out_address, 0, initialized_length);
   }
   if (text == NULL || out_address == NULL) {
     return TCPIP_L01_INVALID_ARGUMENT;
+  }
+  if (out_address_capacity < sizeof(parsed)) {
+    return TCPIP_L01_CAPACITY;
   }
   if (text_len == 0U) {
     return TCPIP_L01_MALFORMED;
@@ -85,8 +93,10 @@ tcpip_l01_status tcpip_l01_parse_ipv4(
 }
 
 tcpip_l01_status tcpip_l01_prefix_contains(
-    const uint8_t address[4],
-    const uint8_t network[4],
+    const uint8_t *address,
+    size_t address_length,
+    const uint8_t *network,
+    size_t network_length,
     uint8_t prefix_length,
     bool *out_contains) {
   size_t full_bytes = 0U;
@@ -98,6 +108,9 @@ tcpip_l01_status tcpip_l01_prefix_contains(
   }
   if (address == NULL || network == NULL || out_contains == NULL) {
     return TCPIP_L01_INVALID_ARGUMENT;
+  }
+  if (address_length < 4U || network_length < 4U) {
+    return TCPIP_L01_TRUNCATED;
   }
   if (prefix_length > 32U) {
     return TCPIP_L01_INVALID_ARGUMENT;

@@ -24,6 +24,16 @@ static void test_big_endian_access(tcpip_test_context *ctx) {
   TCPIP_EXPECT_U16(ctx, value, 0U);
   TCPIP_EXPECT_U32(ctx, tcpip_l01_write_be16(destination, sizeof(destination), 3U, UINT16_C(0x0000)), TCPIP_L01_CAPACITY);
   TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
+
+  value = UINT16_C(0xffff);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l01_read_be16(source, sizeof(source), SIZE_MAX, &value), TCPIP_L01_TRUNCATED);
+  TCPIP_EXPECT_U16(ctx, value, 0U);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_write_be16(destination, sizeof(destination), SIZE_MAX, UINT16_C(0x0000)),
+      TCPIP_L01_CAPACITY);
+  TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
 }
 
 static void test_ipv4_parser(tcpip_test_context *ctx) {
@@ -31,18 +41,31 @@ static void test_ipv4_parser(tcpip_test_context *ctx) {
   const uint8_t expected[] = {UINT8_C(192), UINT8_C(0), UINT8_C(2), UINT8_C(1)};
   const char *invalid[] = {"", "192.0.2", "192..2.1", "256.0.2.1", "1.2.3.4x", "1.2.3.4.5"};
   uint8_t address[4] = {UINT8_C(9), UINT8_C(9), UINT8_C(9), UINT8_C(9)};
+  uint8_t short_address[3] = {UINT8_C(9), UINT8_C(9), UINT8_C(9)};
   const uint8_t zero[4] = {0U, 0U, 0U, 0U};
+  const uint8_t short_zero[3] = {0U, 0U, 0U};
   size_t index = 0U;
 
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_parse_ipv4(valid, sizeof(valid), address), TCPIP_L01_OK);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l01_parse_ipv4(valid, sizeof(valid), address, sizeof(address)), TCPIP_L01_OK);
   TCPIP_EXPECT_BYTES(ctx, address, sizeof(address), expected, sizeof(expected));
 
   for (index = 0U; index < sizeof(invalid) / sizeof(invalid[0]); ++index) {
     memset(address, UINT8_C(0xa5), sizeof(address));
     TCPIP_EXPECT_U32(
-        ctx, tcpip_l01_parse_ipv4(invalid[index], strlen(invalid[index]), address), TCPIP_L01_MALFORMED);
+        ctx,
+        tcpip_l01_parse_ipv4(
+            invalid[index], strlen(invalid[index]), address, sizeof(address)),
+        TCPIP_L01_MALFORMED);
     TCPIP_EXPECT_BYTES(ctx, address, sizeof(address), zero, sizeof(zero));
   }
+
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_parse_ipv4(valid, sizeof(valid), short_address, sizeof(short_address)),
+      TCPIP_L01_CAPACITY);
+  TCPIP_EXPECT_BYTES(
+      ctx, short_address, sizeof(short_address), short_zero, sizeof(short_zero));
 }
 
 static void test_prefixes(tcpip_test_context *ctx) {
@@ -50,19 +73,59 @@ static void test_prefixes(tcpip_test_context *ctx) {
   const uint8_t same[] = {UINT8_C(192), UINT8_C(0), UINT8_C(2), UINT8_C(129)};
   const uint8_t subnet[] = {UINT8_C(192), UINT8_C(0), UINT8_C(2), UINT8_C(128)};
   const uint8_t other[] = {UINT8_C(192), UINT8_C(0), UINT8_C(3), UINT8_C(129)};
+  const uint8_t different_25[] = {UINT8_C(192), UINT8_C(0), UINT8_C(2), UINT8_C(0)};
   bool contains = false;
 
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_prefix_contains(address, other, 0U, &contains), TCPIP_L01_OK);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), other, sizeof(other), 0U, &contains),
+      TCPIP_L01_OK);
   TCPIP_EXPECT_TRUE(ctx, contains);
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_prefix_contains(address, same, 32U, &contains), TCPIP_L01_OK);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), same, sizeof(same), 32U, &contains),
+      TCPIP_L01_OK);
   TCPIP_EXPECT_TRUE(ctx, contains);
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_prefix_contains(address, subnet, 25U, &contains), TCPIP_L01_OK);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), subnet, sizeof(subnet), 25U, &contains),
+      TCPIP_L01_OK);
   TCPIP_EXPECT_TRUE(ctx, contains);
   contains = true;
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_prefix_contains(address, other, 32U, &contains), TCPIP_L01_OK);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), different_25, sizeof(different_25), 25U, &contains),
+      TCPIP_L01_OK);
   TCPIP_EXPECT_TRUE(ctx, !contains);
   contains = true;
-  TCPIP_EXPECT_U32(ctx, tcpip_l01_prefix_contains(address, same, 33U, &contains), TCPIP_L01_INVALID_ARGUMENT);
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), other, sizeof(other), 32U, &contains),
+      TCPIP_L01_OK);
+  TCPIP_EXPECT_TRUE(ctx, !contains);
+  contains = true;
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(address, 3U, same, sizeof(same), 24U, &contains),
+      TCPIP_L01_TRUNCATED);
+  TCPIP_EXPECT_TRUE(ctx, !contains);
+  contains = true;
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(address, sizeof(address), same, 3U, 24U, &contains),
+      TCPIP_L01_TRUNCATED);
+  TCPIP_EXPECT_TRUE(ctx, !contains);
+  contains = true;
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l01_prefix_contains(
+          address, sizeof(address), same, sizeof(same), 33U, &contains),
+      TCPIP_L01_INVALID_ARGUMENT);
   TCPIP_EXPECT_TRUE(ctx, !contains);
 }
 

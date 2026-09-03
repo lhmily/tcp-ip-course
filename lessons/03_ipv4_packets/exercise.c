@@ -15,6 +15,10 @@ tcpip_l03_status tcpip_l03_parse_ipv4(
   if (packet_length < TCPIP_L03_MIN_HEADER_LENGTH) {
     return TCPIP_L03_TRUNCATED;
   }
+  if (((((uint16_t)packet[6U] << 8U) | (uint16_t)packet[7U]) &
+       UINT16_C(0x8000)) != 0U) {
+    return TCPIP_L03_MALFORMED;
+  }
 
   /* TODO(lesson 03): validate version, IHL, lengths, options, and checksum before publishing fields. */
   return TCPIP_L03_TODO;

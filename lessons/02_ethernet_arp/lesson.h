@@ -50,9 +50,12 @@ tcpip_l02_status tcpip_l02_parse_arp(
     const uint8_t *data, size_t data_len, tcpip_l02_arp_packet *out_packet);
 
 tcpip_l02_status tcpip_l02_build_arp_request(
-    const uint8_t sender_mac[TCPIP_L02_MAC_LENGTH],
-    const uint8_t sender_ip[TCPIP_L02_IPV4_LENGTH],
-    const uint8_t target_ip[TCPIP_L02_IPV4_LENGTH],
+    const uint8_t *sender_mac,
+    size_t sender_mac_length,
+    const uint8_t *sender_ip,
+    size_t sender_ip_length,
+    const uint8_t *target_ip,
+    size_t target_ip_length,
     uint8_t *out_frame,
     size_t out_capacity,
     size_t *out_length);

@@ -25,11 +25,16 @@ tcpip_l01_status tcpip_l01_write_be16(
     uint8_t *dst, size_t dst_len, size_t offset, uint16_t value);
 
 tcpip_l01_status tcpip_l01_parse_ipv4(
-    const char *text, size_t text_len, uint8_t out_address[4]);
+    const char *text,
+    size_t text_len,
+    uint8_t *out_address,
+    size_t out_address_capacity);
 
 tcpip_l01_status tcpip_l01_prefix_contains(
-    const uint8_t address[4],
-    const uint8_t network[4],
+    const uint8_t *address,
+    size_t address_length,
+    const uint8_t *network,
+    size_t network_length,
     uint8_t prefix_length,
     bool *out_contains);
 

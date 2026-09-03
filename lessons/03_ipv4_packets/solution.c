@@ -64,6 +64,9 @@ tcpip_l03_status tcpip_l03_parse_ipv4(
   }
 
   total_length = tcpip_l03_read_be16(packet, 2U);
+  if ((tcpip_l03_read_be16(packet, 6U) & UINT16_C(0x8000)) != 0U) {
+    return TCPIP_L03_MALFORMED;
+  }
   if ((size_t)total_length < header_length) {
     return TCPIP_L03_MALFORMED;
   }

@@ -34,7 +34,7 @@ flowchart TD
 | Version + IHL | 1 octet | Version is 4; IHL is at least 5 words |
 | Total length | 2 octets | At least the header length and no greater than available bytes |
 | Identification | 2 octets | Copied as a host-order value |
-| Flags + fragment offset | 2 octets | Preserved as one host-order value; reserved flag rejected by builder |
+| Flags + fragment offset | 2 octets | Preserved as one host-order value; reserved flag rejected by parser and builder |
 | TTL / protocol | 1 octet each | Copied; TTL must exceed one before decrement |
 | Header checksum | 2 octets | One's-complement verification over all header octets |
 | Addresses | 4 octets each | Copied into the parsed result |
@@ -44,7 +44,7 @@ Options are zero to forty octets and must be a multiple of four because IHL coun
 
 ## Algorithm and state transitions
 
-First require the fixed 20-octet prefix. Split byte zero into version and IHL, multiply IHL by four, and prove that many bytes are available. Decode total length only after its two octets are known to exist. Reject a total shorter than the header and report truncation when the declared packet extends beyond the supplied span. Compute the one's-complement checksum over exactly the header length; a valid stored checksum makes the result zero.
+First require the fixed 20-octet prefix. Split byte zero into version and IHL, multiply IHL by four, and prove that many bytes are available. Decode total length and flags only after their octets are known to exist, rejecting the reserved high flag bit. Reject a total shorter than the header and report truncation when the declared packet extends beyond the supplied span. Compute the one's-complement checksum over exactly the header length; a valid stored checksum makes the result zero.
 
 The builder validates the options contract and full capacity before writing. It assembles into a 60-octet local array, leaves the checksum field zero, computes the checksum, inserts it, and performs one final copy. TTL decrement first parses the packet. If TTL is zero or one, it returns `MALFORMED` unchanged. Otherwise it changes TTL, clears the checksum field, and recomputes the header checksum.
 
@@ -77,7 +77,7 @@ Complete each `TODO(lesson 03)` in `exercise.c`. Use explicit octet operations r
 
 ## Test contract and invariants
 
-The deterministic tests parse a base header with payload and an options-bearing fragmented packet, while intentionally performing no fragment reassembly. They distinguish malformed declarations from unavailable bytes, verify that payload corruption does not affect the header checksum, and reject header corruption. Exact builders must match known checksum fixtures. Capacity failure leaves destination bytes untouched and output length zero. TTL decrement changes exactly TTL and checksum, produces a parseable packet, and leaves expired or invalid input unchanged. Student mode detects `TCPIP_L03_TODO` and exits nonzero; solution mode passes.
+The deterministic tests parse a base header with payload and an options-bearing fragmented packet, while intentionally performing no fragment reassembly. They distinguish malformed declarations from unavailable bytes, reject the reserved flag, verify that payload corruption does not affect the header checksum, reject header corruption, and compare complete zeroed parse outputs after every failure. Exact builders must match known checksum fixtures. Capacity and malformed-input failures leave destination bytes untouched and output length zero. TTL decrement changes exactly TTL and checksum, produces a parseable packet, and leaves expired or invalid input unchanged. Student mode detects `TCPIP_L03_TODO` and exits nonzero; solution mode passes.
 
 ## Common mistakes
 

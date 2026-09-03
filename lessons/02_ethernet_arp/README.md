@@ -37,13 +37,13 @@ sequenceDiagram
 | Operation | 2 | Request `1` |
 | Four ARP addresses | 6 + 4 + 6 + 4 | Sender values, zero target MAC, target IPv4 |
 
-`tcpip_l02_parse_ethernet` copies header values and reports the payload as offset 14 plus the remaining length. `tcpip_l02_parse_arp` accepts exactly the standard Ethernet/IPv4 layout and request or reply opcodes. `tcpip_l02_build_arp_request` creates exactly 42 octets: 14 Ethernet plus 28 ARP.
+`tcpip_l02_parse_ethernet` copies header values and reports the payload as offset 14 plus the remaining length; it accepts only Ethernet II type values at or above `0x0600`, not IEEE 802.3 length fields. `tcpip_l02_parse_arp` accepts exactly the standard Ethernet/IPv4 layout and request or reply opcodes. `tcpip_l02_build_arp_request(sender_mac, sender_mac_length, sender_ip, sender_ip_length, target_ip, target_ip_length, out_frame, out_capacity, out_length)` creates exactly 42 octets: 14 Ethernet plus 28 ARP.
 
 ## Algorithm and state transitions
 
 Ethernet parsing first zeroes the output, validates pointers, and requires at least 14 input octets. It copies both MAC addresses, decodes EtherType, and computes the payload span without retaining a borrowed pointer.
 
-ARP parsing similarly requires 28 octets, decodes the fixed descriptor fields into a temporary structure, and checks hardware type, protocol type, both address widths, and opcode. Only then does it copy addresses and publish the temporary. Construction validates every pointer and the full 42-octet capacity. It assembles a zero-initialized local frame, fills constants and caller values, and copies to the destination once complete. Failure therefore cannot expose a partial frame.
+ARP parsing similarly requires 28 octets, decodes the fixed descriptor fields into a temporary structure, and checks hardware type, protocol type, both address widths, and opcode. Only then does it copy addresses and publish the temporary. Construction validates every pointer, the explicit MAC and IPv4 input lengths, and the full 42-octet capacity before any fixed-size copy. It assembles a zero-initialized local frame, fills constants and caller values, and copies to the destination once complete. Failure therefore cannot expose a partial frame.
 
 ## Worked C example
 
@@ -55,7 +55,8 @@ const uint8_t sender[4] = {192, 0, 2, 1};
 const uint8_t target[4] = {192, 0, 2, 99};
 
 if (tcpip_l02_build_arp_request(
-        mac, sender, target, frame, sizeof(frame), &frame_len) != TCPIP_L02_OK) {
+        mac, sizeof(mac), sender, sizeof(sender), target, sizeof(target),
+        frame, sizeof(frame), &frame_len) != TCPIP_L02_OK) {
   return 1;
 }
 /* frame_len is exactly 42. */
@@ -69,7 +70,7 @@ Complete the three `TODO(lesson 02)` regions in `exercise.c`. Use byte-wise big-
 
 ## Test contract and invariants
 
-The deterministic fixture is a broadcast request from `02:00:5e:10:00:00`, sender IPv4 `192.0.2.1`, for `192.0.2.99`. Tests compare all 42 octets, parse the built representation back into copied host values, and verify payload offset and length. Negative cases cover truncated Ethernet and ARP input, incorrect hardware and protocol address widths, unsupported opcode, and one-octet-short output capacity. On failures, outputs are initialized and capacity failure leaves destination bytes unchanged. Student mode returns `TCPIP_L02_TODO` for otherwise valid work and therefore exits nonzero; solution mode passes.
+The deterministic fixture is a broadcast request from `02:00:5e:10:00:00`, sender IPv4 `192.0.2.1`, for `192.0.2.99`. Tests compare all 42 octets, parse the built representation back into copied host values, and verify payload offset and length. Negative cases cover truncated Ethernet and ARP input, an IEEE 802.3 length field, wrong ARP hardware/protocol types and address widths, unsupported opcodes, short builder inputs, and one-octet-short output capacity. Parse failures zero complete output structures, and builder failures leave destination bytes unchanged with output length zero. Student mode returns `TCPIP_L02_TODO` for otherwise valid work and therefore exits nonzero; solution mode passes.
 
 ## Common mistakes
 
