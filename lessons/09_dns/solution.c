@@ -333,7 +333,8 @@ tcpip_l09_status tcpip_l09_first_a(
     }
   }
   if ((header.flags & UINT16_C(0x8000)) == 0U ||
-      (header.flags & UINT16_C(0x7800)) != 0U) {
+      (header.flags & UINT16_C(0x7800)) != 0U ||
+      (header.flags & UINT16_C(0x0040)) != 0U) {
     return TCPIP_L09_MALFORMED;
   }
   if ((header.flags & UINT16_C(0x0200)) != 0U) {

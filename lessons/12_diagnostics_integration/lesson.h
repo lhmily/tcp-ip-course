@@ -76,9 +76,11 @@ tcpip_l12_status tcpip_l12_diagnose_frame(
     const uint8_t *data, size_t len, tcpip_l12_report *report);
 
 /*
- * Writes a deterministic one-line summary. *written is always the required
- * byte count excluding the terminating NUL. A short output buffer receives a
- * NUL-terminated prefix when cap is nonzero and returns TCPIP_L12_CAPACITY.
+ * Writes a deterministic one-line summary. After written itself is validated,
+ * *written is set to zero before any other validation; success or a short
+ * output buffer then replaces it with the required byte count excluding the
+ * terminating NUL. A short output buffer receives a NUL-terminated prefix when
+ * cap is nonzero and returns TCPIP_L12_CAPACITY.
  */
 tcpip_l12_status tcpip_l12_format_report(
     const tcpip_l12_report *report, char *out, size_t cap, size_t *written);

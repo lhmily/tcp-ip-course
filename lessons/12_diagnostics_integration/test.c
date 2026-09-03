@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#define FRAME_CAPACITY 160U
+#define FRAME_CAPACITY 400U
 #define ETHERNET_LEN 14U
 #define IPV4_LEN 20U
 
@@ -141,25 +141,36 @@ static size_t build_dns(uint8_t *frame) {
   return ETHERNET_LEN + IPV4_LEN + udp_len;
 }
 
-static size_t build_http(uint8_t *frame) {
-  const uint8_t message[] = "GET / HTTP/1.1\r\nHost: example.test\r\n\r\n";
+static size_t build_tcp(
+    uint8_t *frame,
+    uint16_t source_port,
+    uint16_t destination_port,
+    const uint8_t *payload,
+    size_t payload_len) {
   uint8_t *ipv4;
   uint8_t *tcp;
-  const size_t tcp_len = 20U + sizeof(message) - 1U;
+  const size_t tcp_len = 20U + payload_len;
 
   memset(frame, 0, FRAME_CAPACITY);
   ipv4 = begin_ipv4(frame, 6U, tcp_len);
   tcp = ipv4 + IPV4_LEN;
-  write_u16(tcp, UINT16_C(49152));
-  write_u16(tcp + 2U, 80U);
+  write_u16(tcp, source_port);
+  write_u16(tcp + 2U, destination_port);
   write_u32(tcp + 4U, UINT32_C(0x01020304));
   write_u32(tcp + 8U, UINT32_C(0x05060708));
   tcp[12] = UINT8_C(0x50);
   tcp[13] = UINT8_C(0x18);
   write_u16(tcp + 14U, UINT16_C(4096));
-  memcpy(tcp + 20U, message, sizeof(message) - 1U);
+  if (payload_len != 0U) {
+    memcpy(tcp + 20U, payload, payload_len);
+  }
   write_u16(tcp + 16U, transport_checksum(ipv4, 6U, tcp, tcp_len));
   return ETHERNET_LEN + IPV4_LEN + tcp_len;
+}
+
+static size_t build_http(uint8_t *frame) {
+  const uint8_t message[] = "GET / HTTP/1.1\r\nHost: example.test\r\n\r\n";
+  return build_tcp(frame, UINT16_C(49152), 80U, message, sizeof(message) - 1U);
 }
 
 static void expect_path(
@@ -188,14 +199,20 @@ static void test_invalid_arguments(tcpip_test_context *ctx) {
       ctx, tcpip_l12_diagnose_frame(&byte, 1U, NULL), TCPIP_L12_INVALID_ARGUMENT);
   TCPIP_EXPECT_U32(
       ctx, tcpip_l12_diagnose_frame(NULL, 1U, &report), TCPIP_L12_INVALID_ARGUMENT);
+  memset(output, 'x', sizeof(output));
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l12_format_report(NULL, output, sizeof(output), &written),
       TCPIP_L12_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, written, 0U);
+  TCPIP_EXPECT_U32(ctx, (uint8_t)output[0], (uint8_t)'x');
+
+  written = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l12_format_report(&report, NULL, sizeof(output), &written),
       TCPIP_L12_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, written, 0U);
 }
 
 static void test_arp(tcpip_test_context *ctx) {
@@ -269,6 +286,14 @@ static void test_dns_and_format(tcpip_test_context *ctx) {
   TCPIP_EXPECT_U32(
       ctx, tcpip_l12_format_report(&report, NULL, 0U, &written), TCPIP_L12_CAPACITY);
   TCPIP_EXPECT_SIZE(ctx, written, strlen(output));
+
+  report.layer_count = TCPIP_L12_MAX_LAYERS + 1U;
+  written = 99U;
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l12_format_report(&report, output, sizeof(output), &written),
+      TCPIP_L12_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, written, 0U);
 }
 
 static void test_http_and_flipped_payload(tcpip_test_context *ctx) {
@@ -295,6 +320,151 @@ static void test_http_and_flipped_payload(tcpip_test_context *ctx) {
       ctx, (report.diagnostics & TCPIP_L12_DIAG_CHECKSUM_MISMATCH) != 0U);
   TCPIP_EXPECT_U32(ctx, report.checksums_checked, 2U);
   TCPIP_EXPECT_U32(ctx, report.checksums_valid, 1U);
+}
+
+static size_t build_dns_payload_frame(
+    uint8_t *frame, const uint8_t *dns_payload, size_t dns_len) {
+  uint8_t *ipv4;
+  uint8_t *udp;
+  const size_t udp_len = 8U + dns_len;
+  uint16_t sum;
+
+  memset(frame, 0, FRAME_CAPACITY);
+  ipv4 = begin_ipv4(frame, 17U, udp_len);
+  udp = ipv4 + IPV4_LEN;
+  write_u16(udp, UINT16_C(53000));
+  write_u16(udp + 2U, 53U);
+  write_u16(udp + 4U, (uint16_t)udp_len);
+  memcpy(udp + 8U, dns_payload, dns_len);
+  sum = transport_checksum(ipv4, 17U, udp, udp_len);
+  write_u16(udp + 6U, sum == 0U ? UINT16_C(0xffff) : sum);
+  return ETHERNET_LEN + IPV4_LEN + udp_len;
+}
+
+static void test_udp_exact_length(tcpip_test_context *ctx) {
+  uint8_t frame[FRAME_CAPACITY];
+  tcpip_l12_report report;
+  size_t len = build_dns(frame);
+  uint8_t *ipv4 = frame + ETHERNET_LEN;
+  uint8_t *udp = ipv4 + IPV4_LEN;
+
+  write_u16(udp + 4U, (uint16_t)(len - ETHERNET_LEN - IPV4_LEN - 1U));
+  write_u16(udp + 6U, 0U);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+  TCPIP_EXPECT_TRUE(ctx, (report.diagnostics & TCPIP_L12_DIAG_MALFORMED) != 0U);
+  TCPIP_EXPECT_SIZE(ctx, report.parsed_length, len - 1U);
+}
+
+static void test_dns_declared_records(tcpip_test_context *ctx) {
+  static const uint8_t complete[] = {
+      0x12U, 0x34U, 0x81U, 0x80U, 0x00U, 0x01U, 0x00U, 0x01U,
+      0x00U, 0x01U, 0x00U, 0x01U,
+      0x01U, 'a', 0x00U, 0x00U, 0x01U, 0x00U, 0x01U,
+      0xc0U, 0x0cU, 0x00U, 0x01U, 0x00U, 0x01U, 0x00U, 0x00U,
+      0x00U, 0x3cU, 0x00U, 0x04U, 192U, 0U, 2U, 1U,
+      0xc0U, 0x0cU, 0x00U, 0x02U, 0x00U, 0x01U, 0x00U, 0x00U,
+      0x00U, 0x3cU, 0x00U, 0x02U, 0xc0U, 0x0cU,
+      0xc0U, 0x0cU, 0x00U, 0x10U, 0x00U, 0x01U, 0x00U, 0x00U,
+      0x00U, 0x3cU, 0x00U, 0x01U, 0x00U};
+  uint8_t frame[FRAME_CAPACITY];
+  uint8_t malformed[sizeof(complete)];
+  tcpip_l12_report report;
+  size_t len = build_dns_payload_frame(frame, complete, sizeof(complete));
+
+  TCPIP_EXPECT_U32(ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_OK);
+
+  memcpy(malformed, complete, sizeof(malformed));
+  malformed[60] = 2U;
+  len = build_dns_payload_frame(frame, malformed, sizeof(malformed));
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_TRUNCATED);
+
+  memcpy(malformed, complete, sizeof(malformed));
+  malformed[20] = 19U;
+  len = build_dns_payload_frame(frame, malformed, sizeof(malformed));
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+
+  memcpy(malformed, complete, sizeof(malformed));
+  malformed[20] = 35U;
+  malformed[35] = UINT8_C(0xc0);
+  malformed[36] = 19U;
+  len = build_dns_payload_frame(frame, malformed, sizeof(malformed));
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+
+  len = build_dns_payload_frame(frame, complete, sizeof(complete) - 1U);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_TRUNCATED);
+}
+
+static void test_dns_name_validation(tcpip_test_context *ctx) {
+  uint8_t dns[12U + 257U + 4U];
+  uint8_t frame[FRAME_CAPACITY];
+  tcpip_l12_report report;
+  size_t cursor;
+  size_t len;
+
+  memset(dns, 0, sizeof(dns));
+  write_u16(dns + 4U, 1U);
+  dns[12] = UINT8_C(0xc0);
+  dns[13] = 12U;
+  len = build_dns_payload_frame(frame, dns, 18U);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+
+  dns[13] = 14U;
+  dns[14] = UINT8_C(0xc0);
+  dns[15] = 12U;
+  len = build_dns_payload_frame(frame, dns, 20U);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+
+  memset(dns, 0, sizeof(dns));
+  write_u16(dns + 4U, 1U);
+  cursor = 12U;
+  for (size_t label = 0U; label < 4U; label += 1U) {
+    dns[cursor] = 63U;
+    memset(dns + cursor + 1U, 'a', 63U);
+    cursor += 64U;
+  }
+  dns[cursor] = 0U;
+  cursor += 1U;
+  write_u16(dns + cursor, 1U);
+  write_u16(dns + cursor + 2U, 1U);
+  cursor += 4U;
+  len = build_dns_payload_frame(frame, dns, cursor);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+}
+
+static void test_tcp_and_ipv4_reserved_fields(tcpip_test_context *ctx) {
+  uint8_t frame[FRAME_CAPACITY];
+  tcpip_l12_report report;
+  const tcpip_l12_layer tcp_path[] = {
+      TCPIP_L12_LAYER_ETHERNET, TCPIP_L12_LAYER_IPV4, TCPIP_L12_LAYER_TCP};
+  size_t len = build_tcp(frame, UINT16_C(49152), 80U, NULL, 0U);
+  uint8_t *ipv4 = frame + ETHERNET_LEN;
+  uint8_t *tcp = ipv4 + IPV4_LEN;
+
+  TCPIP_EXPECT_U32(ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_OK);
+  expect_path(ctx, &report, tcp_path, sizeof(tcp_path) / sizeof(tcp_path[0]));
+  TCPIP_EXPECT_SIZE(ctx, report.payload_length, 0U);
+  TCPIP_EXPECT_SIZE(ctx, report.http_message_length, 0U);
+  TCPIP_EXPECT_U32(ctx, report.diagnostics, TCPIP_L12_DIAG_UNSUPPORTED);
+
+  tcp[12] |= UINT8_C(0x02);
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
+
+  len = build_tcp(frame, UINT16_C(49152), 80U, NULL, 0U);
+  ipv4 = frame + ETHERNET_LEN;
+  write_u16(ipv4 + 6U, UINT16_C(0xc000));
+  write_u16(ipv4 + 10U, 0U);
+  write_u16(ipv4 + 10U, internet_checksum(ipv4, IPV4_LEN));
+  TCPIP_EXPECT_U32(
+      ctx, tcpip_l12_diagnose_frame(frame, len, &report), TCPIP_L12_MALFORMED);
 }
 
 static void test_diagnostics(tcpip_test_context *ctx) {
@@ -332,6 +502,10 @@ int main(void) {
   test_icmp(&ctx);
   test_dns_and_format(&ctx);
   test_http_and_flipped_payload(&ctx);
+  test_udp_exact_length(&ctx);
+  test_dns_declared_records(&ctx);
+  test_dns_name_validation(&ctx);
+  test_tcp_and_ipv4_reserved_fields(&ctx);
   test_diagnostics(&ctx);
   return tcpip_test_finish(&ctx);
 }

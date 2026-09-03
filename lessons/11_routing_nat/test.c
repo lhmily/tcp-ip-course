@@ -151,6 +151,14 @@ static void tcpip_l11_test_outbound_reuse_and_collision(tcpip_test_context *test
   TCPIP_EXPECT_U32(test, storage[0].last_used, 20u);
   TCPIP_EXPECT_U32(test, storage[1].active, 0u);
 
+  aliased = first;
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l11_nat_translate_outbound(&nat, 15u, &aliased, &aliased),
+      TCPIP_L11_OK);
+  TCPIP_EXPECT_U32(test, aliased.source_port, 40000u);
+  TCPIP_EXPECT_U32(test, storage[0].last_used, 20u);
+
   const tcpip_l11_tuple second =
       tcpip_l11_make_tuple(17u, private_b, 51000u, remote_b, 53u);
   TCPIP_EXPECT_U32(
@@ -205,6 +213,12 @@ static void tcpip_l11_test_reverse_only(tcpip_test_context *test) {
   TCPIP_EXPECT_BYTES(test, translated.destination_ip, 4u, private_ip, 4u);
   TCPIP_EXPECT_U32(test, translated.destination_port, 52000u);
   TCPIP_EXPECT_BYTES(test, translated.source_ip, 4u, remote_ip, 4u);
+  TCPIP_EXPECT_U32(test, storage[0].last_used, 3u);
+
+  TCPIP_EXPECT_U32(
+      test,
+      tcpip_l11_nat_translate_inbound(&nat, 1u, &incoming, &translated),
+      TCPIP_L11_OK);
   TCPIP_EXPECT_U32(test, storage[0].last_used, 3u);
 
   incoming.source_ip[3] = stranger_ip[3];
@@ -354,6 +368,12 @@ static void tcpip_l11_test_validation(tcpip_test_context *test) {
   TCPIP_EXPECT_SIZE(test, count, 0u);
   TCPIP_EXPECT_TRUE(test, memcmp(&storage[0], &first_snapshot, sizeof(storage[0])) == 0);
   TCPIP_EXPECT_TRUE(test, memcmp(&storage[1], &second_snapshot, sizeof(storage[1])) == 0);
+
+  storage[1].public_port = (uint16_t)(storage[0].public_port + 1u);
+  count = 88u;
+  TCPIP_EXPECT_U32(
+      test, tcpip_l11_nat_expire(&nat, 100u, 1u, &count), TCPIP_L11_MALFORMED);
+  TCPIP_EXPECT_SIZE(test, count, 0u);
 }
 
 int main(void) {

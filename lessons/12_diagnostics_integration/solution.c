@@ -10,6 +10,8 @@
 #define TCPIP_L12_DNS_HEADER 12U
 #define TCPIP_L12_ICMP_HEADER 8U
 #define TCPIP_L12_TCP_MIN_HEADER 20U
+#define TCPIP_L12_DNS_MAX_WIRE_NAME 255U
+#define TCPIP_L12_DNS_MAX_POINTER_HOPS 128U
 
 static uint16_t tcpip_l12_read_u16(const uint8_t *data) {
   return (uint16_t)(((uint16_t)data[0] << 8U) | (uint16_t)data[1]);
@@ -114,10 +116,130 @@ static int tcpip_l12_http_headers_complete(const uint8_t *data, size_t len) {
   return 0;
 }
 
+static int tcpip_l12_dns_visited_get(const uint8_t *visited, size_t offset) {
+  const size_t byte_index = offset / 8U;
+  const unsigned bit_index = (unsigned)(offset % 8U);
+  return (visited[byte_index] & (uint8_t)(UINT8_C(1) << bit_index)) != 0U;
+}
+
+static void tcpip_l12_dns_visited_set(uint8_t *visited, size_t offset) {
+  const size_t byte_index = offset / 8U;
+  const unsigned bit_index = (unsigned)(offset % 8U);
+  visited[byte_index] |= (uint8_t)(UINT8_C(1) << bit_index);
+}
+
+static tcpip_l12_status tcpip_l12_walk_dns_name(
+    const uint8_t *dns,
+    size_t dns_len,
+    size_t offset,
+    size_t frame_offset,
+    size_t *next_offset,
+    tcpip_l12_report *report) {
+  uint8_t visited[(UINT16_C(0x4000) + 7U) / 8U];
+  size_t cursor = offset;
+  size_t expanded_wire_len = 0U;
+  size_t pointer_hops = 0U;
+  int jumped = 0;
+
+  *next_offset = 0U;
+  memset(visited, 0, sizeof(visited));
+  for (;;) {
+    uint8_t length;
+
+    if (cursor >= dns_len) {
+      return tcpip_l12_truncated(report, frame_offset + dns_len);
+    }
+    length = dns[cursor];
+
+    if ((length & UINT8_C(0xc0)) == UINT8_C(0xc0)) {
+      size_t target;
+      if (dns_len - cursor < 2U) {
+        return tcpip_l12_truncated(report, frame_offset + dns_len);
+      }
+      target = (size_t)(((uint16_t)(length & UINT8_C(0x3f)) << 8U) |
+                        (uint16_t)dns[cursor + 1U]);
+      if (!jumped) {
+        *next_offset = cursor + 2U;
+        jumped = 1;
+      }
+      if (target >= dns_len) {
+        return tcpip_l12_malformed(report, frame_offset + cursor + 2U);
+      }
+      if (tcpip_l12_dns_visited_get(visited, target)) {
+        return tcpip_l12_malformed(report, frame_offset + cursor + 2U);
+      }
+      tcpip_l12_dns_visited_set(visited, target);
+      pointer_hops += 1U;
+      if (pointer_hops > TCPIP_L12_DNS_MAX_POINTER_HOPS) {
+        return tcpip_l12_malformed(report, frame_offset + cursor + 2U);
+      }
+      cursor = target;
+      continue;
+    }
+
+    if ((length & UINT8_C(0xc0)) != 0U || length > 63U) {
+      return tcpip_l12_malformed(report, frame_offset + cursor + 1U);
+    }
+    cursor += 1U;
+    if (length == 0U) {
+      expanded_wire_len += 1U;
+      if (expanded_wire_len > TCPIP_L12_DNS_MAX_WIRE_NAME) {
+        return tcpip_l12_malformed(report, frame_offset + cursor);
+      }
+      if (!jumped) {
+        *next_offset = cursor;
+      }
+      return TCPIP_L12_OK;
+    }
+    if ((size_t)length > dns_len - cursor) {
+      return tcpip_l12_truncated(report, frame_offset + cursor);
+    }
+    if (expanded_wire_len > TCPIP_L12_DNS_MAX_WIRE_NAME - ((size_t)length + 1U)) {
+      return tcpip_l12_malformed(report, frame_offset + cursor);
+    }
+    expanded_wire_len += (size_t)length + 1U;
+    cursor += (size_t)length;
+  }
+}
+
+static tcpip_l12_status tcpip_l12_walk_dns_rrs(
+    const uint8_t *dns,
+    size_t dns_len,
+    size_t frame_offset,
+    uint16_t count,
+    size_t *cursor,
+    tcpip_l12_report *report) {
+  uint16_t index;
+
+  for (index = 0U; index < count; index += 1U) {
+    size_t next = 0U;
+    uint16_t rdlength;
+    tcpip_l12_status status = tcpip_l12_walk_dns_name(
+        dns, dns_len, *cursor, frame_offset, &next, report);
+    if (status != TCPIP_L12_OK) {
+      return status;
+    }
+    *cursor = next;
+    if (dns_len - *cursor < 10U) {
+      return tcpip_l12_truncated(report, frame_offset + *cursor);
+    }
+    rdlength = tcpip_l12_read_u16(dns + *cursor + 8U);
+    *cursor += 10U;
+    if ((size_t)rdlength > dns_len - *cursor) {
+      return tcpip_l12_truncated(report, frame_offset + *cursor);
+    }
+    *cursor += (size_t)rdlength;
+  }
+  return TCPIP_L12_OK;
+}
+
 static tcpip_l12_status tcpip_l12_parse_dns(
     const uint8_t *dns, size_t dns_len, size_t frame_offset, tcpip_l12_report *report) {
   size_t cursor;
   uint16_t question;
+  uint16_t answer_count;
+  uint16_t authority_count;
+  uint16_t additional_count;
 
   tcpip_l12_add_layer(report, TCPIP_L12_LAYER_DNS);
   if (dns_len < TCPIP_L12_DNS_HEADER) {
@@ -126,52 +248,41 @@ static tcpip_l12_status tcpip_l12_parse_dns(
 
   report->dns_identifier = tcpip_l12_read_u16(dns);
   report->dns_question_count = tcpip_l12_read_u16(dns + 4U);
+  answer_count = tcpip_l12_read_u16(dns + 6U);
+  authority_count = tcpip_l12_read_u16(dns + 8U);
+  additional_count = tcpip_l12_read_u16(dns + 10U);
   cursor = TCPIP_L12_DNS_HEADER;
 
   for (question = 0U; question < report->dns_question_count; question += 1U) {
-    int name_done = 0;
-    size_t label_count = 0U;
-
-    while (name_done == 0) {
-      uint8_t label_len;
-      if (cursor >= dns_len) {
-        return tcpip_l12_truncated(report, frame_offset + cursor);
-      }
-      label_len = dns[cursor];
-      cursor += 1U;
-      if (label_len == 0U) {
-        name_done = 1;
-      } else if ((label_len & UINT8_C(0xc0)) == UINT8_C(0xc0)) {
-        uint16_t pointer;
-        if (cursor >= dns_len) {
-          return tcpip_l12_truncated(report, frame_offset + cursor);
-        }
-        pointer = (uint16_t)((((uint16_t)label_len & UINT16_C(0x003f)) << 8U) |
-                             (uint16_t)dns[cursor]);
-        cursor += 1U;
-        if ((size_t)pointer >= dns_len) {
-          return tcpip_l12_malformed(report, frame_offset + cursor);
-        }
-        name_done = 1;
-      } else {
-        if ((label_len & UINT8_C(0xc0)) != 0U || label_len > 63U) {
-          return tcpip_l12_malformed(report, frame_offset + cursor);
-        }
-        if ((size_t)label_len > dns_len - cursor) {
-          return tcpip_l12_truncated(report, frame_offset + cursor);
-        }
-        cursor += (size_t)label_len;
-      }
-      label_count += 1U;
-      if (label_count > 128U) {
-        return tcpip_l12_malformed(report, frame_offset + cursor);
-      }
+    size_t next = 0U;
+    tcpip_l12_status status = tcpip_l12_walk_dns_name(
+        dns, dns_len, cursor, frame_offset, &next, report);
+    if (status != TCPIP_L12_OK) {
+      return status;
     }
-
+    cursor = next;
     if (dns_len - cursor < 4U) {
       return tcpip_l12_truncated(report, frame_offset + cursor);
     }
     cursor += 4U;
+  }
+
+  {
+    tcpip_l12_status status = tcpip_l12_walk_dns_rrs(
+        dns, dns_len, frame_offset, answer_count, &cursor, report);
+    if (status != TCPIP_L12_OK) {
+      return status;
+    }
+    status = tcpip_l12_walk_dns_rrs(
+        dns, dns_len, frame_offset, authority_count, &cursor, report);
+    if (status != TCPIP_L12_OK) {
+      return status;
+    }
+    status = tcpip_l12_walk_dns_rrs(
+        dns, dns_len, frame_offset, additional_count, &cursor, report);
+    if (status != TCPIP_L12_OK) {
+      return status;
+    }
   }
 
   report->parsed_length = frame_offset + dns_len;
@@ -201,6 +312,9 @@ static tcpip_l12_status tcpip_l12_parse_udp(
   }
   if ((size_t)udp_len > ip_payload_len) {
     return tcpip_l12_truncated(report, frame_offset + ip_payload_len);
+  }
+  if ((size_t)udp_len < ip_payload_len) {
+    return tcpip_l12_malformed(report, frame_offset + (size_t)udp_len);
   }
 
   report->payload_length = (size_t)udp_len - TCPIP_L12_UDP_HEADER;
@@ -242,6 +356,9 @@ static tcpip_l12_status tcpip_l12_parse_tcp(
   report->destination_port = tcpip_l12_read_u16(tcp + 2U);
   tcp_header_len = (size_t)(tcp[12] >> 4U) * 4U;
   report->tcp_flags = tcp[13];
+  if ((tcp[12] & UINT8_C(0x0e)) != 0U) {
+    return tcpip_l12_malformed(report, frame_offset + 13U);
+  }
   if (tcp_header_len < TCPIP_L12_TCP_MIN_HEADER) {
     return tcpip_l12_malformed(report, frame_offset + TCPIP_L12_TCP_MIN_HEADER);
   }
@@ -256,8 +373,9 @@ static tcpip_l12_status tcpip_l12_parse_tcp(
   report->payload_length = ip_payload_len - tcp_header_len;
   payload = tcp + tcp_header_len;
 
-  if (report->source_port == 80U || report->destination_port == 80U ||
-      report->source_port == 8080U || report->destination_port == 8080U) {
+  if (report->payload_length > 0U &&
+      (report->source_port == 80U || report->destination_port == 80U ||
+       report->source_port == 8080U || report->destination_port == 8080U)) {
     tcpip_l12_add_layer(report, TCPIP_L12_LAYER_HTTP);
     report->http_message_length = report->payload_length;
     if (tcpip_l12_http_prefix(payload, report->payload_length) == 0) {
@@ -331,6 +449,9 @@ static tcpip_l12_status tcpip_l12_parse_ipv4(
       report, tcpip_l12_checksum_valid(ipv4, header_len), TCPIP_L12_DIAG_IPV4_CHECKSUM);
 
   fragment = tcpip_l12_read_u16(ipv4 + 6U);
+  if ((fragment & UINT16_C(0x8000)) != 0U) {
+    return tcpip_l12_malformed(report, frame_offset + 8U);
+  }
   if ((fragment & UINT16_C(0x3fff)) != 0U) {
     report->diagnostics |= (uint32_t)TCPIP_L12_DIAG_UNSUPPORTED;
     report->payload_length = total_len - header_len;
@@ -466,7 +587,11 @@ tcpip_l12_status tcpip_l12_format_report(
   size_t required;
   size_t copied;
 
-  if (report == NULL || written == NULL || (out == NULL && cap != 0U) ||
+  if (written == NULL) {
+    return TCPIP_L12_INVALID_ARGUMENT;
+  }
+  *written = 0U;
+  if (report == NULL || (out == NULL && cap != 0U) ||
       report->layer_count > TCPIP_L12_MAX_LAYERS) {
     return TCPIP_L12_INVALID_ARGUMENT;
   }

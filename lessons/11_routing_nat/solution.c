@@ -107,6 +107,15 @@ static int tcpip_l11_mapping_is_valid(
          mapping->public_port >= nat->first_port;
 }
 
+static int tcpip_l11_mappings_have_same_outbound_key(
+    const tcpip_l11_nat_mapping *left, const tcpip_l11_nat_mapping *right) {
+  return left->protocol == right->protocol &&
+         left->private_port == right->private_port &&
+         left->remote_port == right->remote_port &&
+         tcpip_l11_bytes_equal(left->private_ip, right->private_ip) &&
+         tcpip_l11_bytes_equal(left->remote_ip, right->remote_ip);
+}
+
 static tcpip_l11_status tcpip_l11_validate_mappings(const tcpip_l11_nat *nat) {
   for (size_t index = 0u; index < nat->capacity; index += 1u) {
     if (!tcpip_l11_mapping_is_valid(nat, &nat->storage[index])) {
@@ -117,7 +126,9 @@ static tcpip_l11_status tcpip_l11_validate_mappings(const tcpip_l11_nat *nat) {
     }
     for (size_t previous = 0u; previous < index; previous += 1u) {
       if (nat->storage[previous].active != 0u &&
-          nat->storage[previous].public_port == nat->storage[index].public_port) {
+          (nat->storage[previous].public_port == nat->storage[index].public_port ||
+           tcpip_l11_mappings_have_same_outbound_key(
+               &nat->storage[previous], &nat->storage[index]))) {
         return TCPIP_L11_MALFORMED;
       }
     }
@@ -238,7 +249,9 @@ tcpip_l11_status tcpip_l11_nat_translate_outbound(
   translated.source_port = public_port;
 
   if (mapping_index != SIZE_MAX) {
-    nat->storage[mapping_index].last_used = now;
+    if (now > nat->storage[mapping_index].last_used) {
+      nat->storage[mapping_index].last_used = now;
+    }
   } else {
     nat->storage[free_index] = new_mapping;
   }
@@ -298,7 +311,9 @@ tcpip_l11_status tcpip_l11_nat_translate_inbound(
       nat->storage[mapping_index].private_ip,
       sizeof(translated.destination_ip));
   translated.destination_port = nat->storage[mapping_index].private_port;
-  nat->storage[mapping_index].last_used = now;
+  if (now > nat->storage[mapping_index].last_used) {
+    nat->storage[mapping_index].last_used = now;
+  }
   *out = translated;
   return TCPIP_L11_OK;
 }

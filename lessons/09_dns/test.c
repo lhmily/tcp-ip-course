@@ -303,6 +303,24 @@ static void test_first_a(tcpip_test_context *test) {
         tcpip_l09_first_a(query_as_response, sizeof(query_as_response), address, &ttl),
         TCPIP_L09_MALFORMED);
   }
+  {
+    uint8_t reserved_z_response[sizeof(tcpip_l09_response)];
+    memcpy(reserved_z_response, tcpip_l09_response, sizeof(reserved_z_response));
+    reserved_z_response[3] |= UINT8_C(0x40);
+    TCPIP_EXPECT_U32(
+        test,
+        tcpip_l09_first_a(reserved_z_response, sizeof(reserved_z_response), address, &ttl),
+        TCPIP_L09_MALFORMED);
+  }
+  {
+    uint8_t modern_flags_response[sizeof(tcpip_l09_response)];
+    memcpy(modern_flags_response, tcpip_l09_response, sizeof(modern_flags_response));
+    modern_flags_response[3] |= UINT8_C(0x30);
+    TCPIP_EXPECT_U32(
+        test,
+        tcpip_l09_first_a(modern_flags_response, sizeof(modern_flags_response), address, &ttl),
+        TCPIP_L09_OK);
+  }
   TCPIP_EXPECT_U32(
       test, tcpip_l09_first_a(NULL, sizeof(tcpip_l09_response), address, &ttl),
       TCPIP_L09_INVALID_ARGUMENT);

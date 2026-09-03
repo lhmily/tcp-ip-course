@@ -69,7 +69,11 @@ tcpip_l09_status tcpip_l09_parse_message(
     size_t message_len,
     tcpip_l09_dns_header *header);
 
-/* Find the first IN A record in a successful, untruncated response. */
+/*
+ * Find the first IN A record in a successful, untruncated standard response.
+ * The QR bit must identify a response, OPCODE and the reserved Z bit must be
+ * zero, and RCODE must report success. Modern AD/CD flag bits are accepted.
+ */
 tcpip_l09_status tcpip_l09_first_a(
     const uint8_t *message,
     size_t message_len,
