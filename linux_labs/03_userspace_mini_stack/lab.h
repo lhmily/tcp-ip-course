@@ -13,9 +13,14 @@ extern "C" {
 #endif
 
 #define TCPIP_LINUX_L03_MAX_FAULT_ACTIONS 32U
-#define TCPIP_LINUX_L03_MAX_EVENTS 32U
 #define TCPIP_LINUX_L03_MAX_PAYLOAD 1024U
-#define TCPIP_LINUX_L03_MAX_FRAME 1110U
+#define TCPIP_LINUX_L03_CHUNK_PAYLOAD 256U
+#define TCPIP_LINUX_L03_MAX_CHUNKS \
+  ((TCPIP_LINUX_L03_MAX_PAYLOAD + TCPIP_LINUX_L03_CHUNK_PAYLOAD - 1U) / \
+   TCPIP_LINUX_L03_CHUNK_PAYLOAD)
+#define TCPIP_LINUX_L03_MAX_EVENTS \
+  (TCPIP_LINUX_L03_MAX_FAULT_ACTIONS + TCPIP_LINUX_L03_MAX_CHUNKS)
+#define TCPIP_LINUX_L03_MAX_FRAME (14U + 20U + 20U + TCPIP_LINUX_L03_CHUNK_PAYLOAD)
 
 typedef enum tcpip_linux_l03_status {
   TCPIP_LINUX_L03_OK = 0,
@@ -74,7 +79,16 @@ typedef struct tcpip_linux_l03_result {
   size_t final_frame_diagnostic_length;
 } tcpip_linux_l03_result;
 
-/* Run one bounded, deterministic userspace TCP-over-IPv4 simulation. */
+/*
+ * Run one bounded, deterministic userspace TCP-over-IPv4 simulation. All
+ * nonempty scenario spans must be valid for their declared element counts;
+ * neither the scenario object nor any scenario span may overlap result.
+ * Diagnostics are best-effort observations: an
+ * application-level diagnosis does not decide transfer success, and a report
+ * formatting-capacity failure leaves final_frame_diagnostic empty with length
+ * zero. Once the modeled handshake reaches ESTABLISHED, final_state preserves
+ * that state on retry exhaustion and system errors.
+ */
 tcpip_linux_l03_status tcpip_linux_l03_run(
     const tcpip_linux_l03_scenario *scenario,
     tcpip_linux_l03_result *result);

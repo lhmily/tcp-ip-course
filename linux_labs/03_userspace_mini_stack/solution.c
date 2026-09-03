@@ -4,19 +4,14 @@
 #include "../../lessons/06_tcp_segments/lesson.h"
 
 #include <errno.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define TCPIP_LINUX_L03_CHUNK 256U
 #define TCPIP_LINUX_L03_ETHERNET_HEADER 14U
 #define TCPIP_LINUX_L03_IPV4_HEADER 20U
-#define TCPIP_LINUX_L03_TCP_HEADER 20U
 #define TCPIP_LINUX_L03_IPV4_DF UINT16_C(0x4000)
-#define TCPIP_LINUX_L03_MAX_CHUNKS \
-  ((TCPIP_LINUX_L03_MAX_PAYLOAD + TCPIP_LINUX_L03_CHUNK - 1U) / TCPIP_LINUX_L03_CHUNK)
 
 typedef struct tcpip_linux_l03_event {
   uint8_t frame[TCPIP_LINUX_L03_MAX_FRAME];
@@ -27,8 +22,40 @@ typedef struct tcpip_linux_l03_event {
   int used;
 } tcpip_linux_l03_event;
 
-static int tcpip_linux_l03_span_is_valid(const void *span, size_t length) {
-  return length == 0U || span != NULL;
+static int tcpip_linux_l03_span_is_valid(const void *span, size_t count, size_t element_size) {
+  return count == 0U ||
+         (span != NULL && element_size != 0U && count <= SIZE_MAX / element_size);
+}
+
+static int tcpip_linux_l03_spans_overlap(
+    const void *first,
+    size_t first_count,
+    size_t first_element_size,
+    const void *second,
+    size_t second_count,
+    size_t second_element_size) {
+  uintptr_t first_start;
+  uintptr_t second_start;
+  size_t first_length;
+  size_t second_length;
+
+  if (first_count == 0U || second_count == 0U) {
+    return 0;
+  }
+  if (!tcpip_linux_l03_span_is_valid(first, first_count, first_element_size) ||
+      !tcpip_linux_l03_span_is_valid(second, second_count, second_element_size)) {
+    return 1;
+  }
+  first_length = first_count * first_element_size;
+  second_length = second_count * second_element_size;
+  first_start = (uintptr_t)first;
+  second_start = (uintptr_t)second;
+  if (first_length > UINTPTR_MAX - first_start ||
+      second_length > UINTPTR_MAX - second_start) {
+    return 1;
+  }
+  return first_start < second_start + second_length &&
+         second_start < first_start + first_length;
 }
 
 static uint16_t tcpip_linux_l03_read_be16(const uint8_t *bytes) {
@@ -66,14 +93,56 @@ static tcpip_linux_l03_status tcpip_linux_l03_validate(
   if (result == NULL) {
     return TCPIP_LINUX_L03_INVALID_ARGUMENT;
   }
+  if (scenario != NULL &&
+      tcpip_linux_l03_spans_overlap(
+          scenario, 1U, sizeof(*scenario), result, 1U, sizeof(*result))) {
+    memset(result, 0, sizeof(*result));
+    result->route_index = SIZE_MAX;
+    result->final_state = TCPIP_L07_TCP_STATE_CLOSED;
+    return TCPIP_LINUX_L03_INVALID_ARGUMENT;
+  }
   memset(result, 0, sizeof(*result));
   result->route_index = SIZE_MAX;
   result->final_state = TCPIP_L07_TCP_STATE_CLOSED;
   if (scenario == NULL ||
-      !tcpip_linux_l03_span_is_valid(scenario->payload, scenario->payload_length) ||
-      !tcpip_linux_l03_span_is_valid(scenario->output, scenario->output_capacity) ||
-      !tcpip_linux_l03_span_is_valid(scenario->routes, scenario->route_count) ||
-      !tcpip_linux_l03_span_is_valid(scenario->faults, scenario->fault_count)) {
+      !tcpip_linux_l03_span_is_valid(
+          scenario->payload, scenario->payload_length, sizeof(*scenario->payload)) ||
+      !tcpip_linux_l03_span_is_valid(
+          scenario->output, scenario->output_capacity, sizeof(*scenario->output)) ||
+      !tcpip_linux_l03_span_is_valid(
+          scenario->routes, scenario->route_count, sizeof(*scenario->routes)) ||
+      !tcpip_linux_l03_span_is_valid(
+          scenario->faults, scenario->fault_count, sizeof(*scenario->faults))) {
+    return TCPIP_LINUX_L03_INVALID_ARGUMENT;
+  }
+  if (tcpip_linux_l03_spans_overlap(
+          scenario->payload,
+          scenario->payload_length,
+          sizeof(*scenario->payload),
+          result,
+          1U,
+          sizeof(*result)) ||
+      tcpip_linux_l03_spans_overlap(
+          scenario->output,
+          scenario->output_capacity,
+          sizeof(*scenario->output),
+          result,
+          1U,
+          sizeof(*result)) ||
+      tcpip_linux_l03_spans_overlap(
+          scenario->routes,
+          scenario->route_count,
+          sizeof(*scenario->routes),
+          result,
+          1U,
+          sizeof(*result)) ||
+      tcpip_linux_l03_spans_overlap(
+          scenario->faults,
+          scenario->fault_count,
+          sizeof(*scenario->faults),
+          result,
+          1U,
+          sizeof(*result))) {
     return TCPIP_LINUX_L03_INVALID_ARGUMENT;
   }
   if (scenario->payload_length == 0U ||
@@ -107,9 +176,11 @@ static tcpip_linux_l03_status tcpip_linux_l03_build_frame(
   tcpip_l03_ipv4_packet parsed_ipv4;
   uint8_t *ipv4 = frame + TCPIP_LINUX_L03_ETHERNET_HEADER;
   uint8_t *tcp = ipv4 + TCPIP_LINUX_L03_IPV4_HEADER;
-  const size_t payload_offset = chunk_index * TCPIP_LINUX_L03_CHUNK;
+  const size_t payload_offset = chunk_index * TCPIP_LINUX_L03_CHUNK_PAYLOAD;
   const size_t remaining = scenario->payload_length - payload_offset;
-  const size_t payload_length = remaining < TCPIP_LINUX_L03_CHUNK ? remaining : TCPIP_LINUX_L03_CHUNK;
+  const size_t payload_length = remaining < TCPIP_LINUX_L03_CHUNK_PAYLOAD
+                                    ? remaining
+                                    : TCPIP_LINUX_L03_CHUNK_PAYLOAD;
   size_t tcp_length = 0U;
   size_t header_length = 0U;
   size_t ipv4_length;
@@ -198,7 +269,7 @@ static size_t tcpip_linux_l03_next_event(
   size_t index;
 
   for (index = 0U; index < TCPIP_LINUX_L03_MAX_EVENTS; index += 1U) {
-    if (events[index].used == 0 || events[index].due_ms > deadline) {
+    if (events[index].used == 0 || events[index].due_ms >= deadline) {
       continue;
     }
     if (best == SIZE_MAX || events[index].due_ms < events[best].due_ms ||
@@ -207,6 +278,22 @@ static size_t tcpip_linux_l03_next_event(
     }
   }
   return best;
+}
+
+static ssize_t tcpip_linux_l03_send_datagram(int fd, const void *data, size_t length) {
+  ssize_t result;
+  do {
+    result = send(fd, data, length, 0);
+  } while (result < 0 && errno == EINTR);
+  return result;
+}
+
+static ssize_t tcpip_linux_l03_receive_datagram(int fd, void *data, size_t capacity) {
+  ssize_t result;
+  do {
+    result = recv(fd, data, capacity, 0);
+  } while (result < 0 && errno == EINTR);
+  return result;
 }
 
 static tcpip_linux_l03_status tcpip_linux_l03_deliver(
@@ -227,11 +314,11 @@ static tcpip_linux_l03_status tcpip_linux_l03_deliver(
   const uint8_t *ipv4_bytes;
   const uint8_t *tcp_bytes;
 
-  sent = send(sender_fd, event->frame, event->frame_length, 0);
+  sent = tcpip_linux_l03_send_datagram(sender_fd, event->frame, event->frame_length);
   if (sent < 0 || (size_t)sent != event->frame_length) {
     return TCPIP_LINUX_L03_SYSTEM_ERROR;
   }
-  received_length = recv(receiver_fd, received, sizeof(received), 0);
+  received_length = tcpip_linux_l03_receive_datagram(receiver_fd, received, sizeof(received));
   if (received_length < 0 || (size_t)received_length != event->frame_length) {
     return TCPIP_LINUX_L03_SYSTEM_ERROR;
   }
@@ -256,32 +343,29 @@ static tcpip_linux_l03_status tcpip_linux_l03_deliver(
     return TCPIP_LINUX_L03_MALFORMED;
   }
   {
+    const int duplicate = acknowledged[event->chunk_index] != 0U;
     tcpip_l07_status reassembly_status = tcpip_l07_reassembly_push(
         reassembly,
         tcp.sequence_number,
         tcp_bytes + tcp.payload_offset,
         tcp.payload_length,
         &accepted);
-    if (reassembly_status == TCPIP_L07_CAPACITY &&
-        acknowledged[event->chunk_index] != 0U) {
-      accepted = 0U;
-    } else if (reassembly_status != TCPIP_L07_OK) {
+    if (reassembly_status != TCPIP_L07_OK ||
+        (duplicate != 0 && accepted != 0U) ||
+        (duplicate == 0 && accepted != tcp.payload_length)) {
       return TCPIP_LINUX_L03_MALFORMED;
     }
   }
-  (void)accepted;
   acknowledged[event->chunk_index] = 1U;
-  memset(&result->final_frame_report, 0, sizeof(result->final_frame_report));
-  if (tcpip_l12_diagnose_frame(received, (size_t)received_length, &result->final_frame_report) !=
-      TCPIP_L12_OK) {
-    return TCPIP_LINUX_L03_MALFORMED;
-  }
+  (void)tcpip_l12_diagnose_frame(
+      received, (size_t)received_length, &result->final_frame_report);
   if (tcpip_l12_format_report(
           &result->final_frame_report,
           result->final_frame_diagnostic,
           sizeof(result->final_frame_diagnostic),
           &result->final_frame_diagnostic_length) != TCPIP_L12_OK) {
-    return TCPIP_LINUX_L03_CAPACITY;
+    result->final_frame_diagnostic[0] = '\0';
+    result->final_frame_diagnostic_length = 0U;
   }
   event->used = 0;
   return TCPIP_LINUX_L03_OK;
@@ -306,7 +390,7 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
   uint8_t reassembly_present[TCPIP_LINUX_L03_MAX_PAYLOAD];
   uint8_t acknowledged[TCPIP_LINUX_L03_MAX_CHUNKS];
   tcpip_l07_reassembly reassembly;
-  tcpip_l07_tcp_state state;
+  tcpip_l07_tcp_state state = TCPIP_L07_TCP_STATE_CLOSED;
   tcpip_linux_l03_status status;
   size_t chunk_count;
   size_t fault_index = 0U;
@@ -314,17 +398,25 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
   uint64_t now = 0U;
   uint64_t rto;
   int sockets[2] = {-1, -1};
-  int flags;
   size_t attempt;
 
   status = tcpip_linux_l03_validate(scenario, result);
   if (status != TCPIP_LINUX_L03_OK) {
     return status;
   }
-  if (tcpip_l11_longest_prefix(
-          scenario->routes, scenario->route_count, scenario->destination_ipv4,
-          &result->route_index) != TCPIP_L11_OK) {
-    return TCPIP_LINUX_L03_ROUTE_NOT_FOUND;
+  {
+    tcpip_l11_status route_status = tcpip_l11_longest_prefix(
+        scenario->routes, scenario->route_count, scenario->destination_ipv4,
+        &result->route_index);
+    if (route_status == TCPIP_L11_TRUNCATED) {
+      return TCPIP_LINUX_L03_ROUTE_NOT_FOUND;
+    }
+    if (route_status == TCPIP_L11_INVALID_ARGUMENT) {
+      return TCPIP_LINUX_L03_INVALID_ARGUMENT;
+    }
+    if (route_status != TCPIP_L11_OK) {
+      return TCPIP_LINUX_L03_MALFORMED;
+    }
   }
   if (tcpip_l07_transition(
           TCPIP_L07_TCP_STATE_CLOSED, TCPIP_L07_TCP_EVENT_ACTIVE_OPEN, &state) != TCPIP_L07_OK ||
@@ -332,6 +424,7 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
           state, TCPIP_L07_TCP_EVENT_RECEIVE_SYN_ACK, &state) != TCPIP_L07_OK) {
     return TCPIP_LINUX_L03_MALFORMED;
   }
+  result->final_state = state;
   if (tcpip_l07_reassembly_init(
           &reassembly,
           scenario->sender_initial_seq,
@@ -342,40 +435,26 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
   }
   memset(events, 0, sizeof(events));
   memset(acknowledged, 0, sizeof(acknowledged));
-  chunk_count = (scenario->payload_length + TCPIP_LINUX_L03_CHUNK - 1U) /
-                TCPIP_LINUX_L03_CHUNK;
+  chunk_count = (scenario->payload_length + TCPIP_LINUX_L03_CHUNK_PAYLOAD - 1U) /
+                TCPIP_LINUX_L03_CHUNK_PAYLOAD;
   rto = scenario->initial_rto_ms;
 
   if (socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets) != 0) {
     return TCPIP_LINUX_L03_SYSTEM_ERROR;
-  }
-  flags = fcntl(sockets[0], F_GETFL, 0);
-  if (flags < 0 || fcntl(sockets[0], F_SETFL, flags | O_NONBLOCK) != 0) {
-    status = TCPIP_LINUX_L03_SYSTEM_ERROR;
-    goto cleanup;
-  }
-  flags = fcntl(sockets[1], F_GETFL, 0);
-  if (flags < 0 || fcntl(sockets[1], F_SETFL, flags | O_NONBLOCK) != 0) {
-    status = TCPIP_LINUX_L03_SYSTEM_ERROR;
-    goto cleanup;
   }
 
   for (attempt = 0U; attempt < scenario->max_attempts; attempt += 1U) {
     uint64_t deadline = UINT64_MAX - now < rto ? UINT64_MAX : now + rto;
     size_t chunk;
     result->attempts = attempt + 1U;
-    for (chunk = 0U; chunk < TCPIP_LINUX_L03_MAX_EVENTS; chunk += 1U) {
-      if (events[chunk].used != 0 && acknowledged[events[chunk].chunk_index] != 0U) {
-        events[chunk].used = 0;
-      }
-    }
-
-
     for (chunk = 0U; chunk < chunk_count; chunk += 1U) {
       tcpip_linux_l03_fault fault = {TCPIP_LINUX_L03_DELIVER, 0U};
       uint64_t due = now;
       if (acknowledged[chunk] != 0U) {
         continue;
+      }
+      if (attempt != 0U) {
+        result->retransmits += 1U;
       }
       if (fault_index < scenario->fault_count) {
         fault = scenario->faults[fault_index];
@@ -433,9 +512,6 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
       goto cleanup;
     }
     now = deadline;
-    if (attempt + 1U < scenario->max_attempts) {
-      result->retransmits += 1U;
-    }
     if (rto <= UINT64_MAX / 2U) {
       rto *= 2U;
     } else {
@@ -444,7 +520,7 @@ tcpip_linux_l03_status tcpip_linux_l03_run(
   }
 
   result->virtual_elapsed_ms = now;
-  result->final_state = TCPIP_L07_TCP_STATE_CLOSED;
+  result->final_state = state;
   status = TCPIP_LINUX_L03_RETRY_EXHAUSTED;
 
 cleanup:

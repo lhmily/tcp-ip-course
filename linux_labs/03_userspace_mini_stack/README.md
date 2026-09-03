@@ -2,7 +2,7 @@
 
 This optional Linux lab ties several earlier lessons into one deliberately small experiment. You will send TCP payload chunks through an IPv4 frame, choose a route, inject bounded faults, reassemble bytes, and inspect the final Ethernet frame. The implementation uses a real Linux `AF_UNIX` `SOCK_DGRAM` socket pair only as the simulated wire. Everything that normally makes a network experiment flaky—wall-clock time, scheduler timing, sleeping, background threads, heap allocation, and global mutable state—is excluded. The result is a repeatable model that still crosses useful operating-system and protocol boundaries.
 
-The single public operation is `tcpip_linux_l03_run(scenario, result)`. A scenario borrows caller-owned input and output spans. It also supplies a route table, addresses and ports, initial sequence numbers, an initial retransmission timeout, an attempt bound, and a finite list of fault actions. A result records the selected route, virtual elapsed time, attempt and retransmission counts, conceptual TCP state, reassembled length, and diagnostics for the last frame that actually crossed the socket pair. No returned pointer outlives the call, and the implementation performs no dynamic allocation.
+The single public operation is `tcpip_linux_l03_run(scenario, result)`. The scenario object and its borrowed caller-owned input and output spans must not overlap the result storage. It also supplies a route table, addresses and ports, initial sequence numbers, an initial retransmission timeout, an attempt bound, and a finite list of fault actions. A result records the selected route, virtual elapsed time, attempt and retransmission counts, conceptual TCP state, reassembled length, and diagnostics for the last frame that actually crossed the socket pair. No returned pointer outlives the call, and the implementation performs no dynamic allocation.
 
 ## Data flow and virtual time
 
@@ -15,7 +15,7 @@ flowchart LR
     D -->|DELAY| Q[Fixed event queue]
     D -->|REORDER| Q
     D -->|DELIVER| Q
-    Q --> S[Nonblocking AF_UNIX datagram pair]
+    Q --> S[Blocking AF_UNIX datagram pair]
     S --> P[Parse and verify TCP/IPv4]
     P --> R[Sequence reassembly]
     R --> O[Caller output span]
@@ -23,21 +23,21 @@ flowchart LR
     T --> B
 ```
 
-Every transmission attempt has a virtual deadline. `DELIVER` schedules a frame immediately. `DROP` schedules nothing. `DELAY` uses the action's explicit millisecond offset. `REORDER` postpones a chunk by half the current RTO, allowing later chunks to arrive first. The fixed-capacity queue orders events by virtual due time and then insertion order. When no useful event remains before the deadline, the clock jumps directly to that deadline and the RTO doubles for the next attempt. There is no `sleep`, polling loop, or dependence on when Linux schedules the process. A delayed original and a retransmission can both arrive, which provides a deterministic duplicate test: the reassembler must accept matching bytes without counting them twice.
+Every transmission attempt has a virtual deadline. `DELIVER` schedules a frame immediately. `DROP` schedules nothing. `DELAY` uses the action's explicit millisecond offset. `REORDER` postpones a chunk by half the current RTO, allowing later chunks to arrive first. The fixed-capacity queue orders events by virtual due time and then insertion order. The attempt deadline is exclusive: an event due exactly at the deadline is not delivered during that attempt. When no useful event remains before the deadline, the clock jumps directly to that deadline and the RTO doubles for the next attempt. There is no `sleep`, polling loop, or dependence on when Linux schedules the process. A delayed original and a retransmission can both arrive, which provides a deterministic duplicate test: the reassembler must accept matching bytes without counting them twice.
 
-The route table follows Lesson 11 semantics: longest prefix wins, then lower metric, then earlier table position. The solution calls that lesson's reference target rather than maintaining a second routing implementation. It likewise reuses Lesson 03 for IPv4 parsing, Lesson 06 for TCP construction and checksum validation, Lesson 07 for state transitions and reassembly, and Lesson 12 for complete-frame diagnostics. The includes are explicit relative paths because several course units intentionally use the same filename, `lesson.h`; relying on include-directory order would make the lab ambiguous.
+The route table follows Lesson 11 semantics: longest prefix wins, then lower metric, then earlier table position. A Lesson 11 no-match result maps to `TCPIP_LINUX_L03_ROUTE_NOT_FOUND`, malformed routes map to `TCPIP_LINUX_L03_MALFORMED`, and invalid route arguments map to `TCPIP_LINUX_L03_INVALID_ARGUMENT`. The solution calls that lesson's reference target rather than maintaining a second routing implementation. It likewise reuses Lesson 03 for IPv4 parsing, Lesson 06 for TCP construction and checksum validation, Lesson 07 for state transitions and reassembly, and Lesson 12 for complete-frame diagnostics. Diagnostics are observational: Lesson 12 application heuristics may report malformed or truncated payloads, especially on HTTP ports with arbitrary bytes, but only IPv4/TCP parsing, checksums, and reassembly govern transfer success. The includes are explicit relative paths because several course units intentionally use the same filename, `lesson.h`; relying on include-directory order would make the lab ambiguous.
 
 ## Contract at a glance
 
 | Input or result | Rule | Why it matters |
 |---|---|---|
-| `payload` / `payload_length` | Borrowed, nonempty, at most 1024 bytes | Keeps frame and queue storage bounded |
-| `output` / `output_capacity` | Caller-owned and large enough for all payload bytes | Avoids allocation and partial success |
-| `routes` | Canonical Lesson 11 routes | Makes route choice inspectable |
+| `payload` / `payload_length` | Borrowed, nonempty, at most 1024 bytes, and not overlapping `result` | Keeps frame and queue storage bounded and prevents result writes from corrupting inputs |
+| `output` / `output_capacity` | Caller-owned, large enough for all payload bytes, and not overlapping `result` | Avoids allocation, partial success, and output/result alias corruption |
+| `routes` | Canonical Lesson 11 routes that do not overlap `result` | Makes route choice inspectable without result writes corrupting route selection |
 | `initial_rto_ms` | Nonzero virtual duration | Guarantees progress without real time |
 | `max_attempts` | Nonzero finite bound | Prevents an infinite retry exercise |
-| `faults` | At most 32 authored actions | Makes failure behavior deterministic |
-| `final_frame_diagnostic` | Formatted Lesson 12 report | Proves the delivered bytes formed a valid frame |
+| `faults` | At most 32 authored actions with valid `tcpip_linux_l03_fault_action` values and no overlap with `result` | Makes failure behavior deterministic and keeps the fault script immutable during the call |
+| `final_frame_diagnostic` | Best-effort formatted Lesson 12 report for the last delivered frame | Records diagnostics without governing transfer success; a formatting-capacity failure leaves an empty diagnostic string |
 
 A minimal caller can use a default route and no faults:
 
