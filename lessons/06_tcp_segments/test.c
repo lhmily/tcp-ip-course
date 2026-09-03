@@ -268,6 +268,16 @@ static void tcpip_l06_test_build_errors(tcpip_test_context *ctx) {
   TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
   TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
 
+  fields.options_length = 44U;
+  output_length = SIZE_MAX;
+  TCPIP_EXPECT_TRUE(
+      ctx,
+      tcpip_l06_build_segment(
+          &fields, NULL, 0U, destination, sizeof(destination), &output_length) ==
+          TCPIP_L06_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
+
   fields = tcpip_l06_syn_fields();
   fields.flags = UINT16_C(0x0200);
   output_length = SIZE_MAX;

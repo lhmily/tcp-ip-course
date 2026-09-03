@@ -55,6 +55,11 @@ tcpip_l07_status tcpip_l07_transition(
     tcpip_l07_tcp_event event,
     tcpip_l07_tcp_state *out_state);
 
+/*
+ * Bind a receive window to separate caller-owned arrays. For nonzero capacity,
+ * data[0..capacity) and present[0..capacity) must be non-null and must not
+ * overlap each other.
+ */
 tcpip_l07_status tcpip_l07_reassembly_init(
     tcpip_l07_reassembly *ctx,
     uint32_t initial_seq,
@@ -69,6 +74,10 @@ tcpip_l07_status tcpip_l07_reassembly_push(
     size_t len,
     size_t *accepted);
 
+/*
+ * Copy the entire contiguous unread run. For nonzero out_capacity, the output
+ * span must not overlap either complete backing array bound by init.
+ */
 tcpip_l07_status tcpip_l07_reassembly_read(
     tcpip_l07_reassembly *ctx,
     uint8_t *out,

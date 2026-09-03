@@ -129,11 +129,16 @@ static void tcpip_l04_test_build_errors(tcpip_test_context *ctx) {
   TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
   TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
 
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_build_echo(
           3U, 1U, 2U, NULL, 0U, output, sizeof(output), &output_length),
       TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_build_echo(
@@ -146,6 +151,10 @@ static void tcpip_l04_test_build_errors(tcpip_test_context *ctx) {
           sizeof(output),
           &output_length),
       TCPIP_L04_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_build_echo(
@@ -158,10 +167,13 @@ static void tcpip_l04_test_build_errors(tcpip_test_context *ctx) {
           sizeof(output),
           &output_length),
       TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
 }
 
 static void tcpip_l04_test_make_reply(tcpip_test_context *ctx) {
   uint8_t output[32];
+  uint8_t in_place[sizeof(tcpip_l04_request)];
   size_t output_length = 99U;
 
   TCPIP_EXPECT_U32(
@@ -175,19 +187,50 @@ static void tcpip_l04_test_make_reply(tcpip_test_context *ctx) {
       TCPIP_L04_OK);
   TCPIP_EXPECT_SIZE(ctx, output_length, sizeof(tcpip_l04_reply));
   TCPIP_EXPECT_BYTES(ctx, output, output_length, tcpip_l04_reply, sizeof(tcpip_l04_reply));
+
+  memcpy(in_place, tcpip_l04_request, sizeof(in_place));
+  output_length = 99U;
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l04_make_echo_reply(
+          in_place, sizeof(in_place), in_place, sizeof(in_place), &output_length),
+      TCPIP_L04_OK);
+  TCPIP_EXPECT_SIZE(ctx, output_length, sizeof(tcpip_l04_reply));
+  TCPIP_EXPECT_BYTES(ctx, in_place, sizeof(in_place), tcpip_l04_reply, sizeof(tcpip_l04_reply));
 }
 
 static void tcpip_l04_test_reply_rejections(tcpip_test_context *ctx) {
   static const uint8_t nonzero_code[13] = {
       0x08U, 0x01U, 0xbbU, 0xfcU, 0x12U, 0x34U, 0x00U,
       0x07U, 0x61U, 0x62U, 0x63U, 0x64U, 0x65U};
+  static const uint8_t minimal_without_echo_fields[4] = {0x08U, 0x00U, 0xf7U, 0xffU};
+  tcpip_l04_message parsed;
   uint8_t output[32];
   uint8_t expected[32];
   uint8_t corrupted[sizeof(tcpip_l04_request)];
   size_t output_length = 99U;
 
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l04_parse_message(
+          minimal_without_echo_fields, sizeof(minimal_without_echo_fields), &parsed),
+      TCPIP_L04_OK);
+
   memset(output, 0xa5, sizeof(output));
   memcpy(expected, output, sizeof(output));
+  TCPIP_EXPECT_U32(
+      ctx,
+      tcpip_l04_make_echo_reply(
+          minimal_without_echo_fields,
+          sizeof(minimal_without_echo_fields),
+          output,
+          sizeof(output),
+          &output_length),
+      TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(
@@ -196,28 +239,44 @@ static void tcpip_l04_test_reply_rejections(tcpip_test_context *ctx) {
   TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
   TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
 
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(
           tcpip_l04_error, sizeof(tcpip_l04_error), output, sizeof(output), &output_length),
       TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(
           nonzero_code, sizeof(nonzero_code), output, sizeof(output), &output_length),
       TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
 
   memcpy(corrupted, tcpip_l04_request, sizeof(corrupted));
   corrupted[8U] ^= 1U;
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(
           corrupted, sizeof(corrupted), output, sizeof(output), &output_length),
       TCPIP_L04_MALFORMED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(tcpip_l04_request, 3U, output, sizeof(output), &output_length),
       TCPIP_L04_TRUNCATED);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
+
+  output_length = 99U;
   TCPIP_EXPECT_U32(
       ctx,
       tcpip_l04_make_echo_reply(
@@ -227,6 +286,8 @@ static void tcpip_l04_test_reply_rejections(tcpip_test_context *ctx) {
           sizeof(tcpip_l04_request) - 1U,
           &output_length),
       TCPIP_L04_CAPACITY);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, output, sizeof(output), expected, sizeof(expected));
 }
 
 int main(void) {

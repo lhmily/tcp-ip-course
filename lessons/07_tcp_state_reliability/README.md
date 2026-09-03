@@ -33,7 +33,7 @@ stateDiagram-v2
 
 ## Wire format or API
 
-There is no packet parser here. The public API accepts semantic events and payload bytes already extracted by a trusted caller. Every public symbol starts with `tcpip_l07_`. `tcpip_l07_reassembly_init` binds a context to separate caller-owned `data` and `present` arrays. `push` accepts a sequence number and immutable input span; `read` copies the entire currently contiguous run into caller storage.
+There is no packet parser here. The public API accepts semantic events and payload bytes already extracted by a trusted caller. Every public symbol starts with `tcpip_l07_`. `tcpip_l07_reassembly_init` binds a context to separate caller-owned `data` and `present` arrays. For nonzero capacity, both arrays must be non-null and their complete `[pointer, pointer + capacity)` spans must not overlap. `push` accepts a sequence number and immutable input span; `read` copies the entire currently contiguous run into caller storage. Its complete output span `[out, out + out_capacity)` must not overlap either complete backing-array span, even if fewer bytes are currently readable.
 
 | Result | Meaning |
 |---|---|
@@ -81,17 +81,17 @@ Complete `exercise.c` by implementing the transition table and the two-phase rea
 
 ## Test contract and invariants
 
-The deterministic test checks active, passive, simultaneous-open, active-close, and passive-close paths. It verifies invalid enums, impossible transitions, out-of-order insertion, wrap-around offsets, duplicate idempotence, conflicting-overlap rollback, capacity rollback, atomic truncation, zero-capacity contexts, and initialized outputs on errors. The starter returns `TCPIP_L07_TODO`, so the same test fails predictably; selecting reference solutions makes it pass.
+The deterministic test checks every documented transition and every other valid state/event pair as malformed. It verifies invalid enums and output pointers, out-of-order insertion, wrap-around offsets, duplicate idempotence, conflicting-overlap rollback, capacity rollback, atomic truncation, zero-capacity contexts, backing-array overlap rejection, output alias rejection, and initialized outputs on errors. The starter returns `TCPIP_L07_TODO`, so the same test fails predictably; selecting reference solutions makes it pass.
 
 At all times, `read_offset <= capacity`; each nonzero presence byte means the corresponding data byte is initialized; and accepted counts only bytes whose bitmap entries changed from absent to present.
 
 ## Common mistakes
 
-Do not compare sequence numbers with ordinary signed arithmetic, add `offset + len` before proving it cannot overflow, treat duplicate retransmissions as new data, or overwrite a matching prefix before discovering a conflicting suffix. Do not use a zero payload byte as a presence marker. Do not advance the read cursor after returning `TRUNCATED`.
+Do not compare sequence numbers with ordinary signed arithmetic, add `offset + len` before proving it cannot overflow, treat duplicate retransmissions as new data, or overwrite a matching prefix before discovering a conflicting suffix. Do not use a zero payload byte as a presence marker. Do not advance the read cursor after returning `TRUNCATED`. Do not compare unrelated pointers directly when checking for array overlap; convert to integer addresses and prove address-plus-length cannot overflow first.
 
 ## Safety and network boundaries
 
-All buffers have explicit capacities, inputs are `const`, and outputs are caller-owned. Null pointers are accepted only for zero-length storage where documented by behavior. No allocation or global mutable state is used. This is an offline model: external network access, raw packet capture, and elevated privileges are prohibited. Feed only deterministic byte arrays from the test process.
+All buffers have explicit capacities, inputs are `const`, and outputs are caller-owned. Null pointers are accepted only for zero-length storage where documented by behavior. Backing arrays and read outputs are validated with overflow-safe address ranges before mutation so aliasing cannot corrupt unread data or presence state. No allocation or global mutable state is used. This is an offline model: external network access, raw packet capture, and elevated privileges are prohibited. Feed only deterministic byte arrays from the test process.
 
 An explicit non-goal is implementing a production TCP stack. Congestion control, retransmission timers, checksums, receive-window sliding, urgent data, reset handling, and the complete RFC state machine are intentionally omitted.
 
