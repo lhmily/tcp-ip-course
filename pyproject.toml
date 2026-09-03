@@ -1,0 +1,28 @@
+[dependency-groups]
+dev = [
+  "mkdocs-material>=9.6",
+  "pytest>=8.0",
+  "ruff>=0.9",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = [".site-docs", "site"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/build_site.py" = ["E501"]
+"scripts/course_catalog.py" = ["E501"]
+"scripts/generate_branding_assets.py" = ["E501"]
+"scripts/generate_documentation_assets.py" = ["E501"]
+"tests/test_documentation.py" = ["E501"]
+"tests/test_repository_contract.py" = ["E501"]

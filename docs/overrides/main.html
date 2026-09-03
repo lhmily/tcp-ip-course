@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block header %}
+  <header class="md-header md-header--shadow" data-md-component="header">
+    <nav class="md-header__inner md-grid" aria-label="Header">
+      <a class="brand-home" href="https://lhmily.github.io/" aria-label="Go to lhmily home">
+        <span class="brand-mark" aria-hidden="true"><img src="{{ 'assets/branding/lemon.svg' | url }}" alt=""></span>
+        <span>lhmily</span>
+      </a>
+      <span class="brand-divider" aria-hidden="true">/</span>
+      <a class="course-home" href="{{ config.site_url }}" aria-label="Go to TCP/IP Course overview">TCP/IP Course</a>
+      <label class="md-header__button md-icon" for="__drawer">{% include ".icons/material/menu.svg" %}</label>
+      <div class="header-spacer"></div>
+      {% if "search" in config.plugins %}
+        <label class="md-header__button md-icon" for="__search">{% include ".icons/material/magnify.svg" %}</label>
+        {% include "partials/search.html" %}
+      {% endif %}
+      {% if config.theme.palette %}{% include "partials/palette.html" %}{% endif %}
+      <a class="header-source" href="{{ config.repo_url }}" aria-label="View TCP/IP Course on GitHub">
+        {% include ".icons/fontawesome/brands/github.svg" %}<span>Source</span>
+      </a>
+    </nav>
+  </header>
+{% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  <link rel="icon" href="{{ 'assets/branding/lemon.svg' | url }}" type="image/svg+xml">
+  <link rel="icon" href="{{ 'assets/branding/favicon.png' | url }}" type="image/png" sizes="32x32">
+  <link rel="shortcut icon" href="{{ 'assets/branding/favicon.ico' | url }}">
+  <link rel="apple-touch-icon" href="{{ 'assets/branding/apple-touch-icon.png' | url }}" sizes="180x180">
+  <link rel="manifest" href="{{ 'site.webmanifest' | url }}">
+  {% if config.extra.cloudflare_web_analytics_token %}
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon='{{ {"token": config.extra.cloudflare_web_analytics_token} | tojson }}'></script>
+  {% endif %}
+  {% if page and page.meta %}
+    {% set canonical_url = config.site_url ~ page.url %}
+    {% set resource_type = page.meta.learning_resource_type or "LearningResource" %}
+    {% set schema_type = "Course" if resource_type == "Course" else "LearningResource" %}
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="{{ config.site_name }}">
+    <meta property="og:title" content="{{ page.meta.title }}">
+    <meta property="og:description" content="{{ page.meta.description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ config.site_url }}assets/tcp-ip-social.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page.meta.title }}">
+    <meta name="twitter:description" content="{{ page.meta.description }}">
+    <meta name="twitter:image" content="{{ config.site_url }}assets/tcp-ip-social.svg">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": {{ schema_type | tojson }},
+        "name": {{ page.meta.title | tojson }},
+        "description": {{ page.meta.description | tojson }},
+        "url": {{ canonical_url | tojson }},
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "educationalLevel": "Beginner to intermediate",
+        "programmingLanguage": "C17",
+        "learningResourceType": {{ resource_type | tojson }},
+        "provider": {"@type": "Person", "name": "lhmily", "url": "https://github.com/lhmily"},
+        "isPartOf": {"@type": "Course", "name": "TCP/IP Course in C17", "url": {{ config.site_url | tojson }}}
+      }
+    </script>
+  {% endif %}
+{% endblock %}

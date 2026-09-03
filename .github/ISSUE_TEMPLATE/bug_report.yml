@@ -1,0 +1,48 @@
+name: Bug report
+description: Report incorrect C behavior, build failures, or documentation defects
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve the C17 TCP/IP course. Do not include sensitive traffic or third-party packet captures.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Lesson starter or public header
+        - Reference solution
+        - Native test or CMake
+        - Documentation or course site
+        - CI or repository tooling
+    validations:
+      required: true
+  - type: input
+    id: lesson
+    attributes:
+      label: Lesson
+      description: Give the numbered lesson directory, if applicable.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include expected behavior, actual behavior, and a minimal offline or loopback reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, compiler and version, CMake version, and preset used.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: The reproduction uses only offline fixtures or loopback with an ephemeral port.
+          required: true
+        - label: I removed credentials, personal data, and packet data from systems I do not own.
+          required: true

@@ -1,0 +1,89 @@
+:root {
+  --course-bg: #f5f8fb;
+  --course-surface: rgba(255, 255, 255, 0.86);
+  --course-text: #102033;
+  --course-muted: #52677d;
+  --course-line: rgba(51, 65, 85, 0.2);
+  --course-blue: #0369a1;
+  --course-green: #047857;
+  --course-shadow: 0 18px 55px rgba(15, 23, 42, 0.08);
+  --md-primary-fg-color: #102033;
+  --md-accent-fg-color: var(--course-blue);
+  --md-typeset-a-color: #0369a1;
+  --md-default-bg-color: var(--course-bg);
+  --md-default-fg-color: var(--course-text);
+  --md-default-fg-color--light: var(--course-muted);
+  --md-code-bg-color: #e9f0f7;
+  --md-code-fg-color: #102033;
+}
+
+[data-md-color-scheme="slate"] {
+  --course-bg: #07111f;
+  --course-surface: rgba(17, 35, 56, 0.84);
+  --course-text: #f8fafc;
+  --course-muted: #b4c5d8;
+  --course-line: rgba(148, 163, 184, 0.24);
+  --course-blue: #7dd3fc;
+  --course-green: #6ee7b7;
+  --course-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  --md-primary-fg-color: #07111f;
+  --md-accent-fg-color: var(--course-blue);
+  --md-typeset-a-color: var(--course-blue);
+  --md-default-bg-color: var(--course-bg);
+  --md-default-fg-color: var(--course-text);
+  --md-default-fg-color--light: var(--course-muted);
+  --md-code-bg-color: #0c192a;
+  --md-code-fg-color: #e6edf7;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--course-bg); }
+.md-header {
+  border-bottom: 1px solid var(--course-line);
+  background: color-mix(in srgb, var(--course-bg) 88%, transparent);
+  color: var(--course-text);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+}
+.md-header__inner { display: flex; min-height: 3.5rem; align-items: center; gap: .7rem; }
+.brand-home, .course-home, .header-source {
+  display: inline-flex; align-items: center; color: var(--course-text); font-weight: 750; text-decoration: none;
+}
+.brand-home { gap: .6rem; }
+.brand-mark, .brand-mark img { display: block; width: 2rem; height: 2rem; }
+.brand-divider { color: var(--course-muted); }
+.header-spacer { flex: 1; }
+.header-source { gap: .4rem; color: var(--course-muted); font-size: .72rem; }
+.header-source svg { width: 1.05rem; fill: currentColor; }
+.brand-home:hover, .course-home:hover, .header-source:hover { color: var(--course-blue); }
+.brand-home:focus-visible, .course-home:focus-visible, .header-source:focus-visible, .md-typeset a:focus-visible {
+  outline: 3px solid var(--course-blue); outline-offset: 3px; border-radius: .3rem;
+}
+.md-search__form { border: 1px solid var(--course-line); border-radius: .7rem; background: var(--course-surface); }
+.md-main__inner { margin-top: 1.4rem; }
+.md-nav__title { color: var(--course-text); background: transparent; box-shadow: none; }
+.md-nav__link { border-radius: .45rem; color: var(--course-muted); }
+.md-nav__link:hover, .md-nav__link:focus, .md-nav__link--active { color: var(--course-blue); }
+.md-nav__link--active { font-weight: 700; }
+.md-content__inner { padding-bottom: 3rem; }
+.md-typeset { color: var(--course-text); font-size: .84rem; line-height: 1.72; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3 { color: var(--course-text); font-weight: 760; letter-spacing: -.03em; }
+.md-typeset h1 { margin-bottom: 1.25rem; font-size: clamp(2.2rem, 4.7vw, 3.65rem); line-height: 1.04; }
+.md-typeset h2 { padding-top: .3rem; font-size: clamp(1.5rem, 3vw, 2.15rem); }
+.md-typeset a { font-weight: 610; text-underline-offset: .2em; }
+.md-typeset a:hover { color: var(--course-green); }
+.md-typeset img, .md-typeset svg { border-radius: .8rem; }
+.md-typeset table:not([class]), .md-typeset pre > code, .md-typeset .admonition, .mermaid {
+  border: 1px solid var(--course-line); border-radius: .8rem; background: var(--course-surface); box-shadow: var(--course-shadow);
+}
+.md-typeset table:not([class]) { overflow: hidden; }
+.md-typeset table:not([class]) th { color: var(--course-text); background: color-mix(in srgb, var(--course-blue) 9%, var(--course-surface)); }
+.mermaid { padding: 1rem; }
+.md-footer { border-top: 1px solid var(--course-line); background: var(--course-bg); }
+@media screen and (max-width: 44.984375em) {
+  .md-header__inner { gap: .4rem; }
+  .brand-home > span:last-child, .brand-divider, .header-source span { display: none; }
+  .course-home { font-size: .78rem; }
+  .md-typeset h1 { font-size: 2.2rem; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

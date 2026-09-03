@@ -1,0 +1,39 @@
+name: Lesson improvement
+description: Propose a focused improvement to one C17 lesson
+title: "[Lesson]: "
+labels: [lesson]
+body:
+  - type: input
+    id: lesson
+    attributes:
+      label: Lesson directory
+      placeholder: 06_tcp_segments
+    validations:
+      required: true
+  - type: textarea
+    id: learner_problem
+    attributes:
+      label: Learner problem
+      description: What is unclear, missing, misleading, or difficult to practice?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Explain how the README, lesson.h, exercise.c, solution.c, test.c, and CMakeLists.txt contract is affected.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: Lesson contract
+      options:
+        - label: Starter and solution keep the same public declarations in lesson.h.
+          required: true
+        - label: Tests remain deterministic and use offline buffers or loopback with an ephemeral port.
+          required: true
+        - label: Documentation keeps all required headings, a unique Mermaid diagram, C example, table, non-goal, and What to notice callout.
+          required: true
+        - label: The proposal does not require privileged capture, raw sockets, external traffic, or shell execution.
+          required: true
