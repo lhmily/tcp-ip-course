@@ -80,9 +80,9 @@ A useful workflow is to solve parsing first, then checksum calculation, then con
 
 ## Test contract and invariants
 
-The deterministic test covers ports, the declared length, a five-byte odd payload, a zero input checksum, exact output bytes, corruption detection, short headers, oversized declared lengths, trailing data, insufficient capacity, and generator-zero mapping. In student mode, a remaining `TCPIP_L05_TODO` is an intentional nonzero test result. Reference mode must pass.
+The deterministic test covers ports, the declared length, a five-byte odd payload, an exact eight-byte zero-payload datagram with a zero input checksum, exact output bytes for zero and nonzero payloads, corruption detection, short headers, oversized declared lengths, trailing data, insufficient capacity, invalid IPv4 span lengths, the maximum legal payload, and generator-zero mapping. In student mode, a remaining `TCPIP_L05_TODO` is an intentional nonzero test result. Reference mode must pass.
 
-On every failure, structured outputs and output lengths are initialized. Capacity failure leaves the destination untouched. The largest representable UDP datagram is 65535 bytes total. The checksum routine rejects a pseudo-header length that cannot fit in its 16-bit UDP length contribution.
+On every failure, structured outputs and output lengths are initialized. Capacity and invalid-address-span failures leave the destination untouched. The largest representable UDP datagram is 65535 bytes total and has a 65527-byte payload. The checksum routine rejects a pseudo-header length that cannot fit in its 16-bit UDP length contribution.
 
 ## Common mistakes
 

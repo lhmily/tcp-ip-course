@@ -3,6 +3,7 @@
 #include <tcpip/test.h>
 
 #include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const uint8_t tcpip_l05_test_source_ipv4[4] = {192U, 0U, 2U, 1U};
@@ -41,6 +42,23 @@ static void tcpip_l05_test_parse(tcpip_test_context *ctx) {
       ctx,
       tcpip_l05_parse_datagram(zero_checksum, sizeof(zero_checksum), &parsed) == TCPIP_L05_OK);
   TCPIP_EXPECT_U16(ctx, parsed.checksum, 0U);
+
+  {
+    const uint8_t empty_datagram[8] = {
+        0x30U, 0x39U, 0xffU, 0xffU, 0x00U, 0x08U, 0x00U, 0x00U};
+
+    memset(&parsed, 0xa5, sizeof(parsed));
+    TCPIP_EXPECT_TRUE(
+        ctx,
+        tcpip_l05_parse_datagram(empty_datagram, sizeof(empty_datagram), &parsed) ==
+            TCPIP_L05_OK);
+    TCPIP_EXPECT_U16(ctx, parsed.source_port, 12345U);
+    TCPIP_EXPECT_U16(ctx, parsed.destination_port, UINT16_MAX);
+    TCPIP_EXPECT_U16(ctx, parsed.length, 8U);
+    TCPIP_EXPECT_U16(ctx, parsed.checksum, 0U);
+    TCPIP_EXPECT_SIZE(ctx, parsed.payload_offset, 8U);
+    TCPIP_EXPECT_SIZE(ctx, parsed.payload_length, 0U);
+  }
 }
 
 static void tcpip_l05_test_parse_errors(tcpip_test_context *ctx) {
@@ -218,6 +236,116 @@ static void tcpip_l05_test_build(tcpip_test_context *ctx) {
   }
 }
 
+static void tcpip_l05_test_zero_payload_build(tcpip_test_context *ctx) {
+  const uint8_t expected[8] = {
+      0x30U, 0x39U, 0xffU, 0xffU, 0x00U, 0x08U, 0xe3U, 0x6dU};
+  uint8_t destination[8];
+  size_t output_length = SIZE_MAX;
+
+  memset(destination, 0xa5, sizeof(destination));
+  TCPIP_EXPECT_TRUE(
+      ctx,
+      tcpip_l05_build_datagram(
+          tcpip_l05_test_source_ipv4,
+          sizeof(tcpip_l05_test_source_ipv4),
+          tcpip_l05_test_destination_ipv4,
+          sizeof(tcpip_l05_test_destination_ipv4),
+          12345U,
+          UINT16_MAX,
+          NULL,
+          0U,
+          destination,
+          sizeof(destination),
+          &output_length) == TCPIP_L05_OK);
+  TCPIP_EXPECT_SIZE(ctx, output_length, sizeof(expected));
+  TCPIP_EXPECT_BYTES(ctx, destination, output_length, expected, sizeof(expected));
+}
+
+static void tcpip_l05_test_maximum_payload(tcpip_test_context *ctx) {
+  const size_t payload_length = (size_t)UINT16_MAX - 8U;
+  uint8_t *payload = (uint8_t *)malloc(payload_length);
+  uint8_t *destination = (uint8_t *)malloc((size_t)UINT16_MAX);
+  size_t output_length = SIZE_MAX;
+  size_t index;
+
+  if (payload == NULL || destination == NULL) {
+    TCPIP_FAIL(ctx, "unable to allocate maximum-size UDP test buffers");
+    free(destination);
+    free(payload);
+    return;
+  }
+
+  for (index = 0U; index < payload_length; ++index) {
+    payload[index] = (uint8_t)(index & UINT8_MAX);
+  }
+  memset(destination, 0xa5, (size_t)UINT16_MAX);
+  TCPIP_EXPECT_TRUE(
+      ctx,
+      tcpip_l05_build_datagram(
+          tcpip_l05_test_source_ipv4,
+          sizeof(tcpip_l05_test_source_ipv4),
+          tcpip_l05_test_destination_ipv4,
+          sizeof(tcpip_l05_test_destination_ipv4),
+          1U,
+          2U,
+          payload,
+          payload_length,
+          destination,
+          (size_t)UINT16_MAX,
+          &output_length) == TCPIP_L05_OK);
+  TCPIP_EXPECT_SIZE(ctx, output_length, (size_t)UINT16_MAX);
+  TCPIP_EXPECT_TRUE(ctx, destination[4] == UINT8_C(0xff));
+  TCPIP_EXPECT_TRUE(ctx, destination[5] == UINT8_C(0xff));
+  TCPIP_EXPECT_BYTES(ctx, destination + 8U, payload_length, payload, payload_length);
+
+  free(destination);
+  free(payload);
+}
+
+static void tcpip_l05_test_build_ipv4_span_errors(tcpip_test_context *ctx) {
+  static const uint8_t unchanged[16] = {
+      0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U,
+      0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U, 0xa5U};
+  uint8_t destination[sizeof(unchanged)];
+  size_t output_length = SIZE_MAX;
+
+  memset(destination, 0xa5, sizeof(destination));
+  TCPIP_EXPECT_TRUE(
+      ctx,
+      tcpip_l05_build_datagram(
+          tcpip_l05_test_source_ipv4,
+          3U,
+          tcpip_l05_test_destination_ipv4,
+          sizeof(tcpip_l05_test_destination_ipv4),
+          1U,
+          2U,
+          NULL,
+          0U,
+          destination,
+          sizeof(destination),
+          &output_length) == TCPIP_L05_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
+
+  output_length = SIZE_MAX;
+  TCPIP_EXPECT_TRUE(
+      ctx,
+      tcpip_l05_build_datagram(
+          tcpip_l05_test_source_ipv4,
+          sizeof(tcpip_l05_test_source_ipv4),
+          tcpip_l05_test_destination_ipv4,
+          5U,
+          1U,
+          2U,
+          NULL,
+          0U,
+          destination,
+          sizeof(destination),
+          &output_length) == TCPIP_L05_INVALID_ARGUMENT);
+  TCPIP_EXPECT_SIZE(ctx, output_length, 0U);
+  TCPIP_EXPECT_BYTES(ctx, destination, sizeof(destination), unchanged, sizeof(unchanged));
+}
+
 static void tcpip_l05_test_zero_mapping(tcpip_test_context *ctx) {
   const uint8_t payload[2] = {0x13U, 0xa0U};
   const uint8_t expected[10] = {
@@ -267,6 +395,9 @@ int main(void) {
   tcpip_l05_test_parse_errors(&ctx);
   tcpip_l05_test_checksum(&ctx);
   tcpip_l05_test_build(&ctx);
+  tcpip_l05_test_zero_payload_build(&ctx);
+  tcpip_l05_test_maximum_payload(&ctx);
+  tcpip_l05_test_build_ipv4_span_errors(&ctx);
   tcpip_l05_test_zero_mapping(&ctx);
   return tcpip_test_finish(&ctx);
 }
