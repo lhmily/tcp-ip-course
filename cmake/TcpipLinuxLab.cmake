@@ -31,8 +31,8 @@ function(tcpip_add_linux_lab)
   )
 
   foreach(dependency IN LISTS LAB_LINK_SOLUTIONS)
-    target_link_libraries(${prefix}_solution PRIVATE "tcpip_l${dependency}_solution")
-    target_link_libraries(${prefix}_test PRIVATE "tcpip_l${dependency}_solution")
+    target_link_libraries(${prefix}_exercise PUBLIC "tcpip_l${dependency}_solution")
+    target_link_libraries(${prefix}_solution PUBLIC "tcpip_l${dependency}_solution")
   endforeach()
 
   if(LAB_THREADS)
