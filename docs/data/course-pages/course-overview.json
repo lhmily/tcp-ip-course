@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "catalog_key": "course-overview",
+  "components": [
+    {
+      "id": "course-hero",
+      "type": "page_hero",
+      "heading": "TCP/IP Course in C17",
+      "payload": {
+        "title": "TCP/IP Course in C17",
+        "summary": "Learn TCP/IP by reading bytes, modeling protocol state, and writing small portable C17 programs across 12 core lessons and four optional Linux labs.",
+        "badges": ["C17", "12 portable lessons", "4 optional Linux labs", "Local and deterministic"],
+        "actions": [
+          {"label": "Read the course site", "href": "https://lhmily.github.io/tcp-ip-course/"},
+          {"label": "View source", "href": "https://github.com/lhmily/tcp-ip-course"}
+        ]
+      },
+      "provenance": [
+        {"path": "scripts/course_catalog.py", "symbol": "LESSONS"},
+        {"path": "scripts/course_catalog.py", "symbol": "LINUX_LABS"}
+      ]
+    },
+    {
+      "id": "course-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Requirements and outcomes",
+      "payload": {
+        "prerequisites": [
+          "A C17 compiler such as Clang or GCC",
+          "CMake 3.25 or newer with CTest",
+          "Linux or macOS with POSIX APIs for socket lessons",
+          "Git"
+        ],
+        "outcomes": [
+          "Decode protocol bytes without mapping wire data onto C structs",
+          "Model bounds, ownership, state transitions, and failure behavior explicitly",
+          "Compose parsers and local socket exercises into deterministic diagnostics"
+        ]
+      }
+    },
+    {
+      "id": "core-curriculum",
+      "type": "curriculum_cards",
+      "heading": "Curriculum",
+      "payload": {
+        "items": [
+          {"label": "Bytes, Addressing, and Checksums", "href": "lessons/01_bytes_addressing_checksum/README.md", "description": "Integer representation, byte order, bounds, addresses, and one's-complement checksums.", "meta": ["Lesson 1", "Foundations"]},
+          {"label": "Ethernet and ARP", "href": "lessons/02_ethernet_arp/README.md", "description": "Local-link framing, MAC addresses, EtherTypes, and address resolution.", "meta": ["Lesson 2", "Foundations"]},
+          {"label": "IPv4 Packets", "href": "lessons/03_ipv4_packets/README.md", "description": "Header parsing, total length, fragmentation, TTL, and validation.", "meta": ["Lesson 3", "Internet layer"]},
+          {"label": "ICMP", "href": "lessons/04_icmp/README.md", "description": "Echo messages, error reporting, quoted packets, and checksum handling.", "meta": ["Lesson 4", "Internet layer"]},
+          {"label": "UDP", "href": "lessons/05_udp/README.md", "description": "Datagram framing, pseudo-headers, ports, checksums, and loss semantics.", "meta": ["Lesson 5", "Transport"]},
+          {"label": "TCP Segments", "href": "lessons/06_tcp_segments/README.md", "description": "Flags, sequence numbers, options, windows, and segment checksums.", "meta": ["Lesson 6", "Transport"]},
+          {"label": "TCP State and Reliability", "href": "lessons/07_tcp_state_reliability/README.md", "description": "State transitions, acknowledgments, retransmission, flow control, and shutdown.", "meta": ["Lesson 7", "Transport"]},
+          {"label": "Stream Sockets", "href": "lessons/08_stream_sockets/README.md", "description": "POSIX socket lifecycle, partial I/O, loopback, and stream framing.", "meta": ["Lesson 8", "Applications"]},
+          {"label": "DNS", "href": "lessons/09_dns/README.md", "description": "Names, compression pointers, questions, and resource records.", "meta": ["Lesson 9", "Applications"]},
+          {"label": "HTTP", "href": "lessons/10_http/README.md", "description": "Request and response parsing, limits, body framing, and persistent streams.", "meta": ["Lesson 10", "Applications"]},
+          {"label": "Routing and NAT", "href": "lessons/11_routing_nat/README.md", "description": "Longest-prefix match, forwarding decisions, mappings, and expiry.", "meta": ["Lesson 11", "Networks in practice"]},
+          {"label": "Diagnostics and Integration", "href": "lessons/12_diagnostics_integration/README.md", "description": "Compose parsers and explain failures across layers from offline fixtures.", "meta": ["Lesson 12", "Networks in practice"]}
+        ]
+      },
+      "provenance": [
+        {"path": "scripts/course_catalog.py", "symbol": "LESSONS"}
+      ]
+    },
+    {
+      "id": "course-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "In-memory packet fixtures",
+          "Loopback sockets with operating-system-assigned ephemeral ports",
+          "Communication inside one test process or local machine"
+        ],
+        "excluded": [
+          "Internet access, elevated privileges, packet capture, and raw or packet sockets",
+          "Wildcard listeners, TUN/TAP devices, network namespaces, fork, clone, or third-party traffic",
+          "Production deployment concerns such as TLS, authentication, event-loop scale, and broad platform abstraction"
+        ]
+      }
+    }
+  ]
+}

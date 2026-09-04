@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "catalog_key": "userspace-mini-stack",
+  "components": [
+    {
+      "id": "mini-stack-hero",
+      "type": "page_hero",
+      "heading": "Linux Lab 03: A deterministic userspace mini-stack",
+      "payload": {
+        "title": "A deterministic userspace mini-stack",
+        "summary": "Send TCP payload chunks through IPv4 and Ethernet framing, route them, inject bounded faults, reassemble bytes, and inspect the final frame over a local Unix datagram socket pair.",
+        "badges": ["Linux Lab 03", "Virtual time", "AF_UNIX datagrams", "No dynamic allocation"],
+        "actions": [
+          {"label": "Review contract", "href": "#contract-at-a-glance"},
+          {"label": "Run Linux labs", "href": "https://github.com/lhmily/tcp-ip-course/blob/main/linux_labs/README.md#prerequisites-and-workflow"}
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/03_userspace_mini_stack/lab.h", "symbol": "tcpip_linux_l03_run"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_scenario"}
+      ]
+    },
+    {
+      "id": "mini-stack-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Data flow and virtual time",
+      "payload": {
+        "prerequisites": [
+          "Earlier routing, TCP, IPv4, Ethernet, and diagnostics lessons",
+          "A Linux environment with AF_UNIX SOCK_DGRAM support",
+          "Caller-owned payload, output, route, and fault spans that do not overlap result storage",
+          "Finite route, retransmission timeout, attempt, and fault-script inputs"
+        ],
+        "outcomes": [
+          "Separate deterministic virtual time from wall-clock time and scheduler behavior",
+          "Model delivery, drop, delay, reorder, retransmission, duplicate acceptance, and retry exhaustion",
+          "Inspect final-frame diagnostics without making diagnostics govern transfer success"
+        ]
+      }
+    },
+    {
+      "id": "mini-stack-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise workflow and tests",
+      "payload": {
+        "exercise": "Implement tcpip_linux_l03_run in exercise.c after the starter's scalar and span validation. Preserve predictable result initialization and avoid payload output writes on validation failures.",
+        "reference": "The solution reuses the course reference targets for routing, IPv4 parsing, TCP construction and checksum validation, state transitions and reassembly, and complete-frame diagnostics.",
+        "checks": [
+          "Clean delivery, first-attempt drop with retransmission, out-of-order chunks, and delayed duplicates succeed deterministically",
+          "Retry exhaustion, longest-prefix route selection, insufficient output capacity, and repeated runs are covered",
+          "Final diagnostics are mandatory but best effort for formatting capacity",
+          "Sanitizer and warnings-as-errors configurations are strongly recommended"
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_clean"},
+        {"path": "linux_labs/03_userspace_mini_stack/lab.h", "symbol": "tcpip_linux_l03_result"}
+      ]
+    },
+    {
+      "id": "mini-stack-safety",
+      "type": "safety_boundary",
+      "heading": "Safety, provenance, and non-goals",
+      "payload": {
+        "allowed": [
+          "A userspace teaching model using a local AF_UNIX socket pair as a simulated wire",
+          "Complete synthetic Ethernet frames inside the local process",
+          "Independently authored course code using documented userspace interfaces"
+        ],
+        "excluded": [
+          "Internet or packet sockets, root access, interface changes, traffic outside the local process, or kernel mutation",
+          "MTUs, NIC queues, congestion, real packet loss, full RFC conformance, fragmentation, IPv6, NAT, TLS, persistence, or concurrent endpoints",
+          "Interpreting virtual_elapsed_ms as a latency benchmark or pasting Linux kernel code into the lab"
+        ]
+      }
+    }
+  ]
+}

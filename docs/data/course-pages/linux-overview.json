@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "catalog_key": "linux-overview",
+  "components": [
+    {
+      "id": "linux-hero",
+      "type": "page_hero",
+      "heading": "Optional Linux implementation track",
+      "payload": {
+        "title": "Optional Linux implementation track",
+        "summary": "Four optional Linux-only labs connect the portable C17 course to selected Linux networking interfaces and implementation boundaries without making kernel internals a prerequisite.",
+        "badges": ["Linux only", "Unprivileged", "Local tests", "Pinned v6.6 source study"],
+        "actions": [
+          {"label": "Build student labs", "href": "#prerequisites-and-workflow"},
+          {"label": "Start Lab 01", "href": "01_epoll_event_loop/README.md"}
+        ]
+      },
+      "provenance": [
+        {"path": "scripts/course_catalog.py", "symbol": "LINUX_LABS"},
+        {"path": "CMakePresets.json", "symbol": "linux-student"}
+      ]
+    },
+    {
+      "id": "linux-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and workflow",
+      "payload": {
+        "prerequisites": [
+          "Ubuntu or a comparable Linux environment",
+          "GCC or Clang, CMake 3.25 or newer, and CTest",
+          "System Linux UAPI headers",
+          "No root access, namespace setup, virtual interface, packet capture, raw socket, or internet connection"
+        ],
+        "outcomes": [
+          "Use stable Linux user-space interfaces before studying internal implementation paths",
+          "Run deterministic, local, unprivileged tests for each optional lab",
+          "Recognize UAPI headers as contracts and internal kernel files as implementation references"
+        ]
+      }
+    },
+    {
+      "id": "linux-curriculum",
+      "type": "curriculum_cards",
+      "heading": "Labs",
+      "payload": {
+        "items": [
+          {"label": "epoll Event Loop", "href": "01_epoll_event_loop/README.md", "description": "Readiness, framing, deadlines, and descriptor ownership.", "meta": ["Linux Lab 01", "epoll"]},
+          {"label": "TCP_INFO", "href": "02_tcp_info/README.md", "description": "Loopback TCP observation through versioned Linux UAPI data.", "meta": ["Linux Lab 02", "UAPI"]},
+          {"label": "Userspace Mini-Stack", "href": "03_userspace_mini_stack/README.md", "description": "Deterministic routing, TCP, IPv4, Ethernet, and diagnostics over a local Unix socket pair.", "meta": ["Linux Lab 03", "model"]},
+          {"label": "Kernel Source Walkthrough", "href": "04_kernel_source_walkthrough/README.md", "description": "Authored ingress and egress reading paths through pinned Linux v6.6 source.", "meta": ["Linux Lab 04", "source study"]}
+        ]
+      },
+      "provenance": [
+        {"path": "scripts/course_catalog.py", "symbol": "LINUX_LABS"}
+      ]
+    },
+    {
+      "id": "linux-safety",
+      "type": "safety_boundary",
+      "heading": "Safety boundary",
+      "payload": {
+        "allowed": [
+          "Deterministic buffers and ordinary unprivileged Linux APIs",
+          "Loopback with ephemeral ports when a socket is necessary",
+          "Pinned source links for study and provenance"
+        ],
+        "excluded": [
+          "Raw and packet sockets, packet-capture tools, process execution, and wildcard listeners",
+          "TUN/TAP devices, namespace or privilege-changing APIs, fork, clone, and external numeric endpoints",
+          "Copying Linux kernel source, comments, tables, or snapshots into this MIT-licensed repository"
+        ]
+      }
+    }
+  ]
+}

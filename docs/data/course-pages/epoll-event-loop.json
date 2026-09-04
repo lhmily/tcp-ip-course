@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "catalog_key": "epoll-event-loop",
+  "components": [
+    {
+      "id": "epoll-hero",
+      "type": "page_hero",
+      "heading": "Linux Lab 01: A Correct epoll Echo Loop",
+      "payload": {
+        "title": "A Correct epoll Echo Loop",
+        "summary": "Build a one-connection Linux event loop that preserves application state while readiness notifications, partial I/O, peer shutdown, signals, and a deadline compete.",
+        "badges": ["Linux Lab 01", "epoll", "Unix socketpair tests", "No heap allocation"],
+        "actions": [
+          {"label": "Review public contract", "href": "#public-contract"},
+          {"label": "Run Linux labs", "href": "https://github.com/lhmily/tcp-ip-course/blob/main/linux_labs/README.md#prerequisites-and-workflow"}
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/01_epoll_event_loop/lab.h", "symbol": "tcpip_linux_l01_echo"},
+        {"path": "linux_labs/01_epoll_event_loop/lab.h", "symbol": "tcpip_linux_l01_set_nonblocking"}
+      ]
+    },
+    {
+      "id": "epoll-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and learning goals",
+      "payload": {
+        "prerequisites": [
+          "Complete the stream-socket and TCP reliability lessons first",
+          "Understand that TCP streams do not preserve message boundaries",
+          "Understand that send may consume fewer bytes than requested",
+          "Build only on Linux with TCPIP_BUILD_LINUX_LABS enabled"
+        ],
+        "outcomes": [
+          "Explain why edge-triggered code drains an operation to EAGAIN",
+          "Use a bounded work quantum for level-triggered readiness",
+          "Keep unread input and unsent output as separate state"
+        ]
+      }
+    },
+    {
+      "id": "epoll-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement exercise.c without changing lab.h or the tests. Validate arguments, initialize stats before early returns, use fixed local storage, preserve descriptor flags, and treat EINTR as a retry without resetting the absolute deadline.",
+        "reference": "Compare against the reference implementation through the linux-reference preset after the starter compiles.",
+        "checks": [
+          "Large level-triggered and edge-triggered echoes preserve content and byte counts",
+          "Descriptor flags are restored and the temporary epoll descriptor does not leak",
+          "Edge-triggered paths record completed nonblocking drains",
+          "Zero-length work, invalid descriptors, invalid triggers, null stats, negative timeouts, EOF, truncation, and bounded timeout are deterministic"
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/01_epoll_event_loop/test.c", "symbol": "test_large_echo"},
+        {"path": "linux_labs/01_epoll_event_loop/test.c", "symbol": "tcpip_linux_l01_echo"}
+      ]
+    },
+    {
+      "id": "epoll-safety",
+      "type": "safety_boundary",
+      "heading": "Safety notes and non-goals",
+      "payload": {
+        "allowed": [
+          "A one-connection teaching loop using a caller-owned connected descriptor",
+          "Local Unix socketpair endpoints in tests",
+          "MSG_NOSIGNAL to suppress SIGPIPE for individual sends"
+        ],
+        "excluded": [
+          "Changing process signal disposition or closing the caller's socket",
+          "An accept loop, connection table, cancellation API, TLS, or application framing protocol",
+          "Promises to echo bytes beyond the requested boundary or diagnose application messages"
+        ]
+      }
+    }
+  ]
+}

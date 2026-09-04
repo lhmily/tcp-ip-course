@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "catalog_key": "kernel-source-walkthrough",
+  "components": [
+    {
+      "id": "kernel-walkthrough-hero",
+      "type": "page_hero",
+      "heading": "Linux Lab 04: Kernel source walkthrough, pinned to v6.6",
+      "payload": {
+        "title": "Kernel source walkthrough, pinned to v6.6",
+        "summary": "Navigate two authored Linux v6.6 source-reading routes for TCP ingress and egress, then cross the TCP_INFO UAPI boundary without copying or executing kernel code.",
+        "badges": ["Linux Lab 04", "Pinned v6.6", "Source study", "No kernel code copied"],
+        "actions": [
+          {"label": "Open source explorer", "href": "#interactive-source-explorer"},
+          {"label": "Review source index", "href": "#source-index"}
+        ]
+      },
+      "provenance": [
+        {"path": "docs/data/linux-v6.6-walkthrough.json", "symbol": "symbols"},
+        {"path": "linux_labs/04_kernel_source_walkthrough/lab.h", "symbol": "tcpip_linux_l04_symbol_by_id"}
+      ]
+    },
+    {
+      "id": "kernel-walkthrough-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Mental model",
+      "payload": {
+        "prerequisites": [
+          "Comfort reading C signatures, return contracts, and failure paths",
+          "Awareness that sk_buff, socket state, route callbacks, hooks, and UAPI copies cross different ownership boundaries",
+          "Understanding that authored reading edges can be direct calls, callbacks, continuations, or observation boundaries"
+        ],
+        "outcomes": [
+          "Follow ingress from receive core through IPv4 local delivery to TCP acknowledgement processing",
+          "Follow egress from sock_sendmsg through TCP write queues, IPv4 output, and device queueing",
+          "Compare tcp_get_info with struct tcp_info and explain option-length handling"
+        ]
+      },
+      "provenance": [
+        {"path": "docs/data/linux-v6.6-walkthrough.json", "symbol": "routes"},
+        {"path": "docs/data/linux-v6.6-walkthrough.json", "symbol": "uapi_boundary"}
+      ]
+    },
+    {
+      "id": "kernel-walkthrough-contract",
+      "type": "exercise_test_contract",
+      "heading": "Staged exercise checklist",
+      "payload": {
+        "exercise": "Complete the static C index and directed-edge validator in exercise.c without downloading source or adding generated files. Keep data static and immutable so calls require no allocation or global mutation.",
+        "reference": "The generated walkthrough data defines the exact ingress and egress ID arrays, symbol metadata, source URLs, and UAPI bridge records used by the reference implementation.",
+        "checks": [
+          "Unique IDs and exact ingress and egress sequences are required",
+          "Unknown, reversed, skipped, and non-adjacent teaching edges are rejected",
+          "URLs are HTTPS links pinned to /v6.6/ and capacity queries produce no partial URL",
+          "The CLI handles list, route, symbol lookup, unknown options, unknown keys, and extra arguments deterministically"
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/04_kernel_source_walkthrough/test.c", "symbol": "tcpip_linux_l04_expected_ingress"},
+        {"path": "linux_labs/04_kernel_source_walkthrough/test.c", "symbol": "tcpip_linux_l04_expected_egress"}
+      ]
+    },
+    {
+      "id": "kernel-walkthrough-safety",
+      "type": "safety_boundary",
+      "heading": "GPL provenance, safety, and non-goals",
+      "payload": {
+        "allowed": [
+          "Pinned links to Linux v6.6 source for study and provenance",
+          "Independently authored navigation metadata, descriptions, validators, and CLI output",
+          "Unprivileged offline source navigation and option-boundary reasoning"
+        ],
+        "excluded": [
+          "Copying Linux kernel function bodies, comment blocks, tables, source snapshots, or generated files into this repository",
+          "Network access, module loading, tracing, probing, privileged operation, or kernel modification",
+          "Treating the validator as a call-graph analyzer or modeling every ingress or egress branch, UDP, IPv6, forwarding, raw sockets, XDP, offload, retransmission details, or lock ordering"
+        ]
+      },
+      "provenance": [
+        {"path": "docs/data/linux-v6.6-walkthrough.json", "symbol": "v6.6"}
+      ]
+    }
+  ]
+}

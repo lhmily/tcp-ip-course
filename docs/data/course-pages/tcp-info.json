@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "catalog_key": "tcp-info",
+  "components": [
+    {
+      "id": "tcp-info-hero",
+      "type": "page_hero",
+      "heading": "Linux Lab 02: Reading TCP_INFO Safely",
+      "payload": {
+        "title": "Reading TCP_INFO Safely",
+        "summary": "Capture a narrow course-owned TCP snapshot from Linux TCP_INFO, copy only fields covered by the returned option length, and map observations into the course state model.",
+        "badges": ["Linux Lab 02", "TCP_INFO", "UAPI hygiene", "Loopback only"],
+        "actions": [
+          {"label": "Review snapshot contract", "href": "#snapshot-and-api-contract"},
+          {"label": "Run Linux labs", "href": "https://github.com/lhmily/tcp-ip-course/blob/main/linux_labs/README.md#prerequisites-and-workflow"}
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_capture"},
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_check_invariants"}
+      ]
+    },
+    {
+      "id": "tcp-info-prerequisites",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and learning goals",
+      "payload": {
+        "prerequisites": [
+          "Review Lesson 7's state model and the stream-socket lesson",
+          "Know the roles of MSS, unacknowledged segments, loss, retransmission, RTT, RTT variation, and congestion-control state",
+          "Use Linux headers and a Linux kernel implementing TCP_INFO",
+          "No elevated capabilities, packet capture, external network access, fixed port, or timing tool"
+        ],
+        "outcomes": [
+          "Treat returned socklen_t as the boundary for every copied field",
+          "Use presence bits so zero is not confused with absence",
+          "Check stable invariants without depending on volatile performance values"
+        ]
+      }
+    },
+    {
+      "id": "tcp-info-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement exercise.c by zeroing struct tcp_info, initializing socklen_t to the full structure size, checking every field by offset and size, rejecting unsupported sockets cleanly, and avoiding retained pointers, allocation, or global state.",
+        "reference": "Compare against the linux-reference preset, which copies into the public course snapshot and maps Linux states to the Lesson 7 vocabulary.",
+        "checks": [
+          "Loopback client and server endpoints map to established with required fields present",
+          "MSS and RTT observations are present and nonzero when covered by the returned structure",
+          "Listener state mapping, unknown state handling, and Unix socketpair rejection are deterministic",
+          "Synthetic snapshots report documented violation bits without turning invariant failures into system errors"
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/02_tcp_info/test.c", "symbol": "tcpip_linux_l02_capture"},
+        {"path": "linux_labs/02_tcp_info/test.c", "symbol": "tcpip_linux_l02_map_state"}
+      ]
+    },
+    {
+      "id": "tcp-info-safety",
+      "type": "safety_boundary",
+      "heading": "Safety notes and non-goals",
+      "payload": {
+        "allowed": [
+          "Immediate, observational TCP_INFO snapshots",
+          "Loopback IPv4 sockets bound to port zero",
+          "A narrow course-owned representation independent of struct tcp_info"
+        ],
+        "excluded": [
+          "Using snapshots as synchronization, congestion-control interfaces, or predictions of the next packet",
+          "Parsing /proc, invoking ss, exposing unstable new kernel fields, or benchmarking loopback",
+          "Exact RTT, RTT variance, congestion window, queue counter, or endpoint-equality assertions"
+        ]
+      }
+    }
+  ]
+}

@@ -1,8 +1,10 @@
+<!-- COURSE_COMPONENT:course-hero START -->
 # TCP/IP Course in C17
 
 Learn TCP/IP by reading bytes, modeling protocol state, and writing small portable C17 programs. The 12 portable core lessons move upward through the stack—from representation and local links to IPv4, transport, applications, routing, and integrated diagnostics. Four optional Linux implementation labs then connect those models to pinned kernel interfaces and source boundaries. C is the course language; Python 3.14, uv, MkDocs Material, pytest, and Ruff exist only to build and validate the documentation and repository contracts.
 
 [Read the course site](https://lhmily.github.io/tcp-ip-course/) · [lhmily home](https://lhmily.github.io/) · [Source](https://github.com/lhmily/tcp-ip-course)
+<!-- COURSE_COMPONENT:course-hero END -->
 
 ![TCP/IP course progression](docs/assets/tcp-ip-overview.svg)
 
@@ -29,6 +31,7 @@ Each lesson contains the same six-file learning contract: an illustrated `README
 | Applications | 8–10 | POSIX streams, DNS, HTTP framing |
 | Networks in practice | 11–12 | Routing, NAT, offline diagnostics |
 
+<!-- COURSE_COMPONENT:course-prerequisites START -->
 ## Requirements
 
 - A C17 compiler (Clang or GCC)
@@ -37,6 +40,9 @@ Each lesson contains the same six-file learning contract: an illustrated `README
 - Git
 
 Windows is not a supported native target for the POSIX socket exercises. A Linux environment such as WSL can be used instead. Python is not required to complete the C lessons; it is required only for maintainers who run repository and documentation tooling.
+
+By the end of the course, you will be able to decode protocol bytes without mapping wire data onto C structs, model bounds and ownership explicitly, and compose parsers and local socket exercises into deterministic diagnostics.
+<!-- COURSE_COMPONENT:course-prerequisites END -->
 
 ## Learner workflow
 
@@ -64,12 +70,15 @@ cmake --build --preset sanitize
 ctest --preset sanitize
 ```
 
+<!-- COURSE_COMPONENT:course-safety START -->
 ## Safety and network boundaries
 
 The course is designed for safe, deterministic local study. Packet lessons operate on in-memory fixtures. Socket lessons bind only to loopback, use operating-system-assigned ephemeral ports, and communicate within one test process or machine. Exercises do not require internet access, elevated privileges, packet capture, raw or packet sockets, process execution, wildcard listeners, TUN/TAP devices, network namespaces, `fork`/`clone`, or traffic sent to third-party hosts. Do not adapt examples to inspect or contact systems you do not own or have explicit permission to test.
 
 A deliberate non-goal is production networking software. The examples teach protocol representation, invariants, and defensive C techniques; they omit production concerns such as TLS, authentication, event-loop scale, adversarial deployment hardening, and broad platform abstraction.
+<!-- COURSE_COMPONENT:course-safety END -->
 
+<!-- COURSE_COMPONENT:core-curriculum START -->
 ## Curriculum
 
 ### Foundations
@@ -98,6 +107,7 @@ A deliberate non-goal is production networking software. The examples teach prot
 
 11. [Routing and NAT](lessons/11_routing_nat/README.md) — longest-prefix match, forwarding decisions, mappings, and expiry.
 12. [Diagnostics and Integration](lessons/12_diagnostics_integration/README.md) — composing parsers and explaining failures across layers from offline fixtures.
+<!-- COURSE_COMPONENT:core-curriculum END -->
 
 ## Optional Linux implementation track
 

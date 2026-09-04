@@ -1,3 +1,4 @@
+<!-- COURSE_COMPONENT:kernel-walkthrough-hero START -->
 # Linux Lab 04: Kernel source walkthrough, pinned to v6.6
 
 ```text
@@ -19,6 +20,10 @@ BPF, namespaces, offloads, queueing, and architecture details can change real ex
 Every source link is pinned to the immutable Linux `v6.6` tag so the reading exercise
 remains reproducible.
 
+[Open the source explorer](#interactive-source-explorer) · [Review the source index](#source-index)
+<!-- COURSE_COMPONENT:kernel-walkthrough-hero END -->
+
+<!-- COURSE_COMPONENT:kernel-walkthrough-prerequisites START -->
 ## Mental model
 
 Read each route as four questions repeated at every stop:
@@ -28,6 +33,10 @@ Read each route as four questions repeated at every stop:
 3. **What boundary was crossed?** Device, IP, transport, socket, hook, or UAPI.
 4. **Why is the next edge valid?** It may be a direct call, callback, continuation, or
    authored conceptual handoff rather than the next C stack frame.
+
+Use those questions to follow ingress to acknowledgement processing, egress to device
+queueing, and the `tcp_get_info` observation bridge to `struct tcp_info`.
+<!-- COURSE_COMPONENT:kernel-walkthrough-prerequisites END -->
 
 <div class="kernel-walkthrough-legend" aria-label="Walkthrough legend">
   <span><i class="kw-legend-line kw-edge-direct" aria-hidden="true"></i> direct call</span>
@@ -216,6 +225,7 @@ the source README intentionally does not duplicate that generated table.
 
 <!-- L04_SOURCE_TABLE -->
 
+<!-- COURSE_COMPONENT:kernel-walkthrough-contract START -->
 ## Staged exercise checklist
 
 - [ ] **Orientation:** Explain why this authored route is not a universal runtime call
@@ -239,7 +249,9 @@ require unique IDs, the exact two sequences, rejection of unknown, reversed, and
 paths, HTTPS URLs pinned to `/v6.6/`, no partial writes on capacity queries, CLI usage
 errors for unknown options or extra arguments, and the `tcp_get_info` bridge. Keep the
 data static and immutable so calls require no allocation or global mutation.
+<!-- COURSE_COMPONENT:kernel-walkthrough-contract END -->
 
+<!-- COURSE_COMPONENT:kernel-walkthrough-safety START -->
 ## GPL provenance, safety, and non-goals
 
 Linux v6.6 source is copyrighted by its contributors and distributed under
@@ -265,3 +277,4 @@ treat the path validator as a call-graph analyzer. Rejecting a skipped pair mean
 adjacent teaching edge”; accepting an edge means “follow this next while reading v6.6.”
 That narrow contract keeps source-study expectations precise, offline, testable, and
 reviewable without pretending a configurable kernel has one universal execution trace.
+<!-- COURSE_COMPONENT:kernel-walkthrough-safety END -->
