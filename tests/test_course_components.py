@@ -213,6 +213,40 @@ def test_state_timeline_and_routing_models_match_native_contracts():
     assert {item["payload"]["first_port"] for item in nat_components} == {40000, 45000, 50000}
 
 
+def test_diagnostics_and_linux_models_match_native_contracts():
+    diagnostics = component_payload("diagnostics-integration", "diagnostics_explorer")
+    assert len(diagnostics["cases"]) == 10
+    assert {case["status"] for case in diagnostics["cases"]} >= {
+        "TCPIP_L12_OK",
+        "TCPIP_L12_MALFORMED",
+        "TCPIP_L12_TRUNCATED",
+    }
+
+    epoll_state = component_payload("epoll-event-loop", "state_machine")
+    epoll_timeline = component_payload("epoll-event-loop", "socket_timeline")
+    epoll_stats = component_payload("epoll-event-loop", "transition_table")
+    assert len(epoll_state["states"]) == 6
+    assert len(epoll_state["events"]) == 9
+    assert len(epoll_state["transitions"]) == 9
+    assert len(epoll_timeline["events"]) == 11
+    assert len(epoll_stats["rows"]) == 8
+
+    tcp_info = component_payload("tcp-info", "linux_uapi_view")
+    tcp_states = component_payload("tcp-info", "transition_table")
+    assert len(tcp_info["fields"]) == 10
+    assert len(tcp_info["invariants"]) == 7
+    assert len(tcp_states["rows"]) == 13
+
+    mini_timeline = component_payload("userspace-mini-stack", "socket_timeline")
+    mini_routes = component_payload("userspace-mini-stack", "routing_table")
+    mini_diagnostics = component_payload("userspace-mini-stack", "diagnostics_explorer")
+    assert len(mini_timeline["lanes"]) == 6
+    assert len(mini_timeline["events"]) == 11
+    assert len(mini_routes["routes"]) == 2
+    assert len(mini_routes["cases"]) == 4
+    assert len(mini_diagnostics["cases"]) == 4
+
+
 def test_component_manifest_is_current():
     assert OUTPUT.is_file()
     assert OUTPUT.read_bytes() == expected_manifest()

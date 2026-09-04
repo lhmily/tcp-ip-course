@@ -292,6 +292,45 @@ def render_nat_table(component: Component) -> str:
     return _section(component, body, "nat")
 
 
+def render_diagnostics_explorer(component: Component) -> str:
+    cards: list[str] = []
+    for case in component.payload["cases"]:
+        status = html.escape(case["status"])
+        status_attribute = html.escape(case["status"], quote=True)
+        layers = " → ".join(html.escape(layer) for layer in case["layers"])
+        diagnostics = ", ".join(html.escape(item) for item in case["diagnostics"]) or "none"
+        cards.append(
+            f'<article class="diagnostic-case" data-status="{status_attribute}">'
+            f"<h3>{html.escape(case['label'])}</h3>"
+            f"<p>{html.escape(case['summary'])}</p>"
+            f"<p><strong>Status:</strong> <code>{status}</code></p>"
+            f"<p><strong>Layers:</strong> {layers}</p>"
+            f"<p><strong>Diagnostics:</strong> {diagnostics}</p>"
+            f"<p><strong>Checksums:</strong> {case['checksums_valid']}/"
+            f"{case['checksums_checked']} valid</p></article>"
+        )
+    body = f'<div class="diagnostic-grid">{"".join(cards)}</div>'
+    return _section(component, body, "diagnostics")
+
+
+def render_linux_uapi_view(component: Component) -> str:
+    fields = "".join(
+        f"<tr><td><code>{html.escape(field['name'])}</code></td>"
+        f"<td>{html.escape(field['presence'])}</td><td>{html.escape(field['meaning'])}</td></tr>"
+        for field in component.payload["fields"]
+    )
+    invariants = "".join(
+        f"<li>{html.escape(item)}</li>" for item in component.payload["invariants"]
+    )
+    body = (
+        f"<p>{html.escape(component.payload['title'])}</p>"
+        '<div class="component-table" role="region" aria-label="Linux UAPI fields" tabindex="0">'
+        f"<table><thead><tr><th>Field</th><th>Presence</th><th>Meaning</th></tr></thead>"
+        f'<tbody>{fields}</tbody></table></div><ul class="uapi-invariants">{invariants}</ul>'
+    )
+    return _section(component, body, "uapi")
+
+
 RENDERERS: dict[str, Callable[[Component], str]] = {
     "page_hero": render_page_hero,
     "prerequisites_outcomes": render_prerequisites_outcomes,
@@ -304,6 +343,8 @@ RENDERERS: dict[str, Callable[[Component], str]] = {
     "socket_timeline": render_socket_timeline,
     "routing_table": render_routing_table,
     "nat_table": render_nat_table,
+    "diagnostics_explorer": render_diagnostics_explorer,
+    "linux_uapi_view": render_linux_uapi_view,
     "exercise_test_contract": render_exercise_test_contract,
     "safety_boundary": render_safety_boundary,
 }

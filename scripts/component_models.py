@@ -268,6 +268,62 @@ def _validate_decision_payload(component_type: str, payload: dict[str, Any], lab
             _nonempty_string(step["input"], f"{item_label}.input")
             _nonempty_string(step["output"], f"{item_label}.output")
             _nonempty_string(step["status"], f"{item_label}.status")
+    elif component_type == "diagnostics_explorer":
+        _exact_keys(payload, {"cases"}, f"{label}.payload")
+        cases = payload["cases"]
+        if not isinstance(cases, list) or not cases:
+            raise ComponentModelError(f"{label}.payload.cases must be non-empty array")
+        ids: set[str] = set()
+        for index, case in enumerate(cases):
+            item_label = f"{label}.payload.cases[{index}]"
+            if not isinstance(case, dict):
+                raise ComponentModelError(f"{item_label} must be object")
+            _exact_keys(
+                case,
+                {
+                    "id",
+                    "label",
+                    "status",
+                    "layers",
+                    "diagnostics",
+                    "checksums_checked",
+                    "checksums_valid",
+                    "summary",
+                },
+                item_label,
+            )
+            case_id = _nonempty_string(case["id"], f"{item_label}.id")
+            if case_id in ids:
+                raise ComponentModelError(f"{label}: duplicate diagnostic case {case_id!r}")
+            ids.add(case_id)
+            _nonempty_string(case["label"], f"{item_label}.label")
+            _nonempty_string(case["status"], f"{item_label}.status")
+            _nonempty_string(case["summary"], f"{item_label}.summary")
+            if not isinstance(case["layers"], list) or not case["layers"]:
+                raise ComponentModelError(f"{item_label}.layers must be non-empty array")
+            if not isinstance(case["diagnostics"], list):
+                raise ComponentModelError(f"{item_label}.diagnostics must be array")
+            checked = _integer(case["checksums_checked"], f"{item_label}.checksums_checked")
+            valid = _integer(case["checksums_valid"], f"{item_label}.checksums_valid")
+            if valid > checked:
+                raise ComponentModelError(f"{item_label}: valid checksums exceed checked")
+    elif component_type == "linux_uapi_view":
+        _exact_keys(payload, {"title", "fields", "invariants"}, f"{label}.payload")
+        _nonempty_string(payload["title"], f"{label}.payload.title")
+        if not isinstance(payload["fields"], list) or not payload["fields"]:
+            raise ComponentModelError(f"{label}.payload.fields must be non-empty array")
+        for index, field in enumerate(payload["fields"]):
+            item_label = f"{label}.payload.fields[{index}]"
+            if not isinstance(field, dict):
+                raise ComponentModelError(f"{item_label} must be object")
+            _exact_keys(field, {"name", "presence", "meaning"}, item_label)
+            _nonempty_string(field["name"], f"{item_label}.name")
+            _nonempty_string(field["presence"], f"{item_label}.presence")
+            _nonempty_string(field["meaning"], f"{item_label}.meaning")
+        if not isinstance(payload["invariants"], list) or not payload["invariants"]:
+            raise ComponentModelError(f"{label}.payload.invariants must be non-empty array")
+        for index, invariant in enumerate(payload["invariants"]):
+            _nonempty_string(invariant, f"{label}.payload.invariants[{index}]")
 
 
 def load_page_model(path: Path, *, root: Path, catalog_keys: set[str]) -> PageModel:
@@ -315,6 +371,8 @@ def load_page_model(path: Path, *, root: Path, catalog_keys: set[str]) -> PageMo
             "socket_timeline",
             "routing_table",
             "nat_table",
+            "diagnostics_explorer",
+            "linux_uapi_view",
         }:
             _validate_decision_payload(component_type, item["payload"], label)
         components.append(

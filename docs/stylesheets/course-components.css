@@ -136,6 +136,17 @@
 .routing-cases { display: grid; gap: .5rem; }
 .routing-cases li { display: grid; grid-template-columns: minmax(9rem, 1fr) 1fr 1fr; gap: .6rem; padding: .55rem; border: 1px solid var(--course-line); }
 .nat-summary { padding: .7rem; border-left: .3rem solid var(--course-green); background: var(--course-bg); }
+.diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+  gap: .75rem;
+}
+.diagnostic-case { padding: .8rem; border: 1px solid var(--course-line); border-radius: .55rem; background: var(--course-bg); }
+.diagnostic-case h3 { margin-top: 0; }
+.diagnostic-case[data-status*="MALFORMED"],
+.diagnostic-case[data-status*="TRUNCATED"] { border-left: .3rem solid var(--course-orange); }
+.diagnostic-case p { margin: .35rem 0; }
+.uapi-invariants { display: grid; gap: .45rem; }
 .course-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));

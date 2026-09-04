@@ -43,12 +43,14 @@
       "component_ids": [
         "diagnostics-integration-hero",
         "diagnostics-integration-prerequisites-outcomes",
+        "diagnostics-integration-explorer",
         "diagnostics-integration-exercise-test",
         "diagnostics-integration-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "diagnostics_explorer",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -79,12 +81,18 @@
       "component_ids": [
         "epoll-hero",
         "epoll-prerequisites",
+        "epoll-state-machine",
+        "epoll-large-echo-timeline",
+        "epoll-statistics",
         "epoll-contract",
         "epoll-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "state_machine",
+        "socket_timeline",
+        "transition_table",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -251,12 +259,16 @@
       "component_ids": [
         "tcp-info-hero",
         "tcp-info-prerequisites",
+        "tcp-info-uapi-view",
+        "tcp-info-state-map",
         "tcp-info-contract",
         "tcp-info-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "linux_uapi_view",
+        "transition_table",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -331,12 +343,18 @@
       "component_ids": [
         "mini-stack-hero",
         "mini-stack-prerequisites",
+        "mini-stack-fault-timeline",
+        "mini-stack-route-table",
+        "mini-stack-diagnostics",
         "mini-stack-contract",
         "mini-stack-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "socket_timeline",
+        "routing_table",
+        "diagnostics_explorer",
         "exercise_test_contract",
         "safety_boundary"
       ]
