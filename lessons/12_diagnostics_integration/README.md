@@ -61,6 +61,23 @@ The report exposes an ordered `layers` array, a diagnostic bit mask, frame/parse
 
 **What to notice:** a report remains useful on failure. Its ordered path shows how far parsing progressed, and `parsed_length` identifies the boundary reached without claiming that missing bytes existed.
 
+<!-- COURSE_COMPONENT:diagnostics-integration-explorer START -->
+### Diagnostic fixture explorer
+
+| Case | Status | Ordered layers | Diagnostics | Checksums (valid/checked) | Native result |
+|---|---|---|---|---:|---|
+| ARP request | `TCPIP_L12_OK` | `ethernet → arp` | none | 0/0 | Opcode 1; the complete 42-byte frame is parsed without checksum work. |
+| ICMP echo request | `TCPIP_L12_OK` | `ethernet → ipv4 → icmp` | none | 2/2 | Type 8; the IPv4 and ICMP checksums are valid. |
+| DNS query | `TCPIP_L12_OK` | `ethernet → ipv4 → udp → dns` | none | 2/2 | Port `53000 → 53`; query `0x1a2b` contains one `example.com` A question. |
+| HTTP request | `TCPIP_L12_OK` | `ethernet → ipv4 → tcp → http` | none | 2/2 | Port `49152 → 80`; the complete message is `GET / HTTP/1.1` for `example.test`. |
+| Flipped HTTP payload byte | `TCPIP_L12_OK` | `ethernet → ipv4 → tcp → http` | `CHECKSUM_MISMATCH`, `TRANSPORT_CHECKSUM` | 1/2 | The complete HTTP path remains available, but only the TCP checksum is invalid. |
+| Short IPv4 header | `TCPIP_L12_TRUNCATED` | `ethernet → ipv4` | `TRUNCATED` | 0/0 | Only four IPv4 bytes follow Ethernet, so the partial path is preserved. |
+| Impossible IPv4 total length | `TCPIP_L12_MALFORMED` | `ethernet → ipv4` | `MALFORMED` | 0/0 | Total length 19 cannot contain the 20-byte IPv4 header. |
+| Shorter UDP declaration | `TCPIP_L12_MALFORMED` | `ethernet → ipv4 → udp` | `MALFORMED` | 1/1 | UDP declares one byte less than the IPv4 payload; only the valid IPv4 checksum is counted. |
+| TCP without application data | `TCPIP_L12_OK` | `ethernet → ipv4 → tcp` | `UNSUPPORTED` | 2/2 | The valid port-80 segment has no payload, so no HTTP layer is appended. |
+| Unsupported EtherType | `TCPIP_L12_OK` | `ethernet` | `UNSUPPORTED` | 0/0 | EtherType `0x86dd` is complete but outside this parser. |
+<!-- COURSE_COMPONENT:diagnostics-integration-explorer END -->
+
 ## Algorithm and state transitions
 
 1. Validate pointers and clear the caller-owned report.

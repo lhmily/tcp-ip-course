@@ -70,6 +70,204 @@
       ]
     },
     {
+      "id": "diagnostics-integration-explorer",
+      "type": "diagnostics_explorer",
+      "heading": "Diagnostic fixture explorer",
+      "payload": {
+        "cases": [
+          {
+            "id": "arp-request",
+            "label": "ARP request",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "arp"
+            ],
+            "diagnostics": [],
+            "checksums_checked": 0,
+            "checksums_valid": 0,
+            "summary": "An Ethernet ARP request reports opcode 1 and the complete 42-byte frame without checksum work."
+          },
+          {
+            "id": "icmp-echo-request",
+            "label": "ICMP echo request",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "icmp"
+            ],
+            "diagnostics": [],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "The IPv4 header and ICMP echo request are complete; type 8 and both checksums are valid."
+          },
+          {
+            "id": "dns-query",
+            "label": "DNS query",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "udp",
+              "dns"
+            ],
+            "diagnostics": [],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "UDP port 53000 to 53 carries DNS query 0x1a2b with one example.com A question."
+          },
+          {
+            "id": "http-request",
+            "label": "HTTP request",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "tcp",
+              "http"
+            ],
+            "diagnostics": [],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "TCP port 49152 to 80 carries a complete GET / HTTP/1.1 request for example.test."
+          },
+          {
+            "id": "flipped-http-payload",
+            "label": "Flipped HTTP payload byte",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "tcp",
+              "http"
+            ],
+            "diagnostics": [
+              "CHECKSUM_MISMATCH",
+              "TRANSPORT_CHECKSUM"
+            ],
+            "checksums_checked": 2,
+            "checksums_valid": 1,
+            "summary": "Flipping one HTTP payload byte preserves the complete HTTP path but invalidates only the TCP checksum."
+          },
+          {
+            "id": "short-ipv4-header",
+            "label": "Short IPv4 header",
+            "status": "TCPIP_L12_TRUNCATED",
+            "layers": [
+              "ethernet",
+              "ipv4"
+            ],
+            "diagnostics": [
+              "TRUNCATED"
+            ],
+            "checksums_checked": 0,
+            "checksums_valid": 0,
+            "summary": "Only four IPv4 bytes follow Ethernet, so the report preserves the partial path and marks truncation."
+          },
+          {
+            "id": "impossible-ipv4-total-length",
+            "label": "Impossible IPv4 total length",
+            "status": "TCPIP_L12_MALFORMED",
+            "layers": [
+              "ethernet",
+              "ipv4"
+            ],
+            "diagnostics": [
+              "MALFORMED"
+            ],
+            "checksums_checked": 0,
+            "checksums_valid": 0,
+            "summary": "IPv4 declares 19 total bytes for a 20-byte header, an impossible length rejected before checksums."
+          },
+          {
+            "id": "shorter-udp-declaration",
+            "label": "Shorter UDP declaration",
+            "status": "TCPIP_L12_MALFORMED",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "udp"
+            ],
+            "diagnostics": [
+              "MALFORMED"
+            ],
+            "checksums_checked": 1,
+            "checksums_valid": 1,
+            "summary": "UDP declares one byte less than the IPv4 payload window, so only the valid IPv4 checksum is counted."
+          },
+          {
+            "id": "tcp-without-application-data",
+            "label": "TCP without application data",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet",
+              "ipv4",
+              "tcp"
+            ],
+            "diagnostics": [
+              "UNSUPPORTED"
+            ],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "A valid TCP segment to port 80 has no payload, so it stops before HTTP and reports unsupported application data."
+          },
+          {
+            "id": "unsupported-ethertype",
+            "label": "Unsupported EtherType",
+            "status": "TCPIP_L12_OK",
+            "layers": [
+              "ethernet"
+            ],
+            "diagnostics": [
+              "UNSUPPORTED"
+            ],
+            "checksums_checked": 0,
+            "checksums_valid": 0,
+            "summary": "EtherType 0x86dd is complete but outside this parser, so diagnosis succeeds with only Ethernet recorded."
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/12_diagnostics_integration/lesson.h",
+          "symbol": "tcpip_l12_report"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/lesson.h",
+          "symbol": "tcpip_l12_diagnostic"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_arp"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_icmp"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_dns_and_format"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_http_and_flipped_payload"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_udp_exact_length"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_tcp_and_ipv4_reserved_fields"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "test_diagnostics"
+        }
+      ]
+    },
+    {
       "id": "diagnostics-integration-exercise-test",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",
