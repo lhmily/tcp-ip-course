@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-hero START -->
 # Lesson 01: Bytes, addressing, and checksums
 
+| Lesson track | Structured fallback |
+|---|---|
+| Foundations | Decode bytes, IPv4 text, prefixes, and Internet checksums with explicit C17 bounds. |
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-hero END -->
+
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can decode and encode a 16-bit network-order integer without depending on host byte order, parse a length-delimited IPv4 address, decide whether an address belongs to a prefix, and compute the 16-bit Internet checksum. You will also practice an API discipline used throughout the course: every buffer has an explicit size, every result uses a checked output parameter, and a failed operation leaves a predictable result.
@@ -7,6 +14,7 @@ By the end of this lesson, you can decode and encode a 16-bit network-order inte
 ## Prerequisites
 
 You should know C17 integer types, arrays, pointers, `size_t`, loops, and basic bitwise operations. Familiarity with binary and hexadecimal notation helps. You do not need socket programming experience. The examples assume an octet is represented by `uint8_t` and use fixed-width constants where useful.
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-outcomes END -->
 
 ## Mental model
 
@@ -59,6 +67,7 @@ if (tcpip_l01_checksum16(bytes, sizeof(bytes), &checksum) != TCPIP_L01_OK) {
 
 The input remains const, and both outputs have defined values even if validation fails.
 
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-contract START -->
 ## Exercise
 
 Complete each `TODO(lesson 01)` in `exercise.c`. Preserve validation and output initialization. For the parser, use a four-octet temporary so a late syntax error cannot expose a partially parsed address. For writes, do not change either destination octet until capacity has been established. Avoid library conversion functions that depend on NUL termination or accept syntax beyond this lesson's grammar.
@@ -66,14 +75,17 @@ Complete each `TODO(lesson 01)` in `exercise.c`. Preserve validation and output 
 ## Test contract and invariants
 
 The test executable links either `exercise.c` or `solution.c`, selected by `TCPIP_USE_SOLUTIONS`. It checks exact big-endian values, too-short reads, offsets beyond the span including `SIZE_MAX`, capacity failures with unchanged destination bytes, short IPv4 output and input arrays, valid and malformed IPv4 text, prefix boundaries `/0` and `/32`, a differing `/25` bit, and empty, even-length, and odd-length checksums. In student mode, unresolved functions return `TCPIP_L01_TODO`, causing a nonzero test result. The solution must pass every deterministic fixture.
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-contract END -->
 
 ## Common mistakes
 
 Do not cast a byte pointer to `uint16_t *`: that can violate alignment and aliasing rules and still gives host-dependent byte order. Do not test `offset + 2 > length`, because addition may wrap; test `offset > length` and then the remaining length. Do not shift an eight-bit value before promoting it. A checksum's odd final byte is the high byte, not the low byte. A prefix mask uses the most significant bits first.
 
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-safety START -->
 ## Safety and network boundaries
 
 This lesson performs pure in-memory transformations. It uses no network, raw sockets, capture, or external commands. It allocates no heap memory and owns no mutable global state. An explicit non-goal is sending packets or validating whether an address is reachable. The code demonstrates bounded parsing only; it is not an authorization boundary and should not be treated as a complete defense for an unrelated protocol.
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-safety END -->
 
 ## Further experiments
 

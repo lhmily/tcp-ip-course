@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "ipv4-packets",
+  "components": [
+    {
+      "id": "ipv4-packets-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "IPv4 packets",
+        "summary": "Validate variable IPv4 header boundaries and checksums, construct portable headers, and apply an atomic router-style TTL update.",
+        "badges": ["Lesson 03", "Internet layer", "Linux connection"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the Linux connection", "href": "#linux-implementation-connection"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/lesson.h", "symbol": "tcpip_l03_parse_ipv4"}
+      ]
+    },
+    {
+      "id": "ipv4-packets-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "Fixed-width C17 integers, size_t, arrays, const, shifts, and network-order 16-bit values",
+          "Basic datagram, payload, protocol-number, and one's-complement checksum concepts"
+        ],
+        "outcomes": [
+          "Decode bounded IPv4 headers and derive checked option and payload spans",
+          "Verify variable-length header checksums and construct exact headers without layout assumptions",
+          "Decrement TTL and repair the checksum while preserving invalid or expired input"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/lesson.h", "symbol": "tcpip_l03_ipv4_packet"},
+        {"path": "lessons/03_ipv4_packets/lesson.h", "symbol": "tcpip_l03_decrement_ttl"}
+      ]
+    },
+    {
+      "id": "ipv4-packets-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete each TODO(lesson 03) in lessons/03_ipv4_packets/exercise.c.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Validate fixed and variable boundaries before decoding or publishing any output",
+          "Distinguish malformed declarations from unavailable bytes and include options in the checksum",
+          "Keep failed builds and TTL updates atomic while matching deterministic fixtures"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/exercise.c", "symbol": "tcpip_l03_parse_ipv4"},
+        {"path": "lessons/03_ipv4_packets/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "ipv4-packets-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Bounded in-memory IPv4 parsing, construction, and TTL mutation",
+          "Copied host-side fields and checked offset-length spans",
+          "Pinned Linux v6.6 source as provenance and conceptual comparison"
+        ],
+        "excluded": [
+          "Network access, raw sockets, packet capture, or external commands",
+          "Fragment reassembly, packet transmission, or route selection",
+          "Trust, authentication, or authorization decisions from parse success"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/lesson.h", "symbol": "tcpip_l03_status"}
+      ]
+    }
+  ]
+}

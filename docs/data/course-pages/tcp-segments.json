@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "tcp-segments",
+  "components": [
+    {
+      "id": "tcp-segments-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "TCP segments",
+        "summary": "Validate variable TCP headers, options, flags, checksums, and wrapping sequence arithmetic without depending on native C wire layouts.",
+        "badges": ["Lesson 06", "Transport", "Linux connection"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the Linux connection", "href": "#linux-implementation-connection"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/lesson.h", "symbol": "tcpip_l06_parse_segment"}
+      ]
+    },
+    {
+      "id": "tcp-segments-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "Big-endian integers, checked size_t arithmetic, and one's-complement checksum addition",
+          "IPv4 pseudo-headers and modular unsigned sequence-number arithmetic"
+        ],
+        "outcomes": [
+          "Decode fixed and variable TCP header fields, all nine flags, options, and payload spans",
+          "Build a checksummed TCP segment after a complete atomic preflight",
+          "Compare wrapping sequence numbers without implementation-defined signed conversion"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/lesson.h", "symbol": "tcpip_l06_segment"},
+        {"path": "lessons/06_tcp_segments/lesson.h", "symbol": "tcpip_l06_seq_before"}
+      ]
+    },
+    {
+      "id": "tcp-segments-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Fill in each lesson-specific TODO in lessons/06_tcp_segments/exercise.c without changing lesson.h.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Validate data offset, reserved bits, options, payload, and pseudo-header inputs before publishing or writing",
+          "Match exact SYN and odd-payload fixtures while preserving initialized outputs on failures",
+          "Implement sequence comparison with unsigned modular subtraction and the half-range rule"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/exercise.c", "symbol": "tcpip_l06_parse_segment"},
+        {"path": "lessons/06_tcp_segments/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "tcp-segments-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "In-memory TCP segment parsing, construction, checksums, and sequence arithmetic",
+          "Explicit caller-owned IPv4, options, payload, and destination spans",
+          "Pinned Linux v6.6 UAPI and implementation source as conceptual provenance"
+        ],
+        "excluded": [
+          "Network access, raw sockets, packet capture, or external commands",
+          "A TCP connection, handshake state, retransmission, congestion control, timers, or reassembly",
+          "Packed structures, bitfields, packet overlays, allocation, or mutable globals"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/lesson.h", "symbol": "tcpip_l06_status"}
+      ]
+    }
+  ]
+}

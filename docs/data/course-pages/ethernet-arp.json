@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "ethernet-arp",
+  "components": [
+    {
+      "id": "ethernet-arp-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "Ethernet and ARP",
+        "summary": "Parse Ethernet II and Ethernet/IPv4 ARP safely, then construct an exact broadcast ARP request without using live networking.",
+        "badges": ["Lesson 02", "Foundations", "42-byte ARP fixture"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the test contract", "href": "#test-contract-and-invariants"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/lesson.h", "symbol": "tcpip_l02_build_arp_request"}
+      ]
+    },
+    {
+      "id": "ethernet-arp-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "Explicit big-endian 16-bit reads and writes from lesson 01 or equivalent experience",
+          "Arrays, memcpy, fixed-width integers, ordinary C structs, and checked capacities"
+        ],
+        "outcomes": [
+          "Parse Ethernet II headers and expose checked payload offsets and lengths",
+          "Validate Ethernet/IPv4 ARP descriptors before copying address fields",
+          "Build a complete broadcast ARP request atomically"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/lesson.h", "symbol": "tcpip_l02_parse_ethernet"},
+        {"path": "lessons/02_ethernet_arp/lesson.h", "symbol": "tcpip_l02_parse_arp"}
+      ]
+    },
+    {
+      "id": "ethernet-arp-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete the three TODO(lesson 02) regions in lessons/02_ethernet_arp/exercise.c.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Use byte-wise big-endian helpers and publish parse outputs only after complete validation",
+          "Match the exact 42-octet request fixture and preserve payload offset and length",
+          "Leave failed parse outputs zeroed and failed build destinations unchanged"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/exercise.c", "symbol": "tcpip_l02_parse_ethernet"},
+        {"path": "lessons/02_ethernet_arp/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "ethernet-arp-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Deterministic in-memory frame parsing and construction",
+          "Explicit caller-owned address and destination spans",
+          "Portable byte operations without packed wire overlays"
+        ],
+        "excluded": [
+          "Live network access, raw sockets, capture, or external commands",
+          "Discovering real neighbors or transmitting frames",
+          "ARP cache poisoning or traffic monitoring"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/lesson.h", "symbol": "tcpip_l02_status"}
+      ]
+    }
+  ]
+}

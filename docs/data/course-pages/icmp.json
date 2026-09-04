@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "icmp",
+  "components": [
+    {
+      "id": "icmp-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "ICMP messages",
+        "summary": "Parse and checksum generic ICMP messages, build exact echo messages, and transform a validated request into an atomic reply.",
+        "badges": ["Lesson 04", "Internet layer", "Echo fixtures"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the test contract", "href": "#test-contract-and-invariants"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/lesson.h", "symbol": "tcpip_l04_make_echo_reply"}
+      ]
+    },
+    {
+      "id": "icmp-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "C17 arrays, pointers, size_t, fixed-width integers, and network byte order",
+          "The Internet checksum and the fact that IPv4 carries ICMP as protocol 1"
+        ],
+        "outcomes": [
+          "Parse bounded generic ICMP messages and verify the complete-message checksum",
+          "Build exact echo request and reply messages with preserved identifiers, sequences, and payloads",
+          "Separate common ICMP framing from strict echo-specific semantics"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/lesson.h", "symbol": "tcpip_l04_parse_message"},
+        {"path": "lessons/04_icmp/lesson.h", "symbol": "tcpip_l04_build_echo"}
+      ]
+    },
+    {
+      "id": "icmp-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete every TODO(lesson 04) in lessons/04_icmp/exercise.c.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Publish parser output only after validating the entire message and checksum",
+          "Preserve odd-length payload bytes and support an in-place echo reply",
+          "Leave failed destinations untouched and initialize every reported length or structure"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/exercise.c", "symbol": "tcpip_l04_parse_message"},
+        {"path": "lessons/04_icmp/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "icmp-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Pure byte-array parsing and echo construction",
+          "Deterministic checksum and malformed-input fixtures",
+          "Caller-owned storage with no allocation or mutable globals"
+        ],
+        "excluded": [
+          "Sending ping traffic, receiving operating-system errors, or using raw sockets",
+          "Packet capture, live networking, or external commands",
+          "Treating a checksum as cryptographic authentication"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/lesson.h", "symbol": "tcpip_l04_status"}
+      ]
+    }
+  ]
+}

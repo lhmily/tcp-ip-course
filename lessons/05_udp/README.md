@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:udp-hero START -->
 # Lesson 05: UDP datagrams
 
+| Lesson track | Structured fallback |
+|---|---|
+| Transport | Parse strict UDP datagrams and generate IPv4 pseudo-header checksums atomically. |
+<!-- COURSE_COMPONENT:udp-hero END -->
+
+<!-- COURSE_COMPONENT:udp-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can decode a UDP header without relying on host layout, distinguish a truncated datagram from a malformed length field, and locate a payload using checked offsets. You can also build a datagram atomically, calculate the UDP checksum with an IPv4 pseudo-header, and explain why a generated checksum value of zero is transmitted as `0xffff`. The broader goal is to practice treating packet bytes as untrusted input while keeping parsing, construction, and validation APIs explicit.
@@ -7,6 +14,7 @@ By the end of this lesson, you can decode a UDP header without relying on host l
 ## Prerequisites
 
 You should be comfortable with fixed-width integer types, `size_t`, arrays, and byte-oriented big-endian encoding in C17. Review one's-complement addition and IPv4 addresses from earlier lessons. No packed structure or host byte-order shortcut is needed. The lesson is self-contained: its checksum implementation does not call another lesson's API.
+<!-- COURSE_COMPONENT:udp-outcomes END -->
 
 ## Mental model
 
@@ -72,6 +80,7 @@ if (status == TCPIP_L05_OK) {
 
 **What to notice:** addresses are byte spans, payload and destination have independent size information, and the builder reports the final byte count through an initialized out-parameter. Parsing returns offsets rather than borrowed interior pointers, making ownership of the original buffer obvious.
 
+<!-- COURSE_COMPONENT:udp-contract START -->
 ## Exercise
 
 Complete the TODO sections in `exercise.c`. Implement explicit big-endian reads and writes; do not cast packet storage to a C structure. For parsing, preserve the distinction among invalid arguments, unavailable bytes, and internally inconsistent bytes. For building, perform the complete preflight before any destination write. Implement pseudo-header checksum accumulation locally and remember its protocol value is 17.
@@ -83,16 +92,19 @@ A useful workflow is to solve parsing first, then checksum calculation, then con
 The deterministic test covers ports, the declared length, a five-byte odd payload, an exact eight-byte zero-payload datagram with a zero input checksum, exact output bytes for zero and nonzero payloads, corruption detection, short headers, oversized declared lengths, trailing data, insufficient capacity, invalid IPv4 span lengths, the maximum legal payload, and generator-zero mapping. In student mode, a remaining `TCPIP_L05_TODO` is an intentional nonzero test result. Reference mode must pass.
 
 On every failure, structured outputs and output lengths are initialized. Capacity and invalid-address-span failures leave the destination untouched. The largest representable UDP datagram is 65535 bytes total and has a 65527-byte payload. The checksum routine rejects a pseudo-header length that cannot fit in its 16-bit UDP length contribution.
+<!-- COURSE_COMPONENT:udp-contract END -->
 
 ## Common mistakes
 
 Do not read the length before confirming eight bytes exist. Do not subtract eight from an unchecked 16-bit value. Do not sum native `uint16_t` objects over packet memory: alignment and host byte order make that invalid. Do not forget the protocol word or UDP length in the pseudo-header. Do not treat a parser-accepted zero checksum as a successful checksum validation. Finally, do not write a header and only afterward discover that the destination is too small; that violates the no-partial-write contract.
 
+<!-- COURSE_COMPONENT:udp-safety START -->
 ## Safety and network boundaries
 
 This lesson operates only on caller-provided memory. It performs no network access, opens no raw sockets, captures no traffic, and runs no external commands. Inputs may be copied from a documented fixture, but they must be treated as hostile bytes. It uses no allocation, global mutable state, packed structures, overlays, unaligned casts, or external libraries.
 
 An explicit non-goal is sending or receiving UDP traffic. Socket APIs, DNS behavior, fragmentation, NAT, and application retry policy are outside this lesson. The code models datagram bytes only.
+<!-- COURSE_COMPONENT:udp-safety END -->
 
 ## Further experiments
 

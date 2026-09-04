@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:ipv4-packets-hero START -->
 # Lesson 03: IPv4 packets
 
+| Lesson track | Structured fallback |
+|---|---|
+| Internet layer | Validate IPv4 header boundaries, checksums, payload spans, and atomic TTL updates. |
+<!-- COURSE_COMPONENT:ipv4-packets-hero END -->
+
+<!-- COURSE_COMPONENT:ipv4-packets-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can decode an IPv4 header from a bounded byte span, derive its variable header and payload ranges, verify the header checksum including options, and build a complete header without relying on machine layout. You can also model a router's TTL step by decrementing the field and repairing the checksum while preserving the packet on failure. The larger goal is to treat every field as untrusted input until its prerequisite lengths and invariants have been checked.
@@ -7,6 +14,7 @@ By the end of this lesson, you can decode an IPv4 header from a bounded byte spa
 ## Prerequisites
 
 You should understand fixed-width C17 integers, `size_t`, arrays, `const`, shifts, and network-order 16-bit values. Lesson 01's one's-complement arithmetic is helpful, but this implementation is self-contained and does not link another lesson API. Familiarity with the terms datagram, payload, and protocol number is useful. No socket programming knowledge is required.
+<!-- COURSE_COMPONENT:ipv4-packets-outcomes END -->
 
 ## Mental model
 
@@ -71,6 +79,7 @@ if (tcpip_l03_build_header(&fields, header, sizeof(header),
 
 This creates a 20-octet, checksummed, header-only IPv4 packet. A caller that needs payload must define how total length is represented; this deliberately narrow builder does not silently promise payload space.
 
+<!-- COURSE_COMPONENT:ipv4-packets-contract START -->
 ## Exercise
 
 Complete each `TODO(lesson 03)` in `exercise.c`. Use explicit octet operations rather than structure overlays. In the parser, fill a local `tcpip_l03_ipv4_packet` and assign it only after successful validation. In the builder, validate option pointer, length, alignment, reserved flag, and capacity before modifying the destination. For TTL, call or reproduce the same complete validation before changing any packet byte.
@@ -78,14 +87,17 @@ Complete each `TODO(lesson 03)` in `exercise.c`. Use explicit octet operations r
 ## Test contract and invariants
 
 The deterministic tests parse a base header with payload and an options-bearing fragmented packet, while intentionally performing no fragment reassembly. They distinguish malformed declarations from unavailable bytes, reject the reserved flag, verify that payload corruption does not affect the header checksum, reject header corruption, and compare complete zeroed parse outputs after every failure. Exact builders must match known checksum fixtures. Capacity and malformed-input failures leave destination bytes untouched and output length zero. TTL decrement changes exactly TTL and checksum, produces a parseable packet, and leaves expired or invalid input unchanged. Student mode detects `TCPIP_L03_TODO` and exits nonzero; solution mode passes.
+<!-- COURSE_COMPONENT:ipv4-packets-contract END -->
 
 ## Common mistakes
 
 Do not cast packet bytes to a C structure: padding, alignment, aliasing, and host byte order make that unsafe. Do not assume IHL is five. Do not checksum the payload or only the fixed prefix when options exist. Do not classify a declared total length smaller than the header as truncation; all bytes may be present, but the declaration is malformed. Do not mutate TTL before validating the old checksum and expiry rule. Remember that fragments remain ordinary parseable headers even though their payload cannot be interpreted as a complete higher-layer message.
 
+<!-- COURSE_COMPONENT:ipv4-packets-safety START -->
 ## Safety and network boundaries
 
 All operations are bounded, in-memory transformations. This lesson uses no network, raw sockets, capture, or external commands. It performs no allocation and owns no mutable globals. An explicit non-goal is fragment reassembly, packet transmission, route selection, or deciding whether source addresses are trustworthy. Parsing success establishes only this lesson's structural and checksum invariants; it is not an authentication or authorization decision.
+<!-- COURSE_COMPONENT:ipv4-packets-safety END -->
 
 ## Linux implementation connection
 

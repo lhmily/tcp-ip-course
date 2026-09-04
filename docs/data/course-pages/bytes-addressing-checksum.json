@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "catalog_key": "bytes-addressing-checksum",
+  "components": [
+    {
+      "id": "bytes-addressing-checksum-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "Bytes, addressing, and checksums",
+        "summary": "Decode network-order values, parse bounded IPv4 text, match prefixes, and compute the Internet checksum with portable C17 byte operations.",
+        "badges": [
+          "Lesson 01",
+          "Foundations",
+          "Offline and deterministic"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/lesson.h",
+          "symbol": "tcpip_l01_checksum16"
+        }
+      ]
+    },
+    {
+      "id": "bytes-addressing-checksum-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "C17 integer types, arrays, pointers, size_t, loops, and basic bitwise operations",
+          "Basic binary and hexadecimal notation"
+        ],
+        "outcomes": [
+          "Decode and encode 16-bit network-order integers without depending on host byte order",
+          "Parse bounded IPv4 text and evaluate IPv4 prefix membership",
+          "Compute the 16-bit Internet checksum with deterministic checked outputs"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/lesson.h",
+          "symbol": "tcpip_l01_read_be16"
+        },
+        {
+          "path": "lessons/01_bytes_addressing_checksum/lesson.h",
+          "symbol": "tcpip_l01_prefix_contains"
+        }
+      ]
+    },
+    {
+      "id": "bytes-addressing-checksum-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete each TODO(lesson 01) in lessons/01_bytes_addressing_checksum/exercise.c.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Preserve validation, initialized outputs, and destination bytes on failed writes",
+          "Handle bounded IPv4 text, /0 and /32 prefixes, and odd-length checksums",
+          "Student TODO results fail while every deterministic reference fixture passes"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/exercise.c",
+          "symbol": "tcpip_l01_read_be16"
+        },
+        {
+          "path": "lessons/01_bytes_addressing_checksum/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "bytes-addressing-checksum-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Bounded in-memory byte transformations",
+          "Caller-owned buffers with explicit lengths and checked outputs",
+          "Deterministic offline fixtures"
+        ],
+        "excluded": [
+          "Network access, raw sockets, packet capture, or external commands",
+          "Packet transmission or reachability checks",
+          "Treating parsing or checksums as authentication or authorization"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/lesson.h",
+          "symbol": "tcpip_l01_status"
+        }
+      ]
+    }
+  ]
+}

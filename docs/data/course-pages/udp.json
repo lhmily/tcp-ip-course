@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "udp",
+  "components": [
+    {
+      "id": "udp-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "UDP datagrams",
+        "summary": "Parse strict UDP framing, construct datagrams atomically, and compute the IPv4 pseudo-header checksum with portable C17 byte operations.",
+        "badges": ["Lesson 05", "Transport", "IPv4 pseudo-header"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the test contract", "href": "#test-contract-and-invariants"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/lesson.h", "symbol": "tcpip_l05_build_datagram"}
+      ]
+    },
+    {
+      "id": "udp-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "Fixed-width integers, size_t, arrays, and byte-oriented big-endian encoding in C17",
+          "One's-complement addition and IPv4 address concepts"
+        ],
+        "outcomes": [
+          "Decode a UDP header and distinguish malformed lengths from truncation",
+          "Expose a payload only through checked offset and length values",
+          "Build and validate an IPv4 UDP checksum, including the generated-zero mapping to 0xffff"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/lesson.h", "symbol": "tcpip_l05_parse_datagram"},
+        {"path": "lessons/05_udp/lesson.h", "symbol": "tcpip_l05_ipv4_checksum"}
+      ]
+    },
+    {
+      "id": "udp-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete the TODO sections in lessons/05_udp/exercise.c.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Implement explicit big-endian reads and writes with strict complete-datagram framing",
+          "Include both IPv4 addresses, protocol 17, and UDP length in checksum generation",
+          "Initialize failure outputs and leave the destination untouched after preflight failures"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/exercise.c", "symbol": "tcpip_l05_parse_datagram"},
+        {"path": "lessons/05_udp/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "udp-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Caller-provided datagram and IPv4 address spans",
+          "Offline deterministic parsing, construction, and checksum checks",
+          "Portable code without packed structures, overlays, or unaligned casts"
+        ],
+        "excluded": [
+          "Sending or receiving UDP traffic",
+          "Raw sockets, packet capture, external commands, or live network access",
+          "DNS behavior, fragmentation, NAT, or application retry policy"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/lesson.h", "symbol": "tcpip_l05_status"}
+      ]
+    }
+  ]
+}

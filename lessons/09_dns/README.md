@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:dns-hero START -->
 # Lesson 09: DNS wire format
 
+| Lesson track | Structured fallback |
+|---|---|
+| Applications | Encode DNS names, decode compression safely, build queries, and locate IN/A answers offline. |
+<!-- COURSE_COMPONENT:dns-hero END -->
+
+<!-- COURSE_COMPONENT:dns-outcomes START -->
 ## Learning objectives
 
 After this lesson, you can encode a dotted domain name into DNS label form, decode a possibly compressed name without following pointer cycles forever, construct one deterministic query, and parse the fixed DNS header into host-order values. You will also walk question and answer sections to locate an IPv4 address record while preserving transaction-style output behavior: errors initialize metadata and never expose partially constructed bytes.
@@ -7,6 +14,7 @@ After this lesson, you can encode a dotted domain name into DNS label form, deco
 ## Prerequisites
 
 You should understand unsigned integer types, arrays, explicit byte lengths, and big-endian integer encoding. Familiarity with UDP is useful context, but this lesson neither opens a socket nor depends on a resolver library. The implementation uses C17 and the standard library only.
+<!-- COURSE_COMPONENT:dns-outcomes END -->
 
 ## Mental model
 
@@ -70,6 +78,7 @@ if (tcpip_l09_build_query(0x1234U, "example.com", 11U, 1U,
 
 The ID check belongs between header parsing and answer acceptance. The library does not keep outstanding-query state globally.
 
+<!-- COURSE_COMPONENT:dns-contract START -->
 ## Exercise
 
 Complete `exercise.c` without changing `lesson.h`. Implement name encoding and decoding, exact query construction, host-order header parsing, and bounded resource-record traversal. Preserve the starter’s argument checks and immediate output initialization. Do not allocate memory, cast message bytes to C structs or integer pointers, introduce global mutable state, or write part of a caller buffer before discovering a later error.
@@ -79,16 +88,19 @@ Complete `exercise.c` without changing `lesson.h`. Implement name encoding and d
 The deterministic tests compare the query byte for byte, including transaction ID, RD flag, counts, QTYPE, and IN class. They cover ordinary and trailing-dot names, root encoding, short destination buffers, empty and overlong labels, embedded zero bytes, compressed answer owners, `next_offset`, truncated labels and pointers, out-of-range pointers, direct and indirect cycles, reserved label prefixes, host-order header fields, a compressed A response, NXDOMAIN, TC, a query passed as a response, and truncated RDATA. Invalid calls must leave `written`, `next_offset`, address, TTL, or header initialized as documented. The starter reaches `TCPIP_L09_TODO`, so its test fails; the same test linked to `solution.c` passes.
 
 A successful name is at most 255 bytes in expanded wire form, each label is at most 63 bytes, every cursor movement is proven against `message_len`, and every resource-record payload is bounded by its declared length and the containing message. No successful return exposes network-endian integer values.
+<!-- COURSE_COMPONENT:dns-contract END -->
 
 ## Common mistakes
 
 Do not call `strlen` when an explicit input length is supplied. Do not accept an interior empty label, forget the terminal root byte, or conflate `CAPACITY` with a truncated input message. Never resume an enclosing record at the end of a compression target. Do not permit reserved `01` or `10` label prefixes, trust section counts without checking each field, or assume a four-byte RDATA value is an A record without checking type and class. A pointer may refer anywhere within its fourteen-bit space, including forward, so monotonic-offset checks alone are not a complete cycle defense.
 
+<!-- COURSE_COMPONENT:dns-safety START -->
 ## Safety and network boundaries
 
 Every operation consumes explicit byte spans and caller-owned output capacities. The implementation uses no allocation, no global mutable state, and no wire-struct or unaligned integer casts. Scratch arrays have protocol-derived fixed bounds, and output operations preflight before committing. Deterministic fixtures make malformed inputs reproducible.
 
 This lesson is strictly offline. External network access, operating-system resolver calls, raw packet capture, and elevated privileges are prohibited. Use only byte arrays constructed by the test process. An explicit non-goal is a production recursive or authoritative resolver: DNSSEC, EDNS, TCP fallback, caching, canonical-name chasing, internationalized names, search domains, and resolver policy are intentionally omitted.
+<!-- COURSE_COMPONENT:dns-safety END -->
 
 ## Further experiments
 

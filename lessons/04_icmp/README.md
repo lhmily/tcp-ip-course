@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:icmp-hero START -->
 # Lesson 04: ICMP messages
 
+| Lesson track | Structured fallback |
+|---|---|
+| Internet layer | Parse generic ICMP, build echo messages, and transform requests into replies safely. |
+<!-- COURSE_COMPONENT:icmp-hero END -->
+
+<!-- COURSE_COMPONENT:icmp-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can parse a bounded ICMP message, verify its one's-complement checksum, describe its body without assuming a particular type, and construct exact echo request and reply messages. You can turn a valid echo request into a reply while preserving identifier, sequence number, and payload. You will also distinguish generic ICMP framing from type-specific semantics and maintain deterministic outputs and destination atomicity on every failure.
@@ -7,6 +14,7 @@ By the end of this lesson, you can parse a bounded ICMP message, verify its one'
 ## Prerequisites
 
 You should know C17 arrays, pointers, `size_t`, fixed-width integer types, network byte order, and the Internet checksum. Understanding that IPv4 carries ICMP as protocol 1 is helpful, but this lesson receives only ICMP message bytes and is self-contained. You do not need privileges, sockets, or a live host.
+<!-- COURSE_COMPONENT:icmp-outcomes END -->
 
 ## Mental model
 
@@ -69,6 +77,7 @@ if (tcpip_l04_parse_message(message, message_length, &parsed) != TCPIP_L04_OK) {
 
 The five-octet payload exercises odd-byte checksum handling. Its last octet occupies the high half of the final checksum word.
 
+<!-- COURSE_COMPONENT:icmp-contract START -->
 ## Exercise
 
 Complete every `TODO(lesson 04)` in `exercise.c`. Keep the checksum helper private and self-contained. Publish parser output only after successful verification. In `build_echo`, validate all arguments and total capacity before touching destination bytes. In `make_echo_reply`, do not infer echo fields until generic validation succeeds and the type, code, and body length establish the echo grammar. Preserve payload bytes exactly, including when request and destination are the same buffer.
@@ -76,14 +85,17 @@ Complete every `TODO(lesson 04)` in `exercise.c`. Keep the checksum helper priva
 ## Test contract and invariants
 
 Tests compare exact request and reply fixtures containing an odd-length payload. They parse a valid destination-unreachable error fixture to prove generic behavior, then corrupt payload bytes to prove checksum rejection. Short input reports `TRUNCATED` and clears the parsed output. Invalid echo type, missing payload pointer, excessive length, and insufficient capacity receive distinct statuses. Reply creation rejects a reply, an error message, a checksummed echo message with nonzero code, corruption, and truncation. Failed builders leave destination bytes unchanged and output length zero. Student mode reports unresolved `TCPIP_L04_TODO` with a nonzero result; reference mode passes.
+<!-- COURSE_COMPONENT:icmp-contract END -->
 
 ## Common mistakes
 
 Do not checksum only the four-octet common header; ICMP covers its entire message. Do not add an IPv4 pseudo-header—that belongs to protocols such as UDP, not ICMPv4. For an odd byte count, shift the final octet into the high half of a 16-bit word. Do not treat every valid ICMP message as echo, and do not generate a reply to an echo reply. Validate code zero and enough echo-body bytes before reading identifier and sequence. Avoid unchecked `header + payload` arithmetic and partial destination writes.
 
+<!-- COURSE_COMPONENT:icmp-safety START -->
 ## Safety and network boundaries
 
 This lesson performs pure byte-array processing. It uses no network, raw sockets, capture, or external commands. It allocates no memory and maintains no mutable global state. An explicit non-goal is sending ping traffic, receiving operating-system errors, interpreting quoted IPv4 packets inside ICMP errors, rate limiting, or deciding whether a message is trustworthy. A valid checksum detects many accidental changes but is not cryptographic authentication.
+<!-- COURSE_COMPONENT:icmp-safety END -->
 
 ## Further experiments
 

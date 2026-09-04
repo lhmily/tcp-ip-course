@@ -1,5 +1,12 @@
+<!-- COURSE_COMPONENT:tcp-segments-hero START -->
 # Lesson 06: TCP segments
 
+| Lesson track | Structured fallback |
+|---|---|
+| Transport | Decode TCP fields, options, checksums, and wrapping sequence arithmetic portably. |
+<!-- COURSE_COMPONENT:tcp-segments-hero END -->
+
+<!-- COURSE_COMPONENT:tcp-segments-outcomes START -->
 ## Learning objectives
 
 This lesson teaches you to parse and build a TCP segment using portable C17 byte operations. You will decode ports, sequence and acknowledgment numbers, the data offset, all nine current control flags including NS, the receive window, checksum, urgent pointer, options, and payload spans. You will validate variable header boundaries separately from checksum validity, generate a checksum with an IPv4 pseudo-header, and compare wrapping sequence numbers without an implementation-defined unsigned-to-signed conversion.
@@ -7,6 +14,7 @@ This lesson teaches you to parse and build a TCP segment using portable C17 byte
 ## Prerequisites
 
 You should understand big-endian integers, checked `size_t` arithmetic, one's-complement checksum addition, and the role of an IPv4 pseudo-header. Familiarity with modular unsigned arithmetic helps with sequence numbers. The lesson does not depend on UDP or another lesson implementation; all helpers are private and self-contained.
+<!-- COURSE_COMPONENT:tcp-segments-outcomes END -->
 
 ## Mental model
 
@@ -75,6 +83,7 @@ tcpip_l06_status status = tcpip_l06_build_segment(
 
 **What to notice:** the builder derives the data offset from the validated options length instead of accepting two potentially inconsistent values. It owns neither the input spans nor the destination. IPv4 addresses are explicit because TCP checksum generation depends on them even though they are not stored in the TCP segment.
 
+<!-- COURSE_COMPONENT:tcp-segments-contract START -->
 ## Exercise
 
 Fill in each lesson-specific TODO in `exercise.c`. Start with byte readers and parser bounds. Add a checksum accumulator that folds end-around carry and handles a final odd byte. Then preflight and encode the builder. Finally, implement serial arithmetic using unsigned subtraction and a half-range comparison; do not cast a large `uint32_t` to `int32_t`.
@@ -86,16 +95,19 @@ Preserve the header API exactly. Every non-OK path with an out-parameter must le
 Tests use an exact 28-byte SYN fixture with eight aligned option bytes and an exact odd-length data fixture carrying `hello`. They verify all decoded fields, NS plus ACK/PSH packing, options and payload spans, pseudo-header validation, corruption, invalid and unavailable offsets, reserved offset-byte bits, invalid option alignment, excessive flags, total-length limits, insufficient capacity, and sequence wrap behavior.
 
 Student mode deliberately exits nonzero while parsing returns `TCPIP_L06_TODO`; the solution build passes. Parser failure leaves the result all zero. Builder failure leaves the reported length zero and destination unchanged. TCP's IPv4 pseudo-header length is limited to 65535 even though a `size_t` may be wider.
+<!-- COURSE_COMPONENT:tcp-segments-contract END -->
 
 ## Common mistakes
 
 Do not interpret the data offset as bytes; multiply its word count by four. Do not accidentally discard NS when decoding flags. Do not accept an offset below five or expose options before checking the complete claimed header. Do not assume an options parser is required here: this lesson reports a checked raw options span. Do not include an already complemented checksum while generating a new one. Avoid signed casts for serial comparison because converting out-of-range unsigned values is implementation-defined. Also avoid writing fixed fields before checking option, payload, and destination sizes.
 
+<!-- COURSE_COMPONENT:tcp-segments-safety START -->
 ## Safety and network boundaries
 
 The implementation transforms in-memory byte spans only. It performs no network access, opens no raw sockets, captures no traffic, and runs no external commands. There is no allocation, mutable global state, packed structure, bitfield, packet overlay, unaligned cast, undefined pointer arithmetic, or external library dependency.
 
 An explicit non-goal is implementing a TCP connection. Handshake state, retransmission, congestion control, receive queues, timers, stream reassembly, and operating-system socket behavior are outside this segment-format lesson.
+<!-- COURSE_COMPONENT:tcp-segments-safety END -->
 
 ## Linux implementation connection
 

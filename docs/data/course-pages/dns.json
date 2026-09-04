@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "catalog_key": "dns",
+  "components": [
+    {
+      "id": "dns-hero",
+      "type": "page_hero",
+      "heading": "Lesson overview",
+      "payload": {
+        "title": "DNS wire format",
+        "summary": "Encode labels, decode bounded compression graphs, build deterministic queries, and locate an IPv4 answer without resolver or network dependencies.",
+        "badges": ["Lesson 09", "Applications", "Compression-safe parsing"],
+        "actions": [
+          {"label": "Start the exercise", "href": "#exercise"},
+          {"label": "Review the test contract", "href": "#test-contract-and-invariants"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/lesson.h", "symbol": "tcpip_l09_decode_name"}
+      ]
+    },
+    {
+      "id": "dns-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Prerequisites and outcomes",
+      "payload": {
+        "prerequisites": [
+          "Unsigned integer types, arrays, explicit byte lengths, and big-endian integer encoding",
+          "Basic UDP context, without requiring sockets or a resolver library"
+        ],
+        "outcomes": [
+          "Encode dotted names into DNS labels and decode compressed names with bounded cycle detection",
+          "Construct one deterministic query and parse fixed header values into host order",
+          "Traverse bounded question and answer sections to return the first IN/A address and TTL"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/lesson.h", "symbol": "tcpip_l09_encode_name"},
+        {"path": "lessons/09_dns/lesson.h", "symbol": "tcpip_l09_first_a"}
+      ]
+    },
+    {
+      "id": "dns-contract",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete lessons/09_dns/exercise.c without changing lesson.h.",
+        "reference": "cmake --build --preset reference && ctest --preset reference",
+        "checks": [
+          "Preserve explicit lengths, immediate output initialization, and atomic caller-buffer writes",
+          "Bound labels, pointers, cycles, section fields, record headers, and declared RDATA",
+          "Match the exact query and compressed A-response fixtures while rejecting malformed response states"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/exercise.c", "symbol": "tcpip_l09_encode_name"},
+        {"path": "lessons/09_dns/test.c", "symbol": "main"}
+      ]
+    },
+    {
+      "id": "dns-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Explicit byte spans, caller-owned capacities, and fixed protocol-derived scratch arrays",
+          "Deterministic offline query and response fixtures",
+          "Bounded graph traversal with visited compression-pointer targets and hop limits"
+        ],
+        "excluded": [
+          "External network access, operating-system resolver calls, raw capture, or elevated privileges",
+          "A production recursive or authoritative resolver",
+          "DNSSEC, EDNS, TCP fallback, caching, canonical-name chasing, internationalization, or resolver policy"
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/lesson.h", "symbol": "tcpip_l09_status"}
+      ]
+    }
+  ]
+}
