@@ -76,6 +76,53 @@
       "provenance": [
         {"path": "lessons/02_ethernet_arp/lesson.h", "symbol": "tcpip_l02_status"}
       ]
+    },
+    {
+      "id": "ethernet-arp-frame-fields",
+      "type": "protocol_fields",
+      "heading": "Canonical Ethernet and ARP fields",
+      "payload": {
+        "fixture": "ff ff ff ff ff ff 02 00 5e 10 00 00 08 06 00 01 08 00 06 04 00 01 02 00 5e 10 00 00 c0 00 02 01 00 00 00 00 00 00 c0 00 02 63",
+        "fields": [
+          {"id": "ethernet-destination", "label": "Ethernet destination", "offset": 0, "length": 6, "value": "ff:ff:ff:ff:ff:ff", "meaning": "Broadcast destination"},
+          {"id": "ethernet-source", "label": "Ethernet source", "offset": 6, "length": 6, "value": "02:00:5e:10:00:00", "meaning": "Sender MAC address"},
+          {"id": "ether-type", "label": "EtherType", "offset": 12, "length": 2, "value": "0x0806", "meaning": "Ethernet payload carries ARP"},
+          {"id": "hardware-type", "label": "Hardware type", "offset": 14, "length": 2, "value": "1", "meaning": "Ethernet"},
+          {"id": "protocol-type", "label": "Protocol type", "offset": 16, "length": 2, "value": "0x0800", "meaning": "IPv4"},
+          {"id": "hardware-length", "label": "Hardware address length", "offset": 18, "length": 1, "value": "6", "meaning": "MAC addresses contain six octets"},
+          {"id": "protocol-length", "label": "Protocol address length", "offset": 19, "length": 1, "value": "4", "meaning": "IPv4 addresses contain four octets"},
+          {"id": "operation", "label": "Operation", "offset": 20, "length": 2, "value": "1", "meaning": "ARP request"},
+          {"id": "sender-hardware", "label": "Sender hardware address", "offset": 22, "length": 6, "value": "02:00:5e:10:00:00", "meaning": "MAC address making the request"},
+          {"id": "sender-protocol", "label": "Sender protocol address", "offset": 28, "length": 4, "value": "192.0.2.1", "meaning": "IPv4 address making the request"},
+          {"id": "target-hardware", "label": "Target hardware address", "offset": 32, "length": 6, "value": "00:00:00:00:00:00", "meaning": "Unknown MAC address represented by zero octets"},
+          {"id": "target-protocol", "label": "Target protocol address", "offset": 38, "length": 4, "value": "192.0.2.99", "meaning": "IPv4 address being resolved"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/test.c", "symbol": "tcpip_l02_test_frame"}
+      ]
+    },
+    {
+      "id": "ethernet-arp-frame-bytes",
+      "type": "byte_inspector",
+      "heading": "Canonical 42-byte ARP request",
+      "payload": {
+        "fixture": "ff ff ff ff ff ff 02 00 5e 10 00 00 08 06 00 01 08 00 06 04 00 01 02 00 5e 10 00 00 c0 00 02 01 00 00 00 00 00 00 c0 00 02 63",
+        "bytes_per_row": 14,
+        "annotations": [
+          {"offset": 0, "length": 6, "label": "Ethernet destination"},
+          {"offset": 6, "length": 6, "label": "Ethernet source"},
+          {"offset": 12, "length": 2, "label": "EtherType"},
+          {"offset": 14, "length": 8, "label": "ARP descriptor and operation"},
+          {"offset": 22, "length": 6, "label": "Sender MAC"},
+          {"offset": 28, "length": 4, "label": "Sender IPv4"},
+          {"offset": 32, "length": 6, "label": "Target MAC"},
+          {"offset": 38, "length": 4, "label": "Target IPv4"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/02_ethernet_arp/test.c", "symbol": "tcpip_l02_test_frame"}
+      ]
     }
   ]
 }

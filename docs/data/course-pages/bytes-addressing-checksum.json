@@ -104,6 +104,73 @@
           "symbol": "tcpip_l01_status"
         }
       ]
+    },
+    {
+      "id": "bytes-addressing-checksum-endian-fields",
+      "type": "protocol_fields",
+      "heading": "Big-endian access fixture",
+      "payload": {
+        "fixture": "aa 12 34 bb",
+        "fields": [
+          {
+            "id": "leading-guard",
+            "label": "Leading guard",
+            "offset": 0,
+            "length": 1,
+            "value": "0xaa",
+            "meaning": "Byte before the selected 16-bit field"
+          },
+          {
+            "id": "network-word",
+            "label": "Network-order word",
+            "offset": 1,
+            "length": 2,
+            "value": "0x1234",
+            "meaning": "Two big-endian octets decoded as the host value 0x1234"
+          },
+          {
+            "id": "trailing-guard",
+            "label": "Trailing guard",
+            "offset": 3,
+            "length": 1,
+            "value": "0xbb",
+            "meaning": "Byte after the selected 16-bit field"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/test.c",
+          "symbol": "test_big_endian_access"
+        }
+      ]
+    },
+    {
+      "id": "bytes-addressing-checksum-odd-checksum",
+      "type": "checksum_view",
+      "heading": "Odd-length Internet checksum fixture",
+      "payload": {
+        "fixture": "01 02 03",
+        "regions": [
+          {
+            "offset": 0,
+            "length": 2,
+            "role": "complete word 0x0102"
+          },
+          {
+            "offset": 2,
+            "length": 1,
+            "role": "odd final octet padded on the right as 0x0300"
+          }
+        ],
+        "expected": 64509
+      },
+      "provenance": [
+        {
+          "path": "lessons/01_bytes_addressing_checksum/test.c",
+          "symbol": "test_checksums"
+        }
+      ]
     }
   ]
 }

@@ -43,6 +43,31 @@ flowchart LR
 
 Text is not required to be NUL-terminated. The parser reports `CAPACITY` unless `out_address_capacity` is at least four, and prefix matching reports `TRUNCATED` unless both address lengths are at least four. Empty checksum input is valid and produces `0xffff`; a `NULL` input is accepted only when its length is zero.
 
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-endian-fields START -->
+### Big-endian access fixture
+
+| Offset | Octets | Field | Decoded value |
+|---:|---:|---|---|
+| 0 | 1 | Leading guard | `0xaa` |
+| 1 | 2 | Network-order word | `0x1234` |
+| 3 | 1 | Trailing guard | `0xbb` |
+
+The complete fixture is `aa 12 34 bb`; reading two octets at offset 1 yields `0x1234` without changing either guard byte.
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-endian-fields END -->
+
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-odd-checksum START -->
+### Odd-length Internet checksum fixture
+
+```text
+Offset:  00 01 02
+Octets:  01 02 03
+Words:   0x0102 0x0300
+Result:  0xfbfd
+```
+
+The final `0x03` occupies the high byte of a zero-padded word before end-around carry folding and one's complementation.
+<!-- COURSE_COMPONENT:bytes-addressing-checksum-odd-checksum END -->
+
 ## Algorithm and state transitions
 
 For a big-endian word, shift the first octet left by eight and OR the second octet. IPv4 parsing advances through four decimal components, rejecting missing digits, values above 255, extra components, and trailing characters. It writes into a temporary address and copies only after the complete grammar succeeds.

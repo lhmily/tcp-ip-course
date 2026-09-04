@@ -47,6 +47,37 @@ sequenceDiagram
 
 `tcpip_l02_parse_ethernet` copies header values and reports the payload as offset 14 plus the remaining length; it accepts only Ethernet II type values at or above `0x0600`, not IEEE 802.3 length fields. `tcpip_l02_parse_arp` accepts exactly the standard Ethernet/IPv4 layout and request or reply opcodes. `tcpip_l02_build_arp_request(sender_mac, sender_mac_length, sender_ip, sender_ip_length, target_ip, target_ip_length, out_frame, out_capacity, out_length)` creates exactly 42 octets: 14 Ethernet plus 28 ARP.
 
+<!-- COURSE_COMPONENT:ethernet-arp-frame-fields START -->
+### Canonical Ethernet and ARP fields
+
+| Offset | Octets | Field | Request value |
+|---:|---:|---|---|
+| 0 | 6 | Ethernet destination | `ff:ff:ff:ff:ff:ff` |
+| 6 | 6 | Ethernet source | `02:00:5e:10:00:00` |
+| 12 | 2 | EtherType | `0x0806` |
+| 14 | 2 | Hardware type | Ethernet `1` |
+| 16 | 2 | Protocol type | IPv4 `0x0800` |
+| 18 | 1 | Hardware address length | `6` |
+| 19 | 1 | Protocol address length | `4` |
+| 20 | 2 | Operation | Request `1` |
+| 22 | 6 | Sender hardware address | `02:00:5e:10:00:00` |
+| 28 | 4 | Sender protocol address | `192.0.2.1` |
+| 32 | 6 | Target hardware address | `00:00:00:00:00:00` |
+| 38 | 4 | Target protocol address | `192.0.2.99` |
+<!-- COURSE_COMPONENT:ethernet-arp-frame-fields END -->
+
+<!-- COURSE_COMPONENT:ethernet-arp-frame-bytes START -->
+### Canonical 42-byte ARP request
+
+```text
+ff ff ff ff ff ff 02 00 5e 10 00 00 08 06
+00 01 08 00 06 04 00 01 02 00 5e 10 00 00
+c0 00 02 01 00 00 00 00 00 00 c0 00 02 63
+```
+
+The first 14 octets form the Ethernet II header; the remaining 28 octets form the Ethernet/IPv4 ARP request.
+<!-- COURSE_COMPONENT:ethernet-arp-frame-bytes END -->
+
 ## Algorithm and state transitions
 
 Ethernet parsing first zeroes the output, validates pointers, and requires at least 14 input octets. It copies both MAC addresses, decodes EtherType, and computes the payload span without retaining a borrowed pointer.
