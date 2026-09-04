@@ -47,6 +47,43 @@ All public symbols begin with `tcpip_l09_`. Text names are passed as `const char
 
 `tcpip_l09_parse_message` only decodes the fixed header. The returned ID, flags, counts, and `rcode` are host values, so callers can compare a response ID with their outstanding query ID directly. `tcpip_l09_first_a` accepts a response byte span and writes the first IN/A address and TTL. It intentionally has no expected-ID parameter: parse the header first and perform the transaction-ID check in the calling layer before accepting the answer.
 
+<!-- COURSE_COMPONENT:dns-fields START -->
+### Deterministic response field map
+
+| Field | Offset | Length | Fixture value | Meaning |
+|---|---:|---:|---|---|
+| Transaction ID | 0 | 2 | `0xbeef` | Matches the response to its outstanding query |
+| Flags | 2 | 2 | `0x8180` | Standard recursive response with no truncation or error |
+| QDCOUNT | 4 | 2 | `1` | One question follows the fixed header |
+| ANCOUNT | 6 | 2 | `1` | One answer resource record follows the question |
+| NSCOUNT | 8 | 2 | `0` | No authority resource records are present |
+| ARCOUNT | 10 | 2 | `0` | No additional resource records are present |
+| QNAME | 12 | 13 | `example.com` | Root-terminated labels `07 example 03 com 00` |
+| QTYPE | 25 | 2 | `A` | The question requests an IPv4 address record |
+| QCLASS | 27 | 2 | `IN` | The question uses the Internet class |
+| Answer name pointer | 29 | 2 | `0xc00c -> 12` | Reuses QNAME beginning at byte offset 12 |
+| Answer TYPE | 31 | 2 | `A` | The answer contains an IPv4 address |
+| Answer CLASS | 33 | 2 | `IN` | The answer uses the Internet class |
+| TTL | 35 | 4 | `60` | The record may be cached for sixty seconds |
+| RDLENGTH | 39 | 2 | `4` | The address RDATA occupies four bytes |
+| RDATA | 41 | 4 | `192.0.2.1` | Documentation IPv4 address returned by the answer |
+<!-- COURSE_COMPONENT:dns-fields END -->
+
+<!-- COURSE_COMPONENT:dns-byte-inspector START -->
+### Deterministic response bytes
+
+```text
+byte     00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+value    be ef 81 80 00 01 00 01 00 00 00 00 07 65 78 61
+byte     10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+value    6d 70 6c 65 03 63 6f 6d 00 00 01 00 01 c0 0c 00
+byte     20 21 22 23 24 25 26 27 28 29 2a 2b 2c
+value    01 00 01 00 00 00 3c 00 04 c0 00 02 01
+```
+
+The first row is the twelve-byte header followed by the start of QNAME. QNAME uses a length octet before each label: `07` introduces `example`, `03` introduces `com`, and `00` terminates at the DNS root. Bytes 29–30 are not another copy of the owner name. Their top two bits are `11`, so `0xc00c` is a compression pointer; masking those bits yields offset 12, where decoding resumes at the question's QNAME. The enclosing answer parser still resumes after the two pointer bytes, at byte 31. The final four bytes are the A-record RDATA and decode directly to `192.0.2.1`.
+<!-- COURSE_COMPONENT:dns-byte-inspector END -->
+
 ## Algorithm and state transitions
 
 Encoding first validates every label and computes the complete wire length. Only after proving the destination is large enough does it write label lengths, bytes, and the root terminator. Query construction similarly encodes into fixed local scratch space, computes the complete message size, then commits a header with ID, RD, QDCOUNT=1, QTYPE, and QCLASS=IN.

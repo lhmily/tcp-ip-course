@@ -40,6 +40,63 @@
       ]
     },
     {
+      "id": "dns-fields",
+      "type": "protocol_fields",
+      "heading": "DNS response field map",
+      "payload": {
+        "fixture": "beef81800001000100000000076578616d706c6503636f6d0000010001c00c000100010000003c0004c0000201",
+        "fields": [
+          {"id": "transaction-id", "label": "Transaction ID", "offset": 0, "length": 2, "value": "0xbeef", "meaning": "Matches the response to its outstanding query"},
+          {"id": "flags", "label": "Flags", "offset": 2, "length": 2, "value": "0x8180", "meaning": "Standard recursive response with no truncation or error"},
+          {"id": "qdcount", "label": "QDCOUNT", "offset": 4, "length": 2, "value": "1", "meaning": "One question follows the fixed header"},
+          {"id": "ancount", "label": "ANCOUNT", "offset": 6, "length": 2, "value": "1", "meaning": "One answer resource record follows the question"},
+          {"id": "nscount", "label": "NSCOUNT", "offset": 8, "length": 2, "value": "0", "meaning": "No authority resource records are present"},
+          {"id": "arcount", "label": "ARCOUNT", "offset": 10, "length": 2, "value": "0", "meaning": "No additional resource records are present"},
+          {"id": "qname", "label": "QNAME", "offset": 12, "length": 13, "value": "example.com", "meaning": "Root-terminated label encoding of the queried name"},
+          {"id": "qtype", "label": "QTYPE", "offset": 25, "length": 2, "value": "A", "meaning": "The question requests an IPv4 address record"},
+          {"id": "qclass", "label": "QCLASS", "offset": 27, "length": 2, "value": "IN", "meaning": "The question uses the Internet class"},
+          {"id": "answer-pointer", "label": "Answer name pointer", "offset": 29, "length": 2, "value": "0xc00c -> 12", "meaning": "Compression pointer reuses QNAME at byte offset 12"},
+          {"id": "answer-type", "label": "Answer TYPE", "offset": 31, "length": 2, "value": "A", "meaning": "The answer contains an IPv4 address"},
+          {"id": "answer-class", "label": "Answer CLASS", "offset": 33, "length": 2, "value": "IN", "meaning": "The answer uses the Internet class"},
+          {"id": "ttl", "label": "TTL", "offset": 35, "length": 4, "value": "60", "meaning": "The record may be cached for sixty seconds"},
+          {"id": "rdlength", "label": "RDLENGTH", "offset": 39, "length": 2, "value": "4", "meaning": "The address RDATA occupies four bytes"},
+          {"id": "rdata", "label": "RDATA", "offset": 41, "length": 4, "value": "192.0.2.1", "meaning": "Documentation IPv4 address returned by the answer"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/test.c", "symbol": "tcpip_l09_response"}
+      ]
+    },
+    {
+      "id": "dns-byte-inspector",
+      "type": "byte_inspector",
+      "heading": "DNS response byte inspector",
+      "payload": {
+        "fixture": "beef81800001000100000000076578616d706c6503636f6d0000010001c00c000100010000003c0004c0000201",
+        "bytes_per_row": 16,
+        "annotations": [
+          {"offset": 0, "length": 2, "label": "Transaction ID"},
+          {"offset": 2, "length": 2, "label": "Flags"},
+          {"offset": 4, "length": 2, "label": "QDCOUNT"},
+          {"offset": 6, "length": 2, "label": "ANCOUNT"},
+          {"offset": 8, "length": 2, "label": "NSCOUNT"},
+          {"offset": 10, "length": 2, "label": "ARCOUNT"},
+          {"offset": 12, "length": 13, "label": "QNAME"},
+          {"offset": 25, "length": 2, "label": "QTYPE"},
+          {"offset": 27, "length": 2, "label": "QCLASS"},
+          {"offset": 29, "length": 2, "label": "Answer name pointer"},
+          {"offset": 31, "length": 2, "label": "Answer TYPE"},
+          {"offset": 33, "length": 2, "label": "Answer CLASS"},
+          {"offset": 35, "length": 4, "label": "TTL"},
+          {"offset": 39, "length": 2, "label": "RDLENGTH"},
+          {"offset": 41, "length": 4, "label": "RDATA"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/09_dns/test.c", "symbol": "tcpip_l09_response"}
+      ]
+    },
+    {
       "id": "dns-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",
