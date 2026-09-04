@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 690" width="100%" role="img" aria-labelledby="uapi-boundary-dark-title uapi-boundary-dark-desc">
+  <title id="uapi-boundary-dark-title">Linux v6.6 TCP_INFO userspace boundary</title>
+  <desc id="uapi-boundary-dark-desc">A four-step observation route from userspace getsockopt and TCP_INFO through tcp_get_info to the public struct tcp_info, with source anchors and typed edges.</desc>
+  <defs>
+    <marker id="uapi-boundary-dark-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#c3c2b7"/>
+    </marker>
+    <pattern id="uapi-boundary-dark-packet-io" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 4 H8" stroke="#3987e5" stroke-width="1" opacity=".34"/>
+    </pattern>
+    <pattern id="uapi-boundary-dark-network" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M-2 8 L8 -2 M2 10 L10 2" stroke="#d95926" stroke-width="1" opacity=".34"/>
+    </pattern>
+    <pattern id="uapi-boundary-dark-transport" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M-2 8 L8 -2 M2 10 L10 2 M-2 0 L8 10 M2 -2 L10 6" stroke="#199e70" stroke-width="1" opacity=".3"/>
+    </pattern>
+    <pattern id="uapi-boundary-dark-observation" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#c98500" opacity=".42"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="690" fill="#1a1a19"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,sans-serif" fill="#ffffff">
+    <text x="56" y="58" font-size="30" font-weight="700">Linux v6.6 TCP_INFO userspace boundary</text>
+    <text x="56" y="88" font-size="15" fill="#c3c2b7">Linux v6.6 · authored reading route · not a universal runtime stack trace</text>
+    <g aria-label="Four labeled phases">
+      <rect x="56" y="116" width="317" height="54" rx="8" fill="#242422" stroke="#383835"/>
+      <rect x="56" y="116" width="12" height="54" rx="6" fill="#3987e5"/>
+      <rect x="68" y="116" width="36" height="54" fill="url(#uapi-boundary-dark-packet-io)"/>
+      <text x="114" y="139" font-size="14" font-weight="700">Packet I/O</text>
+      <text x="114" y="158" font-size="11" fill="#c3c2b7">horizontal pattern</text>
+      <rect x="390" y="116" width="317" height="54" rx="8" fill="#242422" stroke="#383835"/>
+      <rect x="390" y="116" width="12" height="54" rx="6" fill="#d95926"/>
+      <rect x="402" y="116" width="36" height="54" fill="url(#uapi-boundary-dark-network)"/>
+      <text x="448" y="139" font-size="14" font-weight="700">IPv4 and routing</text>
+      <text x="448" y="158" font-size="11" fill="#c3c2b7">diagonal pattern</text>
+      <rect x="724" y="116" width="317" height="54" rx="8" fill="#242422" stroke="#383835"/>
+      <rect x="724" y="116" width="12" height="54" rx="6" fill="#199e70"/>
+      <rect x="736" y="116" width="36" height="54" fill="url(#uapi-boundary-dark-transport)"/>
+      <text x="782" y="139" font-size="14" font-weight="700">Socket and TCP</text>
+      <text x="782" y="158" font-size="11" fill="#c3c2b7">crosshatch pattern</text>
+      <rect x="1058" y="116" width="317" height="54" rx="8" fill="#242422" stroke="#383835"/>
+      <rect x="1058" y="116" width="12" height="54" rx="6" fill="#c98500"/>
+      <rect x="1070" y="116" width="36" height="54" fill="url(#uapi-boundary-dark-observation)"/>
+      <text x="1116" y="139" font-size="14" font-weight="700">Observation boundary</text>
+      <text x="1116" y="158" font-size="11" fill="#c3c2b7">dots pattern</text>
+    </g>
+    <rect x="56" y="205" width="626" height="216" rx="12" fill="#0d0d0d" stroke="#383835"/>
+    <rect x="702" y="205" width="682" height="216" rx="12" fill="#0d0d0d" stroke="#383835"/>
+    <text x="76" y="238" font-size="15" font-weight="700">Userspace and UAPI contract</text>
+    <text x="722" y="238" font-size="15" font-weight="700">Kernel implementation</text>
+    <g aria-label="TCP INFO observation nodes and edges">
+      <rect x="70" y="264" width="276" height="92" rx="10" fill="#242422" stroke="#383835"/>
+      <rect x="70" y="264" width="12" height="92" rx="6" fill="#c98500"/>
+      <rect x="82" y="264" width="30" height="92" fill="url(#uapi-boundary-dark-observation)"/>
+      <text x="124" y="298" font-size="17" font-weight="700">getsockopt()</text>
+      <text x="124" y="322" font-size="11" fill="#c3c2b7">net/socket.c:2383</text>
+      <text x="124" y="341" font-size="10" fill="#a4a39d">userspace</text>
+      <rect x="400" y="264" width="276" height="92" rx="10" fill="#242422" stroke="#383835"/>
+      <rect x="400" y="264" width="12" height="92" rx="6" fill="#c98500"/>
+      <rect x="412" y="264" width="30" height="92" fill="url(#uapi-boundary-dark-observation)"/>
+      <text x="454" y="298" font-size="17" font-weight="700">TCP_INFO</text>
+      <text x="454" y="322" font-size="11" fill="#c3c2b7">include/uapi/linux/tcp.h:102</text>
+      <text x="454" y="341" font-size="10" fill="#a4a39d">uapi</text>
+      <rect x="730" y="264" width="276" height="92" rx="10" fill="#242422" stroke="#383835"/>
+      <rect x="730" y="264" width="12" height="92" rx="6" fill="#c98500"/>
+      <rect x="742" y="264" width="30" height="92" fill="url(#uapi-boundary-dark-observation)"/>
+      <text x="784" y="298" font-size="17" font-weight="700">tcp_get_info</text>
+      <text x="784" y="322" font-size="11" fill="#c3c2b7">net/ipv4/tcp.c:3699</text>
+      <text x="784" y="341" font-size="10" fill="#a4a39d">kernel</text>
+      <rect x="1060" y="264" width="276" height="92" rx="10" fill="#242422" stroke="#383835"/>
+      <rect x="1060" y="264" width="12" height="92" rx="6" fill="#c98500"/>
+      <rect x="1072" y="264" width="30" height="92" fill="url(#uapi-boundary-dark-observation)"/>
+      <text x="1114" y="298" font-size="17" font-weight="700">struct tcp_info</text>
+      <text x="1114" y="322" font-size="11" fill="#c3c2b7">include/uapi/linux/tcp.h:214</text>
+      <text x="1114" y="341" font-size="10" fill="#a4a39d">uapi</text>
+      <line x1="346" y1="310" x2="390" y2="310" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="12 4 2 4 2 4" marker-end="url(#uapi-boundary-dark-arrow)"/>
+      <text x="368" y="298" text-anchor="middle" font-size="9" fill="#a4a39d">observation</text>
+      <line x1="676" y1="310" x2="720" y2="310" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#uapi-boundary-dark-arrow)"/>
+      <text x="698" y="298" text-anchor="middle" font-size="9" fill="#a4a39d">callback-dispatch</text>
+      <line x1="1006" y1="310" x2="1050" y2="310" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="12 4 2 4 2 4" marker-end="url(#uapi-boundary-dark-arrow)"/>
+      <text x="1028" y="298" text-anchor="middle" font-size="9" fill="#a4a39d">observation</text>
+      <path d="M1198 366 V394 H208 V366" fill="none" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="12 4 2 4 2 4" marker-end="url(#uapi-boundary-dark-arrow)"/>
+      <text x="703" y="411" text-anchor="middle" font-size="10" fill="#a4a39d">observation · bounded copy to caller option length</text>
+    </g>
+    <g aria-label="Edge type legend" transform="translate(56 494)">
+      <line x1="0" y1="0" x2="64" y2="0" stroke="#c3c2b7" stroke-width="2"/>
+      <text x="76" y="5" font-size="13">direct-call</text>
+      <line x1="440" y1="0" x2="504" y2="0" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="10 5"/>
+      <text x="516" y="5" font-size="13">hook-continuation</text>
+      <line x1="880" y1="0" x2="944" y2="0" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="2 5"/>
+      <text x="956" y="5" font-size="13">callback-dispatch</text>
+      <line x1="0" y1="34" x2="64" y2="34" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="14 5 3 5"/>
+      <text x="76" y="39" font-size="13">conditional-slow-path</text>
+      <line x1="440" y1="34" x2="504" y2="34" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="5 3"/>
+      <text x="516" y="39" font-size="13">sequencing</text>
+      <line x1="880" y1="34" x2="944" y2="34" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="12 4 2 4 2 4"/>
+      <text x="956" y="39" font-size="13">observation</text>
+    </g>
+    <text x="56" y="640" font-size="12" fill="#c3c2b7">Stable boundary: getsockopt(IPPROTO_TCP, TCP_INFO, …) exposes only the UAPI structure.</text>
+  </g>
+</svg>

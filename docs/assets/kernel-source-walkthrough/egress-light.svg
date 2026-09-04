@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 950" width="100%" role="img" aria-labelledby="egress-light-title egress-light-desc">
+  <title id="egress-light-title">Linux v6.6 TCP egress source walkthrough</title>
+  <desc id="egress-light-desc">A 13-node egress reading route grouped by four labeled phases. Every node gives a source symbol and ownership summary; line patterns identify edge types.</desc>
+  <defs>
+    <marker id="egress-light-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#52514e"/>
+    </marker>
+    <pattern id="egress-light-packet-io" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 4 H8" stroke="#2a78d6" stroke-width="1" opacity=".34"/>
+    </pattern>
+    <pattern id="egress-light-network" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M-2 8 L8 -2 M2 10 L10 2" stroke="#eb6834" stroke-width="1" opacity=".34"/>
+    </pattern>
+    <pattern id="egress-light-transport" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M-2 8 L8 -2 M2 10 L10 2 M-2 0 L8 10 M2 -2 L10 6" stroke="#1baf7a" stroke-width="1" opacity=".3"/>
+    </pattern>
+    <pattern id="egress-light-observation" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#eda100" opacity=".42"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="950" fill="#fcfcfb"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,sans-serif" fill="#0b0b0b">
+    <text x="56" y="58" font-size="30" font-weight="700">Linux v6.6 TCP egress source walkthrough</text>
+    <text x="56" y="88" font-size="15" fill="#52514e">Linux v6.6 · authored reading route · not a universal runtime stack trace</text>
+    <g aria-label="Four labeled phases">
+      <rect x="56" y="116" width="317" height="54" rx="8" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="56" y="116" width="12" height="54" rx="6" fill="#2a78d6"/>
+      <rect x="68" y="116" width="36" height="54" fill="url(#egress-light-packet-io)"/>
+      <text x="114" y="139" font-size="14" font-weight="700">Packet I/O</text>
+      <text x="114" y="158" font-size="11" fill="#52514e">horizontal pattern</text>
+      <rect x="390" y="116" width="317" height="54" rx="8" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="390" y="116" width="12" height="54" rx="6" fill="#eb6834"/>
+      <rect x="402" y="116" width="36" height="54" fill="url(#egress-light-network)"/>
+      <text x="448" y="139" font-size="14" font-weight="700">IPv4 and routing</text>
+      <text x="448" y="158" font-size="11" fill="#52514e">diagonal pattern</text>
+      <rect x="724" y="116" width="317" height="54" rx="8" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="724" y="116" width="12" height="54" rx="6" fill="#1baf7a"/>
+      <rect x="736" y="116" width="36" height="54" fill="url(#egress-light-transport)"/>
+      <text x="782" y="139" font-size="14" font-weight="700">Socket and TCP</text>
+      <text x="782" y="158" font-size="11" fill="#52514e">crosshatch pattern</text>
+      <rect x="1058" y="116" width="317" height="54" rx="8" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="1058" y="116" width="12" height="54" rx="6" fill="#eda100"/>
+      <rect x="1070" y="116" width="36" height="54" fill="url(#egress-light-observation)"/>
+      <text x="1116" y="139" font-size="14" font-weight="700">Observation boundary</text>
+      <text x="1116" y="158" font-size="11" fill="#52514e">dots pattern</text>
+    </g>
+    <g aria-label="egress symbols and edges">
+      <rect x="72" y="220" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="220" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="220" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="242" font-size="14" font-weight="700">sock_sendmsg</text>
+      <text x="480" y="242" font-size="12" fill="#52514e">net/socket.c:756</text>
+      <text x="790" y="242" font-size="12" fill="#52514e">userspace bytes borrowed through msghdr</text>
+      <line x1="56" y1="250" x2="56" y2="266" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="261" font-size="9" fill="#706f6a">callback-dispatch</text>
+      <rect x="72" y="262" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="262" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="262" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="284" font-size="14" font-weight="700">tcp_sendmsg</text>
+      <text x="480" y="284" font-size="12" fill="#52514e">net/ipv4/tcp.c:1335</text>
+      <text x="790" y="284" font-size="12" fill="#52514e">socket locked while userspace bytes are copied</text>
+      <line x1="56" y1="292" x2="56" y2="308" stroke="#52514e" stroke-width="2" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="303" font-size="9" fill="#706f6a">direct-call</text>
+      <rect x="72" y="304" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="304" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="304" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="326" font-size="14" font-weight="700">tcp_sendmsg_locked</text>
+      <text x="480" y="326" font-size="12" fill="#52514e">net/ipv4/tcp.c:1037</text>
+      <text x="790" y="326" font-size="12" fill="#52514e">application bytes copied into socket-owned sk_buffs</text>
+      <line x1="56" y1="334" x2="56" y2="350" stroke="#52514e" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="345" font-size="9" fill="#706f6a">sequencing</text>
+      <rect x="72" y="346" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="346" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="346" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="368" font-size="14" font-weight="700">tcp_write_xmit</text>
+      <text x="480" y="368" font-size="12" fill="#52514e">net/ipv4/tcp_output.c:2670</text>
+      <text x="790" y="368" font-size="12" fill="#52514e">socket write-queue sk_buffs selected for transmission</text>
+      <line x1="56" y1="376" x2="56" y2="392" stroke="#52514e" stroke-width="2" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="387" font-size="9" fill="#706f6a">direct-call</text>
+      <rect x="72" y="388" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="388" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="388" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="410" font-size="14" font-weight="700">tcp_transmit_skb</text>
+      <text x="480" y="410" font-size="12" fill="#52514e">net/ipv4/tcp_output.c:1430</text>
+      <text x="790" y="410" font-size="12" fill="#52514e">transmit clone handed toward network output</text>
+      <line x1="56" y1="418" x2="56" y2="434" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="429" font-size="9" fill="#706f6a">callback-dispatch</text>
+      <rect x="72" y="430" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="430" width="10" height="34" rx="5" fill="#1baf7a"/>
+      <rect x="82" y="430" width="30" height="34" fill="url(#egress-light-transport)"/>
+      <text x="124" y="452" font-size="14" font-weight="700">icsk_af_ops-&gt;queue_xmit</text>
+      <text x="480" y="452" font-size="12" fill="#52514e">net/ipv4/tcp_output.c:1415</text>
+      <text x="790" y="452" font-size="12" fill="#52514e">sk_buff handed to address-family output</text>
+      <line x1="56" y1="460" x2="56" y2="476" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="471" font-size="9" fill="#706f6a">callback-dispatch</text>
+      <rect x="72" y="472" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="472" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="472" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="494" font-size="14" font-weight="700">ip_queue_xmit</text>
+      <text x="480" y="494" font-size="12" fill="#52514e">net/ipv4/ip_output.c:545</text>
+      <text x="790" y="494" font-size="12" fill="#52514e">sk_buff handed to IPv4 output</text>
+      <line x1="56" y1="502" x2="56" y2="518" stroke="#52514e" stroke-width="2" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="513" font-size="9" fill="#706f6a">direct-call</text>
+      <rect x="72" y="514" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="514" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="514" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="536" font-size="14" font-weight="700">__ip_queue_xmit</text>
+      <text x="480" y="536" font-size="12" fill="#52514e">net/ipv4/ip_output.c:454</text>
+      <text x="790" y="536" font-size="12" fill="#52514e">route attached and IPv4 header prepended to sk_buff</text>
+      <line x1="56" y1="544" x2="56" y2="560" stroke="#52514e" stroke-width="2" stroke-dasharray="14 5 3 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="555" font-size="9" fill="#706f6a">conditional-slow-path</text>
+      <rect x="72" y="556" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="556" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="556" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="578" font-size="14" font-weight="700">ip_route_output_flow</text>
+      <text x="480" y="578" font-size="12" fill="#52514e">net/ipv4/route.c:2869</text>
+      <text x="790" y="578" font-size="12" fill="#52514e">referenced route returned to the socket flow</text>
+      <line x1="56" y1="586" x2="56" y2="602" stroke="#52514e" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="597" font-size="9" fill="#706f6a">sequencing</text>
+      <rect x="72" y="598" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="598" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="598" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="620" font-size="14" font-weight="700">ip_local_out</text>
+      <text x="480" y="620" font-size="12" fill="#52514e">net/ipv4/ip_output.c:121</text>
+      <text x="790" y="620" font-size="12" fill="#52514e">sk_buff retained, consumed, or stolen by a hook</text>
+      <line x1="56" y1="628" x2="56" y2="644" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="639" font-size="9" fill="#706f6a">callback-dispatch</text>
+      <rect x="72" y="640" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="640" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="640" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="662" font-size="14" font-weight="700">ip_output</text>
+      <text x="480" y="662" font-size="12" fill="#52514e">net/ipv4/ip_output.c:424</text>
+      <text x="790" y="662" font-size="12" fill="#52514e">sk_buff passed through post-routing</text>
+      <line x1="56" y1="670" x2="56" y2="686" stroke="#52514e" stroke-width="2" stroke-dasharray="10 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="681" font-size="9" fill="#706f6a">hook-continuation</text>
+      <rect x="72" y="682" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="682" width="10" height="34" rx="5" fill="#eb6834"/>
+      <rect x="82" y="682" width="30" height="34" fill="url(#egress-light-network)"/>
+      <text x="124" y="704" font-size="14" font-weight="700">ip_finish_output</text>
+      <text x="480" y="704" font-size="12" fill="#52514e">net/ipv4/ip_output.c:314</text>
+      <text x="790" y="704" font-size="12" fill="#52514e">sk_buff handed toward neighbor output</text>
+      <line x1="56" y1="712" x2="56" y2="728" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5" marker-end="url(#egress-light-arrow)"/>
+      <text x="92" y="723" font-size="9" fill="#706f6a">callback-dispatch</text>
+      <rect x="72" y="724" width="1296" height="34" rx="7" fill="#ffffff" stroke="#e1e0d9"/>
+      <rect x="72" y="724" width="10" height="34" rx="5" fill="#2a78d6"/>
+      <rect x="82" y="724" width="30" height="34" fill="url(#egress-light-packet-io)"/>
+      <text x="124" y="746" font-size="14" font-weight="700">__dev_queue_xmit</text>
+      <text x="480" y="746" font-size="12" fill="#52514e">net/core/dev.c:4277</text>
+      <text x="790" y="746" font-size="12" fill="#52514e">sk_buff consumed by queueing or driver path</text>
+    </g>
+    <g aria-label="Edge type legend" transform="translate(56 818)">
+      <line x1="0" y1="0" x2="64" y2="0" stroke="#52514e" stroke-width="2"/>
+      <text x="76" y="5" font-size="13">direct-call</text>
+      <line x1="440" y1="0" x2="504" y2="0" stroke="#52514e" stroke-width="2" stroke-dasharray="10 5"/>
+      <text x="516" y="5" font-size="13">hook-continuation</text>
+      <line x1="880" y1="0" x2="944" y2="0" stroke="#52514e" stroke-width="2" stroke-dasharray="2 5"/>
+      <text x="956" y="5" font-size="13">callback-dispatch</text>
+      <line x1="0" y1="34" x2="64" y2="34" stroke="#52514e" stroke-width="2" stroke-dasharray="14 5 3 5"/>
+      <text x="76" y="39" font-size="13">conditional-slow-path</text>
+      <line x1="440" y1="34" x2="504" y2="34" stroke="#52514e" stroke-width="2" stroke-dasharray="5 3"/>
+      <text x="516" y="39" font-size="13">sequencing</text>
+      <line x1="880" y1="34" x2="944" y2="34" stroke="#52514e" stroke-width="2" stroke-dasharray="12 4 2 4 2 4"/>
+      <text x="956" y="39" font-size="13">observation</text>
+    </g>
+    <text x="56" y="922" font-size="11" fill="#706f6a">Patterns and direct labels make phase and edge identity independent of color.</text>
+  </g>
+</svg>
