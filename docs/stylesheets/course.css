@@ -87,3 +87,242 @@ body { background: var(--course-bg); }
   .md-typeset h1 { font-size: 2.2rem; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Linux lab 04: progressively enhanced kernel source walkthrough. */
+.kernel-walkthrough-figure {
+  margin: 1.4rem 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+.kernel-walkthrough-figure:focus-visible {
+  outline: 3px solid var(--course-blue);
+  outline-offset: 3px;
+}
+.kernel-walkthrough-picture { display: block; }
+.kernel-walkthrough-picture img {
+  width: 100%;
+  border: 1px solid var(--course-line);
+  background: var(--course-surface);
+  box-shadow: var(--course-shadow);
+}
+.kw-route-figure .kernel-walkthrough-picture,
+.kw-route-figure .kernel-walkthrough-picture img { min-width: 62rem; }
+.kernel-walkthrough-figure figcaption {
+  margin-top: .4rem;
+  color: var(--course-muted);
+  font-size: .7rem;
+}
+.kw-theme-dark { display: none; }
+[data-md-color-scheme="slate"] .kw-theme-light { display: none; }
+[data-md-color-scheme="slate"] .kw-theme-dark { display: block; }
+.kernel-walkthrough-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.1rem;
+  margin: 1rem 0 1.5rem;
+  color: var(--course-muted);
+  font-size: .78rem;
+}
+.kernel-walkthrough-legend span { display: inline-flex; align-items: center; gap: .45rem; }
+.kw-legend-line { display: inline-block; width: 2rem; border-top: 3px solid currentColor; }
+.kw-edge-callback { border-top-style: dashed; }
+.kw-edge-continuation { border-top: 5px double currentColor; }
+.kw-edge-observation { border-top-style: dotted; }
+
+.kernel-walkthrough {
+  --kw-panel: color-mix(in srgb, var(--course-surface) 92%, var(--course-blue) 8%);
+  margin: 1.25rem calc(50% - 50vw + 1rem) 2rem;
+  padding: clamp(.8rem, 2vw, 1.4rem);
+  border: 1px solid var(--course-line);
+  border-left: .3rem solid var(--course-blue);
+  background: var(--course-surface);
+  box-shadow: var(--course-shadow);
+}
+.kw-controls,
+.kw-control-group,
+.kw-step-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+.kw-controls { justify-content: space-between; gap: .8rem 1.5rem; }
+.kw-control-group > span {
+  margin-right: .2rem;
+  color: var(--course-muted);
+  font-weight: 700;
+}
+.kernel-walkthrough button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: .5rem .8rem;
+  border: 1px solid var(--course-line);
+  border-radius: .45rem;
+  color: var(--course-text);
+  background: var(--course-bg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kernel-walkthrough button:hover { border-color: var(--course-blue); }
+.kernel-walkthrough button[aria-pressed="true"] {
+  border-color: var(--course-blue);
+  background: color-mix(in srgb, var(--course-blue) 14%, var(--course-bg));
+  box-shadow: inset 0 0 0 1px var(--course-blue);
+}
+.kernel-walkthrough button:focus-visible,
+.kernel-walkthrough a:focus-visible,
+.kernel-source-table:focus-visible {
+  outline: 3px solid var(--course-blue);
+  outline-offset: 3px;
+}
+.kernel-walkthrough button:disabled { opacity: .45; cursor: not-allowed; }
+.kw-status,
+.kw-noscript { min-height: 1.5em; margin: .75rem 0; color: var(--course-muted); }
+.kw-explorer-layout { display: grid; grid-template-columns: minmax(22rem, 1.55fr) minmax(17rem, 1fr); gap: 1rem; align-items: start; }
+.kw-routes,
+.kw-detail { min-width: 0; }
+.kw-route > h3 { margin: 0 0 .6rem; font-size: 1rem; }
+.kw-route-list { margin: 0; padding: 0; list-style: none; counter-reset: none; }
+.kw-route-step {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: .45rem;
+  margin: 0;
+  padding: 0 0 .7rem;
+}
+.kw-route-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 41px;
+  bottom: -2px;
+  left: 1.35rem;
+  border-left: 2px solid var(--course-muted);
+}
+.kw-route-edge-callback::after,
+.kw-route-edge-callback-dispatch::after,
+.kw-route-edge-indirect::after,
+.kw-route-edge-indirect-call::after { border-left-style: dashed; }
+.kw-route-edge-continuation::after,
+.kw-route-edge-hook-continuation::after { border-left: 4px double var(--course-muted); }
+.kw-route-edge-observation::after,
+.kw-route-edge-uapi::after { border-left-style: dotted; }
+.kw-route-edge-conditional-slow-path::after { border-left-style: dashed; }
+.kernel-walkthrough .kw-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: .7rem;
+  min-width: 0;
+  padding: .45rem .65rem .45rem .35rem;
+  text-align: left;
+}
+.kw-node-index {
+  display: grid;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--course-bg);
+  background: var(--course-muted);
+  font-size: .7rem;
+  font-variant-numeric: tabular-nums;
+}
+.kw-node[aria-current="step"] .kw-node-index { background: var(--course-blue); }
+.kw-node-copy { display: grid; min-width: 0; }
+.kw-node-copy code { overflow-wrap: anywhere; }
+.kw-node-copy small { color: var(--course-muted); font-weight: 500; }
+.kw-no-js-source { align-self: center; padding: .55rem; white-space: nowrap; }
+.is-enhanced .kw-no-js-source { display: none; }
+.is-enhanced .kw-route[hidden],
+.is-enhanced .kw-route-step[hidden] { display: none; }
+.kw-detail {
+  position: sticky;
+  top: 4.4rem;
+  padding: 1rem;
+  border: 1px solid var(--course-line);
+  border-radius: .65rem;
+  background: var(--kw-panel);
+}
+.kw-detail h3 { margin: .15rem 0 .7rem; font-size: clamp(1.15rem, 2vw, 1.5rem); }
+.kw-detail-meta,
+.kw-detail-role { color: var(--course-muted); }
+.kw-detail-meta { margin: 0; font-size: .72rem; }
+.kw-detail-role { font-weight: 700; }
+.kw-detail dl { margin: 1rem 0; }
+.kw-detail dl div { padding: .65rem 0; border-top: 1px solid var(--course-line); }
+.kw-detail dt { color: var(--course-muted); font-size: .72rem; font-weight: 750; }
+.kw-detail dd { margin: .15rem 0 0; }
+.kw-step-controls { justify-content: flex-end; margin-top: 1rem; }
+.kernel-walkthrough script { display: none; }
+
+.kernel-source-table {
+  max-width: 100%;
+  max-height: min(72vh, 44rem);
+  overflow: auto;
+  margin: 1rem 0 1.8rem;
+  border: 1px solid var(--course-line);
+  border-radius: .8rem;
+  background: var(--course-surface);
+  box-shadow: var(--course-shadow);
+}
+.md-typeset .kernel-source-table table { width: max-content; min-width: 100%; margin: 0; border: 0; box-shadow: none; }
+.kernel-source-table thead { position: sticky; z-index: 2; top: 0; }
+.md-typeset .kernel-source-table th { background: color-mix(in srgb, var(--course-blue) 12%, var(--course-bg)); }
+.kernel-source-table td:last-child,
+.kernel-source-table th:last-child,
+.kernel-source-table td:last-child code { white-space: nowrap; }
+
+@media screen and (max-width: 60em) {
+  .kernel-walkthrough { margin-right: 0; margin-left: 0; }
+  .kw-explorer-layout { grid-template-columns: 1fr; }
+  .kw-detail { position: static; }
+}
+@media screen and (max-width: 36em) {
+  .kw-control-group { align-items: stretch; }
+  .kw-control-group > span { flex-basis: 100%; }
+  .kw-phase-controls button { flex: 1 1 46%; }
+  .kw-step-controls button { flex: 1; }
+  .kw-node-copy small { font-size: .63rem; }
+}
+@media (forced-colors: active) {
+  .kernel-walkthrough,
+  .kw-detail,
+  .kernel-source-table { border-color: CanvasText; }
+  .kernel-walkthrough button[aria-pressed="true"] { outline: 3px solid Highlight; }
+  .kw-node-index { color: Canvas; background: CanvasText; }
+  .kw-node[aria-current="step"] .kw-node-index { background: Highlight; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kernel-walkthrough *,
+  .kernel-walkthrough *::before,
+  .kernel-walkthrough *::after { scroll-behavior: auto !important; transition: none !important; }
+}
+@media print {
+  .kernel-walkthrough-figure { overflow: visible; }
+  .kw-route-figure .kernel-walkthrough-picture,
+  .kw-route-figure .kernel-walkthrough-picture img { min-width: 0; }
+  .kernel-walkthrough-figure figcaption { display: none; }
+  .kw-theme-dark,
+  [data-md-color-scheme="slate"] .kw-theme-dark { display: none !important; }
+  .kw-theme-light,
+  [data-md-color-scheme="slate"] .kw-theme-light { display: block !important; }
+  .kernel-walkthrough { margin: 1rem 0; border-color: #333; box-shadow: none; }
+  .kw-controls,
+  .kw-step-controls,
+  .kw-status { display: none !important; }
+  .kw-explorer-layout { display: block; }
+  .kw-route[hidden],
+  .kw-route-step[hidden] { display: flex !important; }
+  .kw-route[hidden] { display: block !important; }
+  .kw-no-js-source { display: inline !important; }
+  .kw-detail { display: none; }
+  .kernel-source-table { max-height: none; overflow: visible; box-shadow: none; }
+  .kernel-source-table thead { position: static; }
+}
