@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -180,8 +181,16 @@ def test_linux_lab_files_follow_contract_when_present():
         required = {"README.md", "lab.h", "exercise.c", "solution.c", "test.c", "CMakeLists.txt"}
         assert {path.name for path in lab.iterdir()} >= required, lab
         document = (lab / "README.md").read_text()
-        assert "Linux" in document
-        assert "```mermaid" in document and "```c" in document
+        assert "Linux" in document and "```c" in document
+        if lab.name == "04_kernel_source_walkthrough":
+            assert "```mermaid" not in document
+            assert document.count("<!-- L04_INTERACTIVE_EXPLORER -->") == 1
+            assert document.count("<!-- L04_SOURCE_TABLE -->") == 1
+            for stem in ("ingress", "egress", "ownership", "uapi-boundary"):
+                for theme in ("light", "dark"):
+                    assert f"{stem}-{theme}.svg" in document
+        else:
+            assert "```mermaid" in document
         assert re.search(r"^\|.+\|\n\|(?:\s*:?-+:?\s*\|)+", document, re.MULTILINE), lab
         assert re.search(r"\bnon-goal", document, re.IGNORECASE), lab
 
@@ -270,6 +279,55 @@ def test_native_socket_tests_stay_on_loopback_and_use_ephemeral_ports():
         for address in {*address_calls.findall(text), *numeric_addresses.findall(text)}:
             assert address in {"127.0.0.1", "::1"}, (path, address)
         assert not fixed_listen_port.search(text), path
+
+
+def test_kernel_walkthrough_model_matches_public_c_contract():
+    model = json.loads((ROOT / "docs" / "data" / "linux-v6.6-walkthrough.json").read_text())
+    header = (LINUX_LAB_ROOT / "04_kernel_source_walkthrough" / "lab.h").read_text()
+    include = (LINUX_LAB_ROOT / "04_kernel_source_walkthrough" / "walkthrough_data.inc").read_text()
+
+    assert model["schema_version"] == 1
+    assert model["linux"]["ref"] == "v6.6"
+    assert model["linux"]["repository"] == "https://github.com/torvalds/linux"
+    symbols = model["symbols"]
+    assert len(symbols) == 30
+    assert [symbol["id"] for symbol in symbols] == list(range(30))
+    assert len({symbol["key"] for symbol in symbols}) == 30
+    assert all(symbol["enum"] in header for symbol in symbols)
+    assert "TCPIP_LINUX_L04_SYMBOL_COUNT" in header
+    assert "TCPIP_LINUX_L04_GENERATED_SYMBOL_COUNT 30U" in include
+
+    symbol_ids = {symbol["id"] for symbol in symbols}
+    assert len(model["routes"]["ingress"]) == 16
+    assert len(model["routes"]["egress"]) == 13
+    assert set(model["routes"]["ingress"]) <= symbol_ids
+    assert set(model["routes"]["egress"]) <= symbol_ids
+
+    edge_types = {
+        "direct-call",
+        "hook-continuation",
+        "callback-dispatch",
+        "conditional-slow-path",
+        "sequencing",
+    }
+    for edge in model["edges"]:
+        assert edge["from"] in symbol_ids and edge["to"] in symbol_ids
+        assert edge["route"] in {"ingress", "egress"}
+        assert edge["type"] in edge_types
+        assert edge["explanation"]
+    for symbol in symbols:
+        source_path = Path(symbol["path"])
+        assert not source_path.is_absolute() and ".." not in source_path.parts
+        assert symbol["line"] > 0
+        assert symbol["phase"] in {phase["key"] for phase in model["phases"]}
+
+    uapi = model["uapi_boundary"]
+    node_keys = {node["key"] for node in uapi["nodes"]}
+    assert node_keys == {"getsockopt", "TCP_INFO", "struct_tcp_info", "tcp_get_info"}
+    for edge in uapi["edges"]:
+        assert edge["from"] in node_keys and edge["to"] in node_keys
+        assert edge["route"] == "observation"
+        assert edge["type"] in edge_types | {"observation"}
 
 
 def test_no_unpinned_kernel_links_or_vendored_source_snapshots():

@@ -171,7 +171,12 @@ def _validate_walkthrough_data(raw: object) -> dict[str, object]:
     repo = _required_string(linux.get("repository"), "linux.repository")
     ref = _required_string(linux.get("ref"), "linux.ref")
     parsed_repo = urlsplit(repo)
-    if parsed_repo.scheme != "https" or not parsed_repo.netloc or parsed_repo.query or parsed_repo.fragment:
+    if (
+        parsed_repo.scheme != "https"
+        or not parsed_repo.netloc
+        or parsed_repo.query
+        or parsed_repo.fragment
+    ):
         raise _walkthrough_error("linux.repository must be a query-free HTTPS URL")
     if repo.rstrip("/") != "https://github.com/torvalds/linux":
         raise _walkthrough_error("linux.repository must be the Torvalds Linux mirror")
@@ -206,11 +211,15 @@ def _validate_walkthrough_data(raw: object) -> dict[str, object]:
             value = symbol.get(field)
             if expected is int:
                 if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-                    raise _walkthrough_error(f"symbols[{index}].{field} must be a non-negative integer")
+                    raise _walkthrough_error(
+                        f"symbols[{index}].{field} must be a non-negative integer"
+                    )
             elif expected is str:
                 _required_string(value, f"symbols[{index}].{field}")
-            elif not isinstance(value, list) or not value or not all(
-                isinstance(item, str) and item for item in value
+            elif (
+                not isinstance(value, list)
+                or not value
+                or not all(isinstance(item, str) and item for item in value)
             ):
                 raise _walkthrough_error(
                     f"symbols[{index}].memberships must be a non-empty string array"
@@ -242,8 +251,13 @@ def _validate_walkthrough_data(raw: object) -> dict[str, object]:
     expected_route_lengths = {"ingress": 16, "egress": 13}
     for route_name, expected_length in expected_route_lengths.items():
         route = routes_raw.get(route_name)
-        if not isinstance(route, list) or not route or not all(
-            isinstance(symbol_id, int) and not isinstance(symbol_id, bool) for symbol_id in route
+        if (
+            not isinstance(route, list)
+            or not route
+            or not all(
+                isinstance(symbol_id, int) and not isinstance(symbol_id, bool)
+                for symbol_id in route
+            )
         ):
             raise _walkthrough_error(f"routes.{route_name} must be a non-empty ID array")
         if len(route) != expected_length:
@@ -318,7 +332,11 @@ def _validate_walkthrough_data(raw: object) -> dict[str, object]:
             raise _walkthrough_error(f"duplicate UAPI node key {key!r}")
         if "symbol_id" in node:
             symbol_id = node["symbol_id"]
-            if not isinstance(symbol_id, int) or isinstance(symbol_id, bool) or symbol_id not in ids:
+            if (
+                not isinstance(symbol_id, int)
+                or isinstance(symbol_id, bool)
+                or symbol_id not in ids
+            ):
                 raise _walkthrough_error(f"uapi_boundary.nodes[{index}].symbol_id is unknown")
         else:
             _required_string(node.get("path"), f"uapi_boundary.nodes[{index}].path")
@@ -391,9 +409,7 @@ def _walkthrough_route_html(data: dict[str, object], route_name: str) -> str:
     for position, symbol_id in enumerate(route, 1):
         symbol = by_id[symbol_id]
         outgoing_type = (
-            "end"
-            if position == len(route)
-            else edge_types[(symbol_id, int(route[position]))]
+            "end" if position == len(route) else edge_types[(symbol_id, int(route[position]))]
         )
         name = html.escape(str(symbol["name"]))
         phase = html.escape(str(symbol["phase"]))
@@ -408,7 +424,7 @@ def _walkthrough_route_html(data: dict[str, object], route_name: str) -> str:
             f'data-route-name="{route_name}" aria-pressed="false">'
             f'<span class="kw-node-index">{position}</span>'
             f'<span class="kw-node-copy"><code>{name}</code>'
-            f'<small>{layer} · {phase}</small></span></button>'
+            f"<small>{layer} · {phase}</small></span></button>"
             f'<a class="kw-no-js-source" href="{url}">source</a>'
             "</li>"
         )
@@ -428,9 +444,7 @@ def _walkthrough_explorer_html(data: dict[str, object]) -> str:
     enriched["symbols"] = [
         {
             **symbol,
-            "source_url": _source_url(
-                str(linux["repository"]), str(linux["ref"]), symbol
-            ),
+            "source_url": _source_url(str(linux["repository"]), str(linux["ref"]), symbol),
         }
         for symbol in symbols
         if isinstance(symbol, dict)
@@ -450,31 +464,31 @@ def _walkthrough_explorer_html(data: dict[str, object]) -> str:
     return (
         '<div class="kernel-walkthrough" data-kernel-walkthrough>'
         '<noscript><p class="kw-noscript">Interactive controls need JavaScript; '
-        'both routes and their pinned source links are listed below.</p></noscript>'
+        "both routes and their pinned source links are listed below.</p></noscript>"
         '<div class="kw-controls" aria-label="Walkthrough controls">'
         '<div class="kw-control-group" aria-label="Route">'
-        '<span>Route</span>'
+        "<span>Route</span>"
         '<button type="button" data-route="ingress" aria-pressed="true">Ingress</button>'
         '<button type="button" data-route="egress" aria-pressed="false">Egress</button>'
         "</div>"
         '<div class="kw-control-group kw-phase-controls" aria-label="Phase">'
-        '<span>Phase</span>'
+        "<span>Phase</span>"
         '<button type="button" data-phase="all" aria-pressed="true">All phases</button>'
         f"{phase_buttons}</div></div>"
         '<p class="kw-status" data-walkthrough-status aria-live="polite"></p>'
         '<div class="kw-explorer-layout"><div class="kw-routes">'
-        f'{_walkthrough_route_html(data, "ingress")}'
-        f'{_walkthrough_route_html(data, "egress")}'
+        f"{_walkthrough_route_html(data, 'ingress')}"
+        f"{_walkthrough_route_html(data, 'egress')}"
         "</div>"
         '<aside class="kw-detail" data-walkthrough-detail aria-label="Selected source symbol">'
         '<p class="kw-detail-meta"><span data-detail-layer></span> · '
-        '<span data-detail-phase></span></p>'
-        '<h3><code data-detail-name></code></h3>'
+        "<span data-detail-phase></span></p>"
+        "<h3><code data-detail-name></code></h3>"
         '<p class="kw-detail-role" data-detail-role></p>'
-        '<p data-detail-description></p>'
-        '<dl><div><dt>Ownership</dt><dd data-detail-ownership></dd></div>'
-        '<div><dt>Edge type</dt><dd data-detail-edge-type></dd></div>'
-        '<div><dt>Why this edge</dt><dd data-detail-edge></dd></div></dl>'
+        "<p data-detail-description></p>"
+        "<dl><div><dt>Ownership</dt><dd data-detail-ownership></dd></div>"
+        "<div><dt>Edge type</dt><dd data-detail-edge-type></dd></div>"
+        "<div><dt>Why this edge</dt><dd data-detail-edge></dd></div></dl>"
         '<p><a data-detail-source href="#">Open pinned Linux source</a></p>'
         "</aside></div>"
         '<div class="kw-step-controls" aria-label="Route navigation">'
@@ -504,7 +518,7 @@ def _walkthrough_source_table(data: dict[str, object]) -> str:
         source = html.escape(f"{symbol['path']}:{symbol['line']}")
         rows.append(
             f"<tr><td><code>{name}</code></td><td>{phase}</td><td>{role}</td>"
-            f"<td>{ownership}</td><td><a href=\"{url}\"><code>{source}</code></a></td></tr>"
+            f'<td>{ownership}</td><td><a href="{url}"><code>{source}</code></a></td></tr>'
         )
     return (
         '<div class="kernel-source-table" role="region" aria-label="All 30 pinned Linux source records" '
@@ -519,17 +533,19 @@ def _expand_walkthrough(text: str) -> str:
     for marker in WALKTHROUGH_MARKERS:
         count = text.count(marker)
         if count != 1:
-            raise ValueError(f"walkthrough marker must appear exactly once: {marker} (found {count})")
+            raise ValueError(
+                f"walkthrough marker must appear exactly once: {marker} (found {count})"
+            )
     if text.count("kernel-walkthrough.js"):
         raise ValueError("walkthrough source must not add its own page-local script")
     if not WALKTHROUGH_DATA.is_file():
-        raise FileNotFoundError(
-            f"missing walkthrough data: {WALKTHROUGH_DATA.relative_to(ROOT)}"
-        )
+        raise FileNotFoundError(f"missing walkthrough data: {WALKTHROUGH_DATA.relative_to(ROOT)}")
     try:
         raw = json.loads(WALKTHROUGH_DATA.read_text())
     except json.JSONDecodeError as error:
-        raise _walkthrough_error(f"malformed JSON at line {error.lineno}, column {error.colno}") from error
+        raise _walkthrough_error(
+            f"malformed JSON at line {error.lineno}, column {error.colno}"
+        ) from error
     data = _validate_walkthrough_data(raw)
     return text.replace(WALKTHROUGH_MARKERS[0], _walkthrough_explorer_html(data)).replace(
         WALKTHROUGH_MARKERS[1], _walkthrough_source_table(data)

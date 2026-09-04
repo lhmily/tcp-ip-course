@@ -85,11 +85,28 @@ def build_site(output: Path, *, token: str | None = None) -> subprocess.Complete
     )
 
 
-def test_documents_have_unique_valid_mermaid_diagrams():
+def test_documents_have_unique_valid_visuals():
     require_lesson_documents()
     seen: set[str] = set()
+    walkthrough = ROOT / "linux_labs" / "04_kernel_source_walkthrough" / "README.md"
     for path in source_documents():
-        blocks = mermaid_blocks(path.read_text())
+        text = path.read_text()
+        blocks = mermaid_blocks(text)
+        if path == walkthrough:
+            assert not blocks
+            for stem in ("ingress", "egress", "ownership", "uapi-boundary"):
+                for theme in ("light", "dark"):
+                    asset = (
+                        ROOT
+                        / "docs"
+                        / "assets"
+                        / "kernel-source-walkthrough"
+                        / f"{stem}-{theme}.svg"
+                    )
+                    assert asset.is_file()
+                    svg = asset.read_text()
+                    assert "<title" in svg and "<desc" in svg
+            continue
         assert blocks, f"missing Mermaid diagram: {path}"
         for block in blocks:
             body = block.strip()
@@ -131,7 +148,11 @@ def test_root_links_to_all_tracks_in_catalog_order():
 
 
 def test_generated_assets_are_reproducible_and_accessible():
-    for script in ("generate_branding_assets.py", "generate_documentation_assets.py"):
+    for script in (
+        "generate_branding_assets.py",
+        "generate_documentation_assets.py",
+        "generate_kernel_walkthrough.py",
+    ):
         result = run_generator(script)
         assert result.returncode == 0, result.stdout + result.stderr
 
@@ -256,6 +277,57 @@ def test_linux_track_pages_routes_navigation_and_links_when_present(tmp_path):
             assert f"../{LINUX_LABS[index - 1].slug}/" in text
         if index + 1 < len(LINUX_LABS):
             assert f"../{LINUX_LABS[index + 1].slug}/" in text
+
+
+def test_kernel_walkthrough_visual_explorer_and_source_table(tmp_path):
+    output = tmp_path / "site"
+    result = build_site(output)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    model = json.loads((ROOT / "docs" / "data" / "linux-v6.6-walkthrough.json").read_text())
+    page = output / "linux-labs" / "kernel-source-walkthrough" / "index.html"
+    text = page.read_text()
+
+    assert "L04_INTERACTIVE_EXPLORER" not in text
+    assert "L04_SOURCE_TABLE" not in text
+    assert "```mermaid" not in text
+    assert text.count('src="../../javascripts/kernel-walkthrough.js"') == 1
+    assert "https://cdn" not in text and "unpkg.com" not in text
+    assert "data-kernel-walkthrough" in text
+    assert 'class="kw-route' in text
+    assert '<section class="kw-route" data-route-list="ingress" hidden' not in text
+    assert '<section class="kw-route" data-route-list="egress" hidden' not in text
+    table_match = re.search(
+        r'<div class="kernel-source-table".*?<tbody>(.*?)</tbody></table></div>',
+        text,
+        re.DOTALL,
+    )
+    assert table_match
+    assert table_match.group(1).count("<tr>") == len(model["symbols"])
+    assert text.count("https://github.com/torvalds/linux/blob/v6.6/") >= len(model["symbols"])
+
+    payload_match = re.search(
+        r'<script type="application/json" data-walkthrough-data>(.*?)</script>',
+        text,
+        re.DOTALL,
+    )
+    assert payload_match
+    payload = json.loads(payload_match.group(1))
+    assert payload["routes"] == model["routes"]
+    assert payload["edges"] == model["edges"]
+    assert payload["uapi_boundary"] == model["uapi_boundary"]
+    assert len(payload["symbols"]) == 30
+
+    assert len(re.findall(r'data-route-name="ingress"', text)) == len(model["routes"]["ingress"])
+    assert len(re.findall(r'data-route-name="egress"', text)) == len(model["routes"]["egress"])
+    for stem in ("ingress", "egress", "ownership", "uapi-boundary"):
+        for theme in ("light", "dark"):
+            assert f"assets/kernel-source-walkthrough/{stem}-{theme}.svg" in text
+
+    for other_page in site_pages(output):
+        if other_page == page:
+            continue
+        assert "kernel-walkthrough.js" not in other_page.read_text()
 
 
 def test_cloudflare_analytics_is_optional_and_escaped(tmp_path):
