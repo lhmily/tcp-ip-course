@@ -1,0 +1,193 @@
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+from scripts.build_site import prepare
+from scripts.component_models import ComponentModelError, load_page_model
+from scripts.component_renderers import render_component
+from scripts.course_catalog import page_identities
+from scripts.generate_course_components import OUTPUT, expected_manifest
+
+ROOT = Path(__file__).parents[1]
+MODELS = ROOT / "docs" / "data" / "course-pages"
+START = re.compile(r"<!-- COURSE_COMPONENT:([a-z0-9-]+) START -->")
+END = re.compile(r"<!-- COURSE_COMPONENT:([a-z0-9-]+) END -->")
+
+
+def source_for(key: str) -> Path:
+    if key == "course-overview":
+        return ROOT / "README.md"
+    if key == "linux-overview":
+        return ROOT / "linux_labs" / "README.md"
+    for page in page_identities():
+        if page.key != key:
+            continue
+        prefix = "lessons" if page.track == "core" else "linux_labs"
+        directories = sorted((ROOT / prefix).glob(f"*_{key.replace('-', '_')}"))
+        assert len(directories) == 1, (key, directories)
+        return directories[0] / "README.md"
+    raise AssertionError(key)
+
+
+def test_all_eighteen_page_identities_have_models():
+    identities = page_identities()
+    assert len(identities) == 18
+    assert [page.key for page in identities] == [
+        "course-overview",
+        "bytes-addressing-checksum",
+        "ethernet-arp",
+        "ipv4-packets",
+        "icmp",
+        "udp",
+        "tcp-segments",
+        "tcp-state-reliability",
+        "stream-sockets",
+        "dns",
+        "http",
+        "routing-nat",
+        "diagnostics-integration",
+        "linux-overview",
+        "epoll-event-loop",
+        "tcp-info",
+        "userspace-mini-stack",
+        "kernel-source-walkthrough",
+    ]
+    assert len({page.route for page in identities}) == 18
+    assert len({page.title for page in identities}) == 18
+    assert {path.stem for path in MODELS.glob("*.json")} == {page.key for page in identities}
+
+
+def test_models_match_catalog_and_markdown_markers():
+    identities = {page.key: page for page in page_identities()}
+    model_paths = sorted(MODELS.glob("*.json"))
+    assert model_paths
+    for path in model_paths:
+        model = load_page_model(path, root=ROOT, catalog_keys=set(identities))
+        assert path.stem == model.catalog_key
+        source = source_for(model.catalog_key)
+        text = source.read_text()
+        starts = START.findall(text)
+        ends = END.findall(text)
+        declared = [component.id for component in model.components]
+        assert starts == ends
+        assert sorted(starts) == sorted(declared)
+        assert len(starts) == len(set(starts))
+        for component in model.components:
+            start = f"<!-- COURSE_COMPONENT:{component.id} START -->"
+            end = f"<!-- COURSE_COMPONENT:{component.id} END -->"
+            fallback = text.split(start, 1)[1].split(end, 1)[0]
+            assert fallback.strip()
+            rendered = render_component(component)
+            assert f'id="component-{component.id}"' in rendered
+            assert component.heading in rendered
+
+
+def test_all_built_pages_render_structured_components(tmp_path):
+    prepare()
+    output = tmp_path / "site"
+    result = subprocess.run(
+        [sys.executable, "-m", "mkdocs", "build", "--strict", "--site-dir", str(output)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    manifest = json.loads(OUTPUT.read_text())
+    expected_counts = {page["route"]: len(page["component_ids"]) for page in manifest["pages"]}
+    identities = {page.key: page for page in page_identities()}
+    for key, identity in identities.items():
+        page = output / identity.route / "index.html"
+        text = page.read_text()
+        assert "COURSE_COMPONENT:" not in text
+        assert text.count("data-course-component=") == expected_counts[identity.route]
+        assert text.count("<h1") == 1, key
+        ids = set(re.findall(r'\bid="([^"]+)"', text))
+        assert all(fragment in ids for fragment in re.findall(r'href="#([^"]+)"', text)), key
+        assert 'data-md-component="search"' in text
+        assert "fonts.googleapis.com" not in text
+        assert "fonts.gstatic.com" not in text
+        if key == "kernel-source-walkthrough":
+            assert "md-content--kernel-walkthrough" in text
+            assert text.count("kernel-walkthrough.js") == 1
+        else:
+            assert "md-content--course-page" in text
+            assert text.count("course-components.js") == 1
+
+    search = json.loads((output / "search" / "search_index.json").read_text())
+    indexed_routes = {
+        entry.get("location", "").split("#", 1)[0]
+        for entry in search["docs"]
+        if entry.get("location")
+    }
+    assert all(identity.route in indexed_routes for identity in identities.values())
+
+
+def test_component_manifest_is_current():
+    assert OUTPUT.is_file()
+    assert OUTPUT.read_bytes() == expected_manifest()
+    manifest = json.loads(OUTPUT.read_text())
+    assert manifest["schema_version"] == 1
+    assert {page["catalog_key"] for page in manifest["pages"]} == {
+        path.stem for path in MODELS.glob("*.json")
+    }
+
+
+def test_renderers_escape_untrusted_text(tmp_path):
+    path = tmp_path / "model.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "catalog_key": "course-overview",
+                "components": [
+                    {
+                        "id": "escape-check",
+                        "type": "page_hero",
+                        "heading": "<script>alert(1)</script>",
+                        "payload": {
+                            "title": "<unsafe>",
+                            "summary": "A & B",
+                            "badges": ["<badge>"],
+                            "actions": [{"label": "Open", "href": "#safe"}],
+                        },
+                    }
+                ],
+            }
+        )
+    )
+    model = load_page_model(path, root=ROOT, catalog_keys={"course-overview"})
+    rendered = render_component(model.components[0])
+    assert "<script>" not in rendered
+    assert "&lt;script&gt;" in rendered
+    assert "&lt;unsafe&gt;" in rendered
+    assert "A &amp; B" in rendered
+
+
+@pytest.mark.parametrize("bad_id", ["Bad", "has space", "under_score", "../escape"])
+def test_model_rejects_unsafe_component_ids(tmp_path, bad_id):
+    path = tmp_path / "bad.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "catalog_key": "course-overview",
+                "components": [
+                    {
+                        "id": bad_id,
+                        "type": "safety_boundary",
+                        "heading": "Safety",
+                        "payload": {"allowed": ["local"], "excluded": ["external"]},
+                    }
+                ],
+            }
+        )
+    )
+    with pytest.raises(ComponentModelError):
+        load_page_model(path, root=ROOT, catalog_keys={"course-overview"})

@@ -36,12 +36,14 @@ extra:
 
 extra_css:
   - stylesheets/course.css
+  - stylesheets/course-components.css
 
 theme:
   name: material
   custom_dir: docs/overrides
   favicon: assets/branding/lemon.svg
   language: en
+  font: false
   features:
     - content.code.copy
     - navigation.footer

@@ -57,6 +57,7 @@ uv run ruff format --check .
 uv run python scripts/generate_branding_assets.py --check
 uv run python scripts/generate_documentation_assets.py --check
 uv run python scripts/generate_kernel_walkthrough.py --check
+uv run python scripts/generate_course_components.py --check
 uv run python scripts/build_site.py
 uv run mkdocs build --strict
 ```

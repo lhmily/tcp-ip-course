@@ -1,0 +1,98 @@
+/* Shared structured course components. */
+.md-main__inner:has(> .md-content--course-page) { max-width: none; }
+.md-content--course-page { min-width: 0; }
+.course-page { --component-measure: 50rem; }
+.course-page > :not(.course-component) {
+  width: min(100%, var(--component-measure));
+  margin-right: auto;
+  margin-left: auto;
+}
+.course-component {
+  width: 100%;
+  max-width: min(100%, 72rem);
+  margin: 1.5rem auto;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid var(--course-line);
+  border-radius: .8rem;
+  background: var(--course-surface);
+  box-shadow: var(--course-shadow);
+}
+.course-component > h2 { margin-top: 0; }
+.course-component--hero {
+  display: grid;
+  min-height: 18rem;
+  align-items: center;
+  border-left: .35rem solid var(--course-blue);
+}
+.course-component--hero h1 { margin: 0 0 .65rem; font-size: clamp(2.3rem, 7vw, 4.8rem); line-height: .98; }
+.course-component--hero p { max-width: 62ch; }
+.course-badges,
+.course-card ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  padding: 0;
+  list-style: none;
+}
+.course-badges li,
+.course-card li {
+  padding: .25rem .5rem;
+  border: 1px solid var(--course-line);
+  border-radius: 999px;
+  color: var(--course-muted);
+  background: color-mix(in srgb, var(--course-bg) 86%, var(--course-blue) 14%);
+  font-size: .75rem;
+}
+.course-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.course-actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: .5rem .8rem;
+  border: 1px solid var(--course-blue);
+  border-radius: .45rem;
+  font-weight: 700;
+}
+.course-two-column,
+.course-safety,
+.course-contract {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.course-contract { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.course-two-column > *,
+.course-safety > *,
+.course-contract > *,
+.course-card { min-width: 0; }
+.course-contract pre { max-width: 100%; overflow: auto; }
+.course-contract code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.course-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: 1rem;
+}
+.course-card {
+  padding: 1rem;
+  border: 1px solid var(--course-line);
+  border-radius: .65rem;
+  background: var(--course-bg);
+}
+.course-card h3 { margin-top: 0; }
+.course-contract pre { margin: .5rem 0 0; }
+@media screen and (max-width: 60em) {
+  .course-page { --component-measure: 100%; }
+  .course-two-column,
+  .course-safety,
+  .course-contract { grid-template-columns: 1fr; }
+}
+@media (forced-colors: active) {
+  .course-component,
+  .course-card,
+  .course-badges li,
+  .course-card li { border-color: CanvasText; }
+}
+@media print {
+  .course-component { box-shadow: none; break-inside: avoid; }
+  .course-actions { display: none; }
+}

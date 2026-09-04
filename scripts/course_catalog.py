@@ -13,6 +13,7 @@ class CatalogPage(Protocol):
     source: str
     slug: str
     title: str
+    key: str
     description: str
     source_root: str
     route_root: str
@@ -26,6 +27,10 @@ class Lesson:
     title: str
     description: str
     section: str
+
+    @property
+    def key(self) -> str:
+        return self.slug
 
     @property
     def source_root(self) -> str:
@@ -47,6 +52,10 @@ class LinuxLab:
     slug: str
     title: str
     description: str
+
+    @property
+    def key(self) -> str:
+        return self.slug
 
     @property
     def source_root(self) -> str:
@@ -218,6 +227,43 @@ def grouped_lessons() -> tuple[tuple[str, tuple[Lesson, ...]], ...]:
     )
 
 
+@dataclass(frozen=True)
+class PageIdentity:
+    key: str
+    route: str
+    title: str
+    description: str
+    track: str
+
+
+COURSE_OVERVIEW = PageIdentity(
+    "course-overview",
+    "",
+    "TCP/IP Course in C17",
+    "Learn TCP/IP in 12 portable C17 core lessons and 4 optional Linux implementation labs.",
+    "overview",
+)
+LINUX_OVERVIEW = PageIdentity(
+    "linux-overview",
+    "linux-labs/",
+    "Optional Linux implementation track",
+    "Explore Linux networking implementation boundaries in four optional, unprivileged C17 labs.",
+    "linux",
+)
+
+
 def all_pages() -> tuple[CatalogPage, ...]:
-    """Return all first-class course pages in stable site order."""
+    """Return all numbered course pages in stable navigation order."""
     return (*LESSONS, *LINUX_LABS)
+
+
+def page_identities() -> tuple[PageIdentity, ...]:
+    """Return all 18 canonical page identities in stable site order."""
+    lesson_pages = tuple(
+        PageIdentity(page.key, page.route, page.title, page.description, "core") for page in LESSONS
+    )
+    linux_pages = tuple(
+        PageIdentity(page.key, page.route, page.title, page.description, "linux")
+        for page in LINUX_LABS
+    )
+    return (COURSE_OVERVIEW, *lesson_pages, LINUX_OVERVIEW, *linux_pages)

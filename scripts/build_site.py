@@ -8,6 +8,13 @@ import json
 import re
 import shutil
 from pathlib import Path
+
+try:
+    from scripts.component_models import ComponentModelError, load_page_model
+    from scripts.component_renderers import render_component
+except ModuleNotFoundError:
+    from component_models import ComponentModelError, load_page_model  # type: ignore[no-redef]
+    from component_renderers import render_component  # type: ignore[no-redef]
 from urllib.parse import quote, urlsplit
 
 try:
@@ -15,6 +22,7 @@ try:
         LESSONS,
         LINUX_LABS,
         CatalogPage,
+        page_identities,
         route_document,
         source_document,
     )
@@ -23,6 +31,7 @@ except ModuleNotFoundError:  # Direct script execution adds scripts/, not the re
         LESSONS,
         LINUX_LABS,
         CatalogPage,
+        page_identities,
         route_document,
         source_document,
     )
@@ -35,6 +44,8 @@ CATALOG_PAGES = (*LESSONS, *LINUX_LABS)
 SOURCE_TO_ROUTE = {(page.source_root, page.source): page.route for page in CATALOG_PAGES}
 WALKTHROUGH_SOURCE = ROOT / "linux_labs" / "04_kernel_source_walkthrough" / "README.md"
 WALKTHROUGH_DATA = ROOT / "docs" / "data" / "linux-v6.6-walkthrough.json"
+COURSE_PAGE_MODELS = ROOT / "docs" / "data" / "course-pages"
+COURSE_COMPONENT_START = re.compile(r"<!-- COURSE_COMPONENT:([a-z0-9-]+) START -->")
 WALKTHROUGH_MARKERS = (
     "<!-- L04_INTERACTIVE_EXPLORER -->",
     "<!-- L04_SOURCE_TABLE -->",
@@ -81,6 +92,86 @@ def front_matter(
         + "\n".join(f"{key}: {json.dumps(value)}" for key, value in values.items())
         + "\n---\n\n"
     )
+
+
+def _rewrite_component_fragments(rendered: str, component_ids: list[str]) -> str:
+    exercise = next(
+        (item for item in component_ids if "contract" in item or "exercise-test" in item), None
+    )
+    prerequisites = next(
+        (item for item in component_ids if "prerequisite" in item or "outcome" in item), None
+    )
+    replacements = {
+        "exercise": exercise,
+        "test-contract-and-invariants": exercise,
+        "public-contract": exercise,
+        "snapshot-and-api-contract": exercise,
+        "contract-at-a-glance": exercise,
+        "prerequisites-and-workflow": prerequisites,
+    }
+    for old, new in replacements.items():
+        if new is not None:
+            rendered = rendered.replace(f'href="#{old}"', f'href="#component-{new}"')
+    return rendered
+
+
+def _rewrite_component_links(rendered: str) -> str:
+    for page in CATALOG_PAGES:
+        public_url = f"/tcp-ip-course/{page.route}"
+        candidates = {
+            f"{page.source_root}/{page.source}/README.md",
+            f"{page.source}/README.md",
+        }
+        for candidate in candidates:
+            rendered = rendered.replace(f'href="{candidate}"', f'href="{public_url}"')
+    return rendered
+
+
+def _expand_course_components(text: str, catalog_key: str) -> tuple[str, bool]:
+    model_path = COURSE_PAGE_MODELS / f"{catalog_key}.json"
+    markers = COURSE_COMPONENT_START.findall(text)
+    if not model_path.is_file():
+        if markers:
+            raise ComponentModelError(
+                f"{catalog_key}: component markers require {model_path.relative_to(ROOT)}"
+            )
+        return text, False
+
+    catalog_keys = {page.key for page in page_identities()}
+    model = load_page_model(model_path, root=ROOT, catalog_keys=catalog_keys)
+    if model.catalog_key != catalog_key:
+        raise ComponentModelError(
+            f"{model_path.relative_to(ROOT)} catalog_key does not match {catalog_key!r}"
+        )
+    declared = [component.id for component in model.components]
+    if len(markers) != len(set(markers)):
+        raise ComponentModelError(f"{catalog_key}: duplicate component markers")
+    if set(markers) != set(declared):
+        raise ComponentModelError(
+            f"{catalog_key}: component marker/model mismatch: markers={sorted(markers)}, declared={sorted(declared)}"
+        )
+
+    expanded = text
+    for component in model.components:
+        start = f"<!-- COURSE_COMPONENT:{component.id} START -->"
+        end = f"<!-- COURSE_COMPONENT:{component.id} END -->"
+        if expanded.count(start) != 1 or expanded.count(end) != 1:
+            raise ComponentModelError(
+                f"{catalog_key}: component {component.id!r} needs one marker pair"
+            )
+        start_index = expanded.index(start)
+        end_index = expanded.index(end, start_index + len(start))
+        region = expanded[start_index + len(start) : end_index]
+        if COURSE_COMPONENT_START.search(region):
+            raise ComponentModelError(f"{catalog_key}: nested component markers are not allowed")
+        replacement = _rewrite_component_fragments(
+            _rewrite_component_links(render_component(component)),
+            declared,
+        )
+        expanded = expanded[:start_index] + replacement + expanded[end_index + len(end) :]
+    if "<!-- COURSE_COMPONENT:" in expanded:
+        raise ComponentModelError(f"{catalog_key}: unexpanded component marker")
+    return expanded, True
 
 
 def _page_link(current: CatalogPage | None, target: CatalogPage) -> str:
@@ -601,6 +692,7 @@ def _stage_page(
     destination = route_document(page, output)
     destination.parent.mkdir(parents=True, exist_ok=True)
     content = source.read_text()
+    content, has_components = _expand_course_components(content, page.key)
     if source == WALKTHROUGH_SOURCE:
         content = _expand_walkthrough(content)
     content = rewrite_markdown(content, page=page)
@@ -609,7 +701,18 @@ def _stage_page(
     content = _append_track_navigation(
         content, page=page, pages=pages, overview=overview, label=label
     )
-    template = "kernel-walkthrough.html" if source == WALKTHROUGH_SOURCE else None
+    template = (
+        "kernel-walkthrough.html"
+        if source == WALKTHROUGH_SOURCE
+        else "course-page.html"
+        if has_components
+        else None
+    )
+    component_script = (
+        '\n<script defer src="../../javascripts/course-components.js"></script>\n'
+        if has_components and source != WALKTHROUGH_SOURCE
+        else ""
+    )
     destination.write_text(
         front_matter(
             page.title,
@@ -618,6 +721,7 @@ def _stage_page(
             template=template,
         )
         + content
+        + component_script
     )
 
 
@@ -634,9 +738,22 @@ def prepare(output: Path = DEFAULT_OUTPUT) -> None:
     homepage = (ROOT / "README.md").read_text()
     if not lab_documents_present:
         homepage = _remove_missing_lab_links(homepage)
+    homepage, homepage_components = _expand_course_components(homepage, "course-overview")
     homepage = rewrite_markdown(homepage)
+    homepage_script = (
+        '\n<script defer src="javascripts/course-components.js"></script>\n'
+        if homepage_components
+        else ""
+    )
     (output / "index.md").write_text(
-        front_matter("TCP/IP Course in C17", homepage_description, "Course") + homepage
+        front_matter(
+            "TCP/IP Course in C17",
+            homepage_description,
+            "Course",
+            template="course-page.html" if homepage_components else None,
+        )
+        + homepage
+        + homepage_script
     )
 
     lesson_pages: tuple[CatalogPage, ...] = LESSONS
@@ -665,13 +782,23 @@ def prepare(output: Path = DEFAULT_OUTPUT) -> None:
     overview_text = linux_overview.read_text()
     if not missing_linux_labs:
         overview_text = _rewrite_linux_overview(overview_text)
+    overview_text, linux_overview_components = _expand_course_components(
+        overview_text,
+        "linux-overview",
+    )
+    linux_overview_template = "course-page.html" if linux_overview_components else None
+    if linux_overview_components:
+        overview_text += '\n<script defer src="../javascripts/course-components.js"></script>\n'
     if missing_linux_labs:
         missing = ", ".join(map(str, missing_linux_labs))
         print(f"skipping Linux lab pages; parallel files are absent: {missing}")
         overview_text = _remove_missing_lab_links(overview_text)
         overview_destination.write_text(
             front_matter(
-                "Optional Linux implementation track", linux_description, "LearningResource"
+                "Optional Linux implementation track",
+                linux_description,
+                "LearningResource",
+                template=linux_overview_template,
             )
             + overview_text
         )
@@ -683,7 +810,10 @@ def prepare(output: Path = DEFAULT_OUTPUT) -> None:
     else:
         overview_destination.write_text(
             front_matter(
-                "Optional Linux implementation track", linux_description, "LearningResource"
+                "Optional Linux implementation track",
+                linux_description,
+                "LearningResource",
+                template=linux_overview_template,
             )
             + rewrite_markdown(overview_text, linux_overview=True)
         )

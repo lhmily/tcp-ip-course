@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "pages": [
+    {
+      "catalog_key": "bytes-addressing-checksum",
+      "route": "lessons/bytes-addressing-checksum/",
+      "component_ids": [
+        "bytes-addressing-checksum-hero",
+        "bytes-addressing-checksum-outcomes",
+        "bytes-addressing-checksum-contract",
+        "bytes-addressing-checksum-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "course-overview",
+      "route": "",
+      "component_ids": [
+        "course-hero",
+        "course-prerequisites",
+        "core-curriculum",
+        "course-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "curriculum_cards",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "diagnostics-integration",
+      "route": "lessons/diagnostics-integration/",
+      "component_ids": [
+        "diagnostics-integration-hero",
+        "diagnostics-integration-prerequisites-outcomes",
+        "diagnostics-integration-exercise-test",
+        "diagnostics-integration-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "dns",
+      "route": "lessons/dns/",
+      "component_ids": [
+        "dns-hero",
+        "dns-outcomes",
+        "dns-contract",
+        "dns-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "epoll-event-loop",
+      "route": "linux-labs/epoll-event-loop/",
+      "component_ids": [
+        "epoll-hero",
+        "epoll-prerequisites",
+        "epoll-contract",
+        "epoll-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "ethernet-arp",
+      "route": "lessons/ethernet-arp/",
+      "component_ids": [
+        "ethernet-arp-hero",
+        "ethernet-arp-outcomes",
+        "ethernet-arp-contract",
+        "ethernet-arp-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "http",
+      "route": "lessons/http/",
+      "component_ids": [
+        "http-hero",
+        "http-prerequisites-outcomes",
+        "http-exercise-test",
+        "http-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "icmp",
+      "route": "lessons/icmp/",
+      "component_ids": [
+        "icmp-hero",
+        "icmp-outcomes",
+        "icmp-contract",
+        "icmp-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "ipv4-packets",
+      "route": "lessons/ipv4-packets/",
+      "component_ids": [
+        "ipv4-packets-hero",
+        "ipv4-packets-outcomes",
+        "ipv4-packets-contract",
+        "ipv4-packets-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "kernel-source-walkthrough",
+      "route": "linux-labs/kernel-source-walkthrough/",
+      "component_ids": [
+        "kernel-walkthrough-hero",
+        "kernel-walkthrough-prerequisites",
+        "kernel-walkthrough-contract",
+        "kernel-walkthrough-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "linux-overview",
+      "route": "linux-labs/",
+      "component_ids": [
+        "linux-hero",
+        "linux-prerequisites",
+        "linux-curriculum",
+        "linux-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "curriculum_cards",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "routing-nat",
+      "route": "lessons/routing-nat/",
+      "component_ids": [
+        "routing-nat-hero",
+        "routing-nat-prerequisites-outcomes",
+        "routing-nat-exercise-test",
+        "routing-nat-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "stream-sockets",
+      "route": "lessons/stream-sockets/",
+      "component_ids": [
+        "stream-sockets-hero",
+        "stream-sockets-prerequisites-outcomes",
+        "stream-sockets-exercise-test",
+        "stream-sockets-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "tcp-info",
+      "route": "linux-labs/tcp-info/",
+      "component_ids": [
+        "tcp-info-hero",
+        "tcp-info-prerequisites",
+        "tcp-info-contract",
+        "tcp-info-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "tcp-segments",
+      "route": "lessons/tcp-segments/",
+      "component_ids": [
+        "tcp-segments-hero",
+        "tcp-segments-outcomes",
+        "tcp-segments-contract",
+        "tcp-segments-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "tcp-state-reliability",
+      "route": "lessons/tcp-state-reliability/",
+      "component_ids": [
+        "tcp-state-reliability-hero",
+        "tcp-state-reliability-prerequisites-outcomes",
+        "tcp-state-reliability-exercise-test",
+        "tcp-state-reliability-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "udp",
+      "route": "lessons/udp/",
+      "component_ids": [
+        "udp-hero",
+        "udp-outcomes",
+        "udp-contract",
+        "udp-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    },
+    {
+      "catalog_key": "userspace-mini-stack",
+      "route": "linux-labs/userspace-mini-stack/",
+      "component_ids": [
+        "mini-stack-hero",
+        "mini-stack-prerequisites",
+        "mini-stack-contract",
+        "mini-stack-safety"
+      ],
+      "component_types": [
+        "page_hero",
+        "prerequisites_outcomes",
+        "exercise_test_contract",
+        "safety_boundary"
+      ]
+    }
+  ]
+}

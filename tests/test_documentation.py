@@ -307,7 +307,9 @@ def test_kernel_walkthrough_visual_explorer_and_source_table(tmp_path):
     ordinary = (output / "lessons" / LESSONS[0].slug / "index.html").read_text()
     assert "md-content--kernel-walkthrough" not in ordinary
     assert "kernel-walkthrough-page" not in ordinary
-    assert "md-sidebar--secondary" in ordinary
+    assert "md-content--course-page" in ordinary
+    assert "course-page" in ordinary
+    assert "md-sidebar--secondary" not in ordinary
     assert 'data-md-component="search"' in ordinary
 
     assert "L04_INTERACTIVE_EXPLORER" not in text
