@@ -8,13 +8,17 @@
         "bytes-addressing-checksum-hero",
         "bytes-addressing-checksum-outcomes",
         "bytes-addressing-checksum-contract",
-        "bytes-addressing-checksum-safety"
+        "bytes-addressing-checksum-safety",
+        "bytes-addressing-checksum-endian-fields",
+        "bytes-addressing-checksum-odd-checksum"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
         "exercise_test_contract",
-        "safety_boundary"
+        "safety_boundary",
+        "protocol_fields",
+        "checksum_view"
       ]
     },
     {
@@ -55,12 +59,16 @@
       "component_ids": [
         "dns-hero",
         "dns-outcomes",
+        "dns-fields",
+        "dns-byte-inspector",
         "dns-contract",
         "dns-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "protocol_fields",
+        "byte_inspector",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -88,13 +96,17 @@
         "ethernet-arp-hero",
         "ethernet-arp-outcomes",
         "ethernet-arp-contract",
-        "ethernet-arp-safety"
+        "ethernet-arp-safety",
+        "ethernet-arp-frame-fields",
+        "ethernet-arp-frame-bytes"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
         "exercise_test_contract",
-        "safety_boundary"
+        "safety_boundary",
+        "protocol_fields",
+        "byte_inspector"
       ]
     },
     {
@@ -119,12 +131,18 @@
       "component_ids": [
         "icmp-hero",
         "icmp-outcomes",
+        "icmp-fields",
+        "icmp-bytes",
+        "icmp-checksum",
         "icmp-contract",
         "icmp-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "protocol_fields",
+        "byte_inspector",
+        "checksum_view",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -135,12 +153,18 @@
       "component_ids": [
         "ipv4-packets-hero",
         "ipv4-packets-outcomes",
+        "ipv4-packets-fields",
+        "ipv4-packets-bytes",
+        "ipv4-packets-checksum",
         "ipv4-packets-contract",
         "ipv4-packets-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "protocol_fields",
+        "byte_inspector",
+        "checksum_view",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -231,12 +255,18 @@
       "component_ids": [
         "tcp-segments-hero",
         "tcp-segments-outcomes",
+        "tcp-segments-fields",
+        "tcp-segments-byte-inspector",
+        "tcp-segments-checksum",
         "tcp-segments-contract",
         "tcp-segments-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "protocol_fields",
+        "byte_inspector",
+        "checksum_view",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -263,12 +293,18 @@
       "component_ids": [
         "udp-hero",
         "udp-outcomes",
+        "udp-fields",
+        "udp-byte-inspector",
+        "udp-checksum",
         "udp-contract",
         "udp-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "protocol_fields",
+        "byte_inspector",
+        "checksum_view",
         "exercise_test_contract",
         "safety_boundary"
       ]

@@ -9,6 +9,7 @@
 }
 .course-component {
   width: 100%;
+  min-width: 0;
   max-width: min(100%, 72rem);
   margin: 1.5rem auto;
   padding: clamp(1rem, 2vw, 1.5rem);
@@ -67,6 +68,53 @@
 .course-card { min-width: 0; }
 .course-contract pre { max-width: 100%; overflow: auto; }
 .course-contract code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.protocol-field-map {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--course-line);
+  border-radius: .65rem;
+}
+.protocol-field {
+  display: grid;
+  flex: var(--field-grow) 0 min(12rem, calc(var(--field-grow) * 2.6rem));
+  min-width: 5rem;
+  gap: .2rem;
+  padding: .75rem;
+  border-right: 1px solid var(--course-line);
+  background: color-mix(in srgb, var(--course-blue) 10%, var(--course-bg));
+}
+.protocol-field:last-child { border-right: 0; }
+.protocol-field small { color: var(--course-muted); }
+.component-table { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+.component-table table { min-width: 42rem; margin: 0; }
+.byte-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--bytes-per-row), minmax(3.4rem, 1fr));
+  gap: .35rem;
+  overflow-x: auto;
+  padding: .5rem;
+  list-style: none;
+  border: 1px solid var(--course-line);
+  border-radius: .65rem;
+  background: var(--course-bg);
+}
+.byte-grid li { display: grid; min-width: 3.4rem; text-align: center; }
+.byte-grid li > span { color: var(--course-muted); font-size: .62rem; }
+.byte-grid li > code { padding: .35rem; border: 1px solid var(--course-line); }
+.byte-grid li > small { overflow-wrap: anywhere; color: var(--course-muted); font-size: .58rem; }
+.byte-legend,
+.checksum-words,
+.checksum-regions { display: flex; flex-wrap: wrap; gap: .45rem; padding: 0; list-style: none; }
+.byte-legend li,
+.checksum-words li,
+.checksum-regions li { padding: .35rem .5rem; border: 1px solid var(--course-line); border-radius: .4rem; }
+.checksum-regions li { display: grid; }
+.checksum-regions span { color: var(--course-muted); font-size: .7rem; }
+.checksum-result { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-left: .3rem solid var(--course-green); background: var(--course-bg); }
+.checksum-result strong { font-size: 1.45rem; }
 .course-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));

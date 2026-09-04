@@ -122,10 +122,92 @@ def render_safety_boundary(component: Component) -> str:
     return _section(component, body, "safety")
 
 
+def _fixture_bytes(component: Component) -> bytes:
+    return bytes.fromhex(component.payload["fixture"].replace(" ", "").replace("\n", ""))
+
+
+def render_protocol_fields(component: Component) -> str:
+    fields = component.payload["fields"]
+    total = len(_fixture_bytes(component))
+    bands = "".join(
+        f'<span class="protocol-field" style="--field-grow:{field["length"]}" '
+        f'data-field-id="{html.escape(field["id"], quote=True)}">'
+        f"<strong>{html.escape(field['label'])}</strong><small>{html.escape(field['value'])}</small></span>"
+        for field in fields
+    )
+    rows = "".join(
+        f"<tr><td><code>{field['offset']}</code></td><td><code>{field['length']}</code></td>"
+        f"<td>{html.escape(field['label'])}</td><td><code>{html.escape(field['value'])}</code></td>"
+        f"<td>{html.escape(field['meaning'])}</td></tr>"
+        for field in fields
+    )
+    body = (
+        f'<div class="protocol-field-map" aria-label="{total}-byte protocol fixture">{bands}</div>'
+        '<div class="component-table" role="region" aria-label="Protocol fields" tabindex="0">'
+        "<table><thead><tr><th>Offset</th><th>Bytes</th><th>Field</th><th>Value</th><th>Meaning</th></tr>"
+        f"</thead><tbody>{rows}</tbody></table></div>"
+    )
+    return _section(component, body, "protocol-fields")
+
+
+def render_byte_inspector(component: Component) -> str:
+    fixture = _fixture_bytes(component)
+    annotations = component.payload["annotations"]
+    labels: list[str] = []
+    cells: list[str] = []
+    for offset, value in enumerate(fixture):
+        annotation = next(
+            (
+                item
+                for item in annotations
+                if item["offset"] <= offset < item["offset"] + item["length"]
+            ),
+            None,
+        )
+        label = annotation["label"] if annotation is not None else "unlabeled"
+        labels.append(label)
+        cells.append(
+            f'<li data-byte-group="{html.escape(label, quote=True)}"><span>{offset:02x}</span>'
+            f"<code>{value:02x}</code><small>{html.escape(label)}</small></li>"
+        )
+    legend = "".join(f"<li>{html.escape(label)}</li>" for label in dict.fromkeys(labels))
+    body = (
+        f'<ol class="byte-grid" style="--bytes-per-row:{component.payload["bytes_per_row"]}" '
+        f'aria-label="{len(fixture)} fixture bytes">{"".join(cells)}</ol>'
+        f'<ul class="byte-legend" aria-label="Byte groups">{legend}</ul>'
+    )
+    return _section(component, body, "byte-inspector")
+
+
+def render_checksum_view(component: Component) -> str:
+    fixture = _fixture_bytes(component)
+    regions = "".join(
+        f"<li><strong>{html.escape(region['role'])}</strong>"
+        f"<span>bytes {region['offset']}–{region['offset'] + region['length'] - 1}</span></li>"
+        for region in component.payload["regions"]
+    )
+    word_values = [
+        int.from_bytes(fixture[index : index + 2].ljust(2, bytes(1)), "big")
+        for index in range(0, len(fixture), 2)
+    ]
+    words = "".join(f"<li><code>{value:04x}</code></li>" for value in word_values)
+    expected = component.payload["expected"]
+    body = (
+        '<div class="checksum-result"><span>Expected checksum</span>'
+        f"<strong><code>0x{expected:04x}</code></strong></div>"
+        f'<ol class="checksum-regions">{regions}</ol>'
+        f'<ol class="checksum-words" aria-label="16-bit words">{words}</ol>'
+    )
+    return _section(component, body, "checksum")
+
+
 RENDERERS: dict[str, Callable[[Component], str]] = {
     "page_hero": render_page_hero,
     "prerequisites_outcomes": render_prerequisites_outcomes,
     "curriculum_cards": render_curriculum_cards,
+    "protocol_fields": render_protocol_fields,
+    "byte_inspector": render_byte_inspector,
+    "checksum_view": render_checksum_view,
     "exercise_test_contract": render_exercise_test_contract,
     "safety_boundary": render_safety_boundary,
 }

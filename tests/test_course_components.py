@@ -129,6 +129,52 @@ def test_all_built_pages_render_structured_components(tmp_path):
     assert all(identity.route in indexed_routes for identity in identities.values())
 
 
+def component_payload(page_key: str, component_type: str) -> dict[str, object]:
+    model = json.loads((MODELS / f"{page_key}.json").read_text())
+    matches = [
+        component["payload"]
+        for component in model["components"]
+        if component["type"] == component_type
+    ]
+    assert len(matches) == 1, (page_key, component_type)
+    return matches[0]
+
+
+def test_protocol_models_match_vetted_native_vectors():
+    expected = {
+        "bytes-addressing-checksum": ("aa1234bb", 0xFBFD),
+        "ethernet-arp": (
+            "ffffffffffff02005e1000000806000108000604000102005e100000c0000201000000000000c0000263",
+            None,
+        ),
+        "ipv4-packets": (
+            "452e00181234400040113c3cc0000201c6336402deadbeef",
+            0x3C3C,
+        ),
+        "icmp": ("0800bbfd123400076162636465", 0xBBFD),
+        "udp": ("30390035000db9676162636465", 0xB967),
+        "tcp-segments": (
+            "c000005012345678000000007002faf072fa0000020405b401010402",
+            0x72FA,
+        ),
+        "dns": (
+            "beef81800001000100000000076578616d706c6503636f6d0000010001"
+            "c00c000100010000003c0004c0000201",
+            None,
+        ),
+    }
+    for page_key, (fixture, checksum) in expected.items():
+        fields = component_payload(page_key, "protocol_fields")
+        assert fields["fixture"].replace(" ", "") == fixture
+        model = json.loads((MODELS / f"{page_key}.json").read_text())
+        if any(component["type"] == "byte_inspector" for component in model["components"]):
+            inspector = component_payload(page_key, "byte_inspector")
+            assert inspector["fixture"].replace(" ", "") == fixture
+        if checksum is not None:
+            checksum_payload = component_payload(page_key, "checksum_view")
+            assert checksum_payload["expected"] == checksum
+
+
 def test_component_manifest_is_current():
     assert OUTPUT.is_file()
     assert OUTPUT.read_bytes() == expected_manifest()
