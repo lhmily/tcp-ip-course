@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "catalog_key": "stream-sockets",
+  "components": [
+    {
+      "id": "stream-sockets-hero",
+      "type": "page_hero",
+      "heading": "Lesson 08: Stream sockets",
+      "payload": {
+        "title": "Stream Sockets",
+        "summary": "Build bounded POSIX stream-socket loops with explicit framing, partial-I/O handling, and monotonic deadlines.",
+        "badges": [
+          "Lesson 08",
+          "Applications",
+          "POSIX",
+          "Loopback only"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "scripts/course_catalog.py",
+          "symbol": "LESSONS"
+        },
+        {
+          "path": "lessons/08_stream_sockets/lesson.h",
+          "symbol": "tcpip_l08_send_all"
+        },
+        {
+          "path": "lessons/08_stream_sockets/lesson.h",
+          "symbol": "tcpip_l08_recv_frame"
+        }
+      ]
+    },
+    {
+      "id": "stream-sockets-prerequisites-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Learning objectives and prerequisites",
+      "payload": {
+        "prerequisites": [
+          "C17 arrays, pointers, explicit lengths, and fixed-width integers",
+          "File descriptors, byte order, and the POSIX socket lifecycle",
+          "Lesson 07's TCP reliability model"
+        ],
+        "outcomes": [
+          "Explain why TCP is a byte stream rather than a message transport",
+          "Complete sends and exact receives despite partial system calls",
+          "Recover application boundaries with length-prefixed frames",
+          "Distinguish EOF, truncation, timeout, capacity, malformed input, and system errors"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/08_stream_sockets/README.md",
+          "symbol": "Learning objectives"
+        },
+        {
+          "path": "lessons/08_stream_sockets/README.md",
+          "symbol": "Prerequisites"
+        }
+      ]
+    },
+    {
+      "id": "stream-sockets-exercise-test",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Complete exercise.c with shared absolute-deadline helpers, partial-I/O loops, framed send/receive, and one-connection echo service behavior.",
+        "reference": "Use solution.c to compare behavior only after implementing the lesson.h contract.",
+        "checks": [
+          "Validation and initialized outputs",
+          "Back-to-back and fragmented frames over local streams",
+          "Oversized declarations that leave payload bytes unread",
+          "Clean EOF, truncation, and bounded timeout",
+          "Ephemeral 127.0.0.1 service behavior, descriptor cleanup, and listener flag restoration"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/08_stream_sockets/exercise.c",
+          "symbol": "tcpip_l08_send_all"
+        },
+        {
+          "path": "lessons/08_stream_sockets/solution.c",
+          "symbol": "tcpip_l08_serve_one"
+        },
+        {
+          "path": "lessons/08_stream_sockets/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "stream-sockets-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Kernel-local socket pairs",
+          "127.0.0.1 listeners on kernel-selected port 0",
+          "Bounded monotonic deadlines on Linux and macOS"
+        ],
+        "excluded": [
+          "External networking, DNS, raw sockets, or packet capture",
+          "Privileged or fixed ports, INADDR_ANY, subprocesses, or shell commands",
+          "A general-purpose or internet-facing echo daemon"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/08_stream_sockets/lesson.h",
+          "symbol": "tcpip_l08_serve_one"
+        },
+        {
+          "path": "lessons/08_stream_sockets/README.md",
+          "symbol": "Safety and network boundaries"
+        }
+      ]
+    }
+  ]
+}

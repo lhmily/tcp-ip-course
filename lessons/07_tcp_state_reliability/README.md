@@ -1,5 +1,8 @@
+<!-- COURSE_COMPONENT:tcp-state-reliability-hero START -->
 # Lesson 07: TCP state and reliability
+<!-- COURSE_COMPONENT:tcp-state-reliability-hero END -->
 
+<!-- COURSE_COMPONENT:tcp-state-reliability-prerequisites-outcomes START -->
 ## Learning objectives
 
 After this lesson, you can model a focused subset of TCP connection states, reject impossible state/event pairs, and reassemble out-of-order bytes without dynamic allocation. You will also practice transactional C APIs: validate first, initialize out-parameters immediately, and mutate caller-owned state only after every byte has passed validation.
@@ -7,6 +10,7 @@ After this lesson, you can model a focused subset of TCP connection states, reje
 ## Prerequisites
 
 You should understand unsigned integers, arrays, pointers with explicit lengths, and the roles of SYN, ACK, and FIN. Familiarity with TCP sequence numbers helps, but the exercise explains the modulo arithmetic it uses. The code requires C17 and only the standard library.
+<!-- COURSE_COMPONENT:tcp-state-reliability-prerequisites-outcomes END -->
 
 ## Mental model
 
@@ -75,6 +79,7 @@ if (tcpip_l07_reassembly_init(&rx, UINT32_MAX - 1U,
 
 The first push lands at offset two despite the wrap. Reading waits until the second push fills offsets zero and one, then produces `abcd`.
 
+<!-- COURSE_COMPONENT:tcp-state-reliability-exercise-test START -->
 ## Exercise
 
 Complete `exercise.c` by implementing the transition table and the two-phase reassembly operations. Preserve the starter’s validation and output initialization. Do not allocate memory, enlarge the receive window, or partially write before checking a whole operation. Use `solution.c` only after reasoning through the invariants yourself.
@@ -84,16 +89,19 @@ Complete `exercise.c` by implementing the transition table and the two-phase rea
 The deterministic test checks every documented transition and every other valid state/event pair as malformed. It verifies invalid enums and output pointers, out-of-order insertion, wrap-around offsets, duplicate idempotence, conflicting-overlap rollback, capacity rollback, atomic truncation, zero-capacity contexts, backing-array overlap rejection, output alias rejection, and initialized outputs on errors. The starter returns `TCPIP_L07_TODO`, so the same test fails predictably; selecting reference solutions makes it pass.
 
 At all times, `read_offset <= capacity`; each nonzero presence byte means the corresponding data byte is initialized; and accepted counts only bytes whose bitmap entries changed from absent to present.
+<!-- COURSE_COMPONENT:tcp-state-reliability-exercise-test END -->
 
 ## Common mistakes
 
 Do not compare sequence numbers with ordinary signed arithmetic, add `offset + len` before proving it cannot overflow, treat duplicate retransmissions as new data, or overwrite a matching prefix before discovering a conflicting suffix. Do not use a zero payload byte as a presence marker. Do not advance the read cursor after returning `TRUNCATED`. Do not compare unrelated pointers directly when checking for array overlap; convert to integer addresses and prove address-plus-length cannot overflow first.
 
+<!-- COURSE_COMPONENT:tcp-state-reliability-safety START -->
 ## Safety and network boundaries
 
 All buffers have explicit capacities, inputs are `const`, and outputs are caller-owned. Null pointers are accepted only for zero-length storage where documented by behavior. Backing arrays and read outputs are validated with overflow-safe address ranges before mutation so aliasing cannot corrupt unread data or presence state. No allocation or global mutable state is used. This is an offline model: external network access, raw packet capture, and elevated privileges are prohibited. Feed only deterministic byte arrays from the test process.
 
 An explicit non-goal is implementing a production TCP stack. Congestion control, retransmission timers, checksums, receive-window sliding, urgent data, reset handling, and the complete RFC state machine are intentionally omitted.
+<!-- COURSE_COMPONENT:tcp-state-reliability-safety END -->
 
 ## Linux implementation connection
 

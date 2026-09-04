@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "catalog_key": "routing-nat",
+  "components": [
+    {
+      "id": "routing-nat-hero",
+      "type": "page_hero",
+      "heading": "Lesson 11: Routing and NAT",
+      "payload": {
+        "title": "Routing and NAT",
+        "summary": "Apply deterministic longest-prefix routing and model bounded, caller-owned NAT mappings in portable C17.",
+        "badges": [
+          "Lesson 11",
+          "Networks in practice",
+          "Portable C17",
+          "In-memory"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "scripts/course_catalog.py",
+          "symbol": "LESSONS"
+        },
+        {
+          "path": "lessons/11_routing_nat/lesson.h",
+          "symbol": "tcpip_l11_longest_prefix"
+        },
+        {
+          "path": "lessons/11_routing_nat/lesson.h",
+          "symbol": "tcpip_l11_nat_translate_outbound"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-prerequisites-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Learning objectives and prerequisites",
+      "payload": {
+        "prerequisites": [
+          "IPv4 addresses and CIDR prefix lengths",
+          "TCP and UDP port numbers",
+          "Fixed-width integers, arrays, size_t, and decoded network-order bytes"
+        ],
+        "outcomes": [
+          "Select routes by longest prefix, metric, and stable table order",
+          "Validate canonical route structures",
+          "Model endpoint-dependent outbound and reverse-only inbound NAT",
+          "Keep checked outputs and caller-owned mappings transactional"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/README.md",
+          "symbol": "Learning objectives"
+        },
+        {
+          "path": "lessons/11_routing_nat/README.md",
+          "symbol": "Prerequisites"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-exercise-test",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement canonical route selection, caller-owned NAT initialization, outbound reuse/allocation, reverse-only inbound translation, and expiry in exercise.c.",
+        "reference": "Compare against solution.c only after implementing the lesson.h status and transactional-output contract.",
+        "checks": [
+          "Longest-prefix selection with metric and stable-order tie breakers",
+          "Canonical-prefix validation and no-match behavior",
+          "First-port allocation, mapping reuse, and public-port uniqueness",
+          "Remote-endpoint matching and inbound reverse-only behavior",
+          "Exhaustion, expiry, reuse after expiry, alias support, and rollback"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/exercise.c",
+          "symbol": "tcpip_l11_longest_prefix"
+        },
+        {
+          "path": "lessons/11_routing_nat/solution.c",
+          "symbol": "tcpip_l11_nat_translate_outbound"
+        },
+        {
+          "path": "lessons/11_routing_nat/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Pure in-memory route tables, tuples, and caller-owned mappings",
+          "Local arrays and direct function calls",
+          "Transactional output and state updates"
+        ],
+        "excluded": [
+          "System networking, DNS, file access, allocation, or mutable globals",
+          "External access, raw capture, privilege, or interface configuration",
+          "A production router, firewall, carrier-grade NAT, or packet-rewrite path"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/lesson.h",
+          "symbol": "tcpip_l11_nat"
+        },
+        {
+          "path": "lessons/11_routing_nat/README.md",
+          "symbol": "Safety and network boundaries"
+        }
+      ]
+    }
+  ]
+}

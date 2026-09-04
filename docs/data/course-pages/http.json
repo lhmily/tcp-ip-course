@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "catalog_key": "http",
+  "components": [
+    {
+      "id": "http-hero",
+      "type": "page_hero",
+      "heading": "Lesson 10: HTTP",
+      "payload": {
+        "title": "HTTP",
+        "summary": "Implement a bounded HTTP/1.1 message subset with borrowed spans, strict framing, and deadline-based stream I/O.",
+        "badges": [
+          "Lesson 10",
+          "Applications",
+          "HTTP/1.1 subset",
+          "Loopback only"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "scripts/course_catalog.py",
+          "symbol": "LESSONS"
+        },
+        {
+          "path": "lessons/10_http/lesson.h",
+          "symbol": "tcpip_l10_parse_message"
+        },
+        {
+          "path": "lessons/10_http/lesson.h",
+          "symbol": "tcpip_l10_recv_message"
+        }
+      ]
+    },
+    {
+      "id": "http-prerequisites-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Learning objectives and prerequisites",
+      "payload": {
+        "prerequisites": [
+          "C17 arrays and pointer-plus-length slices",
+          "POSIX sockets and TCP byte streams",
+          "Protocol errors, system-call errors, and bounded buffers"
+        ],
+        "outcomes": [
+          "Construct a small HTTP/1.1 request without allocation",
+          "Parse requests and responses into non-owning spans",
+          "Separate HTTP message framing from TCP reads",
+          "Reject ambiguous framing and recognize premature EOF"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/10_http/README.md",
+          "symbol": "Learning objectives"
+        },
+        {
+          "path": "lessons/10_http/README.md",
+          "symbol": "Prerequisites"
+        }
+      ]
+    },
+    {
+      "id": "http-exercise-test",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement deterministic request construction, strict Content-Length parsing, shared-deadline socket loops, and the fixed-response serve_one path in exercise.c.",
+        "reference": "Use solution.c only after preserving every initialized-output, limit, and framing rule in lesson.h.",
+        "checks": [
+          "Exact request bytes and borrowed request/response views",
+          "Invalid arguments, small buffers, truncated bodies, and bounded limits",
+          "Rejection of transfer encoding, obsolete folding, and conflicting or invalid lengths",
+          "Fragmented localhost send/receive under one monotonic deadline",
+          "serve_one propagation of truncation, timeout, malformed input, and capacity failures"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/10_http/exercise.c",
+          "symbol": "tcpip_l10_parse_message"
+        },
+        {
+          "path": "lessons/10_http/solution.c",
+          "symbol": "tcpip_l10_serve_one"
+        },
+        {
+          "path": "lessons/10_http/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "http-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Caller-supplied storage and borrowed message views",
+          "127.0.0.1 tests on kernel-selected port 0",
+          "Bounded monotonic timeouts"
+        ],
+        "excluded": [
+          "External networking, raw capture, or privileged operations",
+          "Heap allocation or global mutable state",
+          "Production HTTP features such as TLS, chunking, proxies, compression, or pipelining"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/10_http/lesson.h",
+          "symbol": "tcpip_l10_message_view"
+        },
+        {
+          "path": "lessons/10_http/README.md",
+          "symbol": "Safety and network boundaries"
+        }
+      ]
+    }
+  ]
+}

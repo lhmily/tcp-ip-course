@@ -1,4 +1,7 @@
+<!-- COURSE_COMPONENT:http-hero START -->
 # Lesson 10: HTTP
+<!-- COURSE_COMPONENT:http-hero END -->
+<!-- COURSE_COMPONENT:http-prerequisites-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can construct a small HTTP/1.1 request without allocation, parse a request or response into non-owning spans, and explain why message framing is separate from TCP reads. You will also practice deadline-based socket I/O with `poll`, recognize premature EOF, and reject ambiguous framing before application code sees it.
@@ -6,6 +9,7 @@ By the end of this lesson, you can construct a small HTTP/1.1 request without al
 ## Prerequisites
 
 You should be comfortable with C17 arrays, pointer-plus-length slices, POSIX sockets, TCP byte streams, and the difference between a protocol error and a system-call error. Lessons on byte order, TCP connections, and bounded buffers are useful preparation. The code targets Linux and macOS POSIX environments.
+<!-- COURSE_COMPONENT:http-prerequisites-outcomes END -->
 
 ## Mental model
 
@@ -69,6 +73,7 @@ if (status == TCPIP_L10_OK) {
 
 **What to notice:** every textual value has an explicit length, the builder never appends an implicit NUL byte, and parsing performs no allocation. The output buffer owns all resulting view data.
 
+<!-- COURSE_COMPONENT:http-exercise-test START -->
 ## Exercise
 
 Complete `exercise.c` by following the public contract in `lesson.h`. Implement request construction first, then strict message parsing. Add the monotonic deadline helper, a polling helper, and loops that preserve partial progress across interrupted or short system calls. Finally, implement `serve_one`: receive exactly one request, require request syntax, and send this deterministic response: HTTP/1.1 status 200, `Content-Length: 2`, `Content-Type: text/plain`, `Connection: close`, and body `OK`.
@@ -80,6 +85,7 @@ Do not loosen validation to make a single test pass. In particular, preserve ini
 The same `test.c` links against the starter by default and the reference implementation when `TCPIP_USE_SOLUTIONS=ON`. The starter is expected to fail because valid operations return `TCPIP_L10_TODO`; the solution must pass. Tests cover exact request bytes, borrowed request and response views, invalid arguments, small buffers, truncated bodies, chunking, obsolete folding, conflicting and invalid lengths, excessive headers, oversized headers or bodies, and `serve_one` propagation of truncated, timeout, malformed, and capacity failures.
 
 Network tests launch a local server on `127.0.0.1:0`, allowing the kernel to choose an unused port. The server deliberately fragments writes and requests. Test helper accepts are deadline-bounded and temporarily nonblocking, helper sends and exact receives use one absolute monotonic deadline per operation, every socket is closed, and every worker thread is joined. These invariants make failures terminate rather than hang.
+<!-- COURSE_COMPONENT:http-exercise-test END -->
 
 ## Common mistakes
 
@@ -87,11 +93,13 @@ Do not assume one `recv` equals one HTTP message. Do not use `strlen` on a span,
 
 A subtle mistake is using EOF to frame a response body. This lesson requires `Content-Length`; therefore EOF before the declared number of bytes is `TRUNCATED`, not success. Another mistake is implementing chunked decoding partially. Mixed framing rules create request-smuggling ambiguity, so unsupported transfer encoding is rejected completely.
 
+<!-- COURSE_COMPONENT:http-safety START -->
 ## Safety and network boundaries
 
 All storage is supplied by the caller. The implementation performs no heap allocation, has no global mutable state, and contacts no network endpoint on its own. The tests use localhost only, specifically `127.0.0.1` with port 0 and bounded timeouts. They prohibit external network access, raw packet capture, and privileged operations. Run them as an ordinary user.
 
 An explicit non-goal is general-purpose or production HTTP. This subset does not provide TLS, redirects, proxies, chunked coding, trailers, compression, persistent pipelining, informational responses, URI normalization, or internationalized field processing. It is a focused framing and defensive-I/O exercise, not a replacement for a maintained HTTP library.
+<!-- COURSE_COMPONENT:http-safety END -->
 
 ## Further experiments
 

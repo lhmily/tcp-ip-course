@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "catalog_key": "tcp-state-reliability",
+  "components": [
+    {
+      "id": "tcp-state-reliability-hero",
+      "type": "page_hero",
+      "heading": "Lesson 07: TCP state and reliability",
+      "payload": {
+        "title": "TCP State and Reliability",
+        "summary": "Model TCP connection states and bounded, transactional byte-stream reassembly in portable C17.",
+        "badges": [
+          "Lesson 07",
+          "Transport",
+          "Portable C17",
+          "Offline"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "scripts/course_catalog.py",
+          "symbol": "LESSONS"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_transition"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_reassembly_push"
+        }
+      ]
+    },
+    {
+      "id": "tcp-state-reliability-prerequisites-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Learning objectives and prerequisites",
+      "payload": {
+        "prerequisites": [
+          "Unsigned integers, arrays, and pointer-plus-length spans",
+          "The roles of TCP SYN, ACK, and FIN",
+          "C17 and the standard library"
+        ],
+        "outcomes": [
+          "Model the lesson's focused TCP connection-state subset",
+          "Reject impossible state and event pairs",
+          "Reassemble out-of-order bytes across sequence-number wrap-around",
+          "Apply validate-first, commit-after-success API invariants"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/07_tcp_state_reliability/README.md",
+          "symbol": "Learning objectives"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/README.md",
+          "symbol": "Prerequisites"
+        }
+      ]
+    },
+    {
+      "id": "tcp-state-reliability-exercise-test",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement the transition table and two-phase fixed-window reassembly operations in exercise.c without allocation or partial commits.",
+        "reference": "Use solution.c only after reasoning through the public contract and invariants.",
+        "checks": [
+          "All documented transitions and rejection of every other valid state/event pair",
+          "Out-of-order insertion and uint32_t sequence wrap-around",
+          "Duplicate idempotence and conflicting-overlap rollback",
+          "Capacity and truncation rollback",
+          "Zero-capacity, overlap, alias, and initialized-output behavior"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/07_tcp_state_reliability/exercise.c",
+          "symbol": "tcpip_l07_transition"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/solution.c",
+          "symbol": "tcpip_l07_reassembly_push"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "tcp-state-reliability-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Caller-owned buffers with explicit capacities",
+          "Overflow-safe alias checks and transactional mutation",
+          "Deterministic in-process byte arrays"
+        ],
+        "excluded": [
+          "External network access, raw packet capture, or elevated privileges",
+          "Dynamic allocation or global mutable state",
+          "A production TCP stack, congestion control, or the complete RFC state machine"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_reassembly"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/README.md",
+          "symbol": "Safety and network boundaries"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "catalog_key": "diagnostics-integration",
+  "components": [
+    {
+      "id": "diagnostics-integration-hero",
+      "type": "page_hero",
+      "heading": "Lesson 12: Diagnostics integration",
+      "payload": {
+        "title": "Diagnostics and Integration",
+        "summary": "Compose bounded link-, network-, transport-, and application-layer parsing into deterministic offline diagnostics.",
+        "badges": [
+          "Lesson 12",
+          "Networks in practice",
+          "Portable C17",
+          "Offline"
+        ],
+        "actions": [
+          {
+            "label": "Start the exercise",
+            "href": "#exercise"
+          },
+          {
+            "label": "Review the test contract",
+            "href": "#test-contract-and-invariants"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "scripts/course_catalog.py",
+          "symbol": "LESSONS"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/lesson.h",
+          "symbol": "tcpip_l12_diagnose_frame"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/lesson.h",
+          "symbol": "tcpip_l12_format_report"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics-integration-prerequisites-outcomes",
+      "type": "prerequisites_outcomes",
+      "heading": "Learning objectives and prerequisites",
+      "payload": {
+        "prerequisites": [
+          "Lessons 02, 03, 05, 06, 09, and 10 protocol parsing",
+          "Internet checksum arithmetic",
+          "size_t, fixed-width integers, bit masks, and caller-owned buffers"
+        ],
+        "outcomes": [
+          "Integrate Ethernet, IPv4, transport, and application parsing in layer order",
+          "Keep every decoder inside its parent-defined byte window",
+          "Distinguish structural failures from unsupported protocols and checksum observations",
+          "Produce deterministic summaries without allocation"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/12_diagnostics_integration/README.md",
+          "symbol": "Learning objectives"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/README.md",
+          "symbol": "Prerequisites"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics-integration-exercise-test",
+      "type": "exercise_test_contract",
+      "heading": "Exercise and test contract",
+      "payload": {
+        "exercise": "Implement the narrowing Ethernet-to-application diagnostic pipeline and queryable-capacity report formatting in exercise.c.",
+        "reference": "Use solution.c after implementing the partial-report and diagnostic/status distinctions from lesson.h.",
+        "checks": [
+          "Ethernet to ARP, IPv4/ICMP, IPv4/UDP/DNS, and IPv4/TCP/HTTP paths",
+          "Checksum-valid fixture construction and checksum-mismatch observation",
+          "Truncated, malformed, and unsupported inputs",
+          "Exact deterministic summary output",
+          "NUL termination for short buffers and bounded ordered layer reporting"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/12_diagnostics_integration/exercise.c",
+          "symbol": "tcpip_l12_diagnose_frame"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/solution.c",
+          "symbol": "tcpip_l12_format_report"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/test.c",
+          "symbol": "main"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics-integration-safety",
+      "type": "safety_boundary",
+      "heading": "Safety and network boundaries",
+      "payload": {
+        "allowed": [
+          "Deterministic byte-array fixtures created by the test process",
+          "Caller-owned reports and bounded output buffers",
+          "In-memory fuzz inputs through the same bounded API"
+        ],
+        "excluded": [
+          "Sockets, external networking, raw capture, elevated privilege, or interface access",
+          "Allocation, mutable global state, or packed wire-structure casts",
+          "Production inspection features such as reassembly, TLS decryption, or arbitrary DNS graph traversal"
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/12_diagnostics_integration/lesson.h",
+          "symbol": "tcpip_l12_report"
+        },
+        {
+          "path": "lessons/12_diagnostics_integration/README.md",
+          "symbol": "Safety and network boundaries"
+        }
+      ]
+    }
+  ]
+}

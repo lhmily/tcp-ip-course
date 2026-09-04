@@ -1,4 +1,7 @@
+<!-- COURSE_COMPONENT:stream-sockets-hero START -->
 # Lesson 08: Stream sockets
+<!-- COURSE_COMPONENT:stream-sockets-hero END -->
+<!-- COURSE_COMPONENT:stream-sockets-prerequisites-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can explain why TCP is a byte stream rather than a message transport, implement complete sends and exact receives despite partial system calls, impose an application-level frame boundary, and distinguish EOF, truncation, timeout, capacity, malformed input, and operating-system failure. You will also use `poll` with one `CLOCK_MONOTONIC` absolute deadline so repeated interruptions cannot silently extend a caller's timeout.
@@ -6,6 +9,7 @@ By the end of this lesson, you can explain why TCP is a byte stream rather than 
 ## Prerequisites
 
 You should be comfortable with C17 arrays and pointers, explicit `size_t` lengths, fixed-width integers, file descriptors, byte order, and the lifecycle `socket` → `bind` → `listen` → `accept` → `close`. Lesson 7's TCP reliability model is useful background. The examples target Linux and macOS POSIX sockets.
+<!-- COURSE_COMPONENT:stream-sockets-prerequisites-outcomes END -->
 
 ## Mental model
 
@@ -61,6 +65,7 @@ if (status == TCPIP_L08_OK) {
 
 The caller owns all storage and chooses a bounded timeout for each complete framed operation. No terminating byte is implied; binary zeroes are ordinary payload.
 
+<!-- COURSE_COMPONENT:stream-sockets-exercise-test START -->
 ## Exercise
 
 Complete the TODO paths in `exercise.c` using the contract in `lesson.h`. Build internal helpers that accept a shared absolute deadline so a frame's header and payload do not each receive a fresh timeout. Validate every descriptor, buffer/length pair, timeout, capacity, and output pointer. Keep the provided output initialization. Handle partial progress and `EINTR`, and preserve the exact status distinctions.
@@ -68,16 +73,19 @@ Complete the TODO paths in `exercise.c` using the contract in `lesson.h`. Build 
 ## Test contract and invariants
 
 The test first checks validation and output initialization. Local `socketpair` streams cover multiple back-to-back frames, oversized declarations whose payload remains available, clean EOF, partial-input truncation, and bounded receive timeout. The integration portion binds only `127.0.0.1` with port `0`, confirms the kernel-selected address with `getsockname`, calls `listen` before creating a pthread, fragments header and payload writes, validates the echoed frame, confirms the listener stays open with unchanged flags, closes every descriptor, joins every started thread, and checks that `serve_one` propagates a truncated request. On platforms where `size_t` can represent it, validation also passes a non-dereferenced fake length larger than `UINT32_MAX` and expects `MALFORMED`. All test waits are bounded; CTest also provides an outer timeout.
+<!-- COURSE_COMPONENT:stream-sockets-exercise-test END -->
 
 ## Common mistakes
 
 Do not assume one `send` matches one `recv`, restart the timeout after every partial operation, use `time(NULL)` for elapsed deadlines, cast a four-byte input directly to `uint32_t *`, or write `out_len` only on success. Do not confuse orderly EOF with a transient `EAGAIN`, ignore `SIGPIPE` behavior while sending, consume an oversized payload accidentally, close the caller's listening descriptor, or forget to join a server thread on an error path.
 
+<!-- COURSE_COMPONENT:stream-sockets-safety START -->
 ## Safety and network boundaries
 
 This lesson performs no allocation and uses no global mutable state. It does not use raw sockets, external network access, subprocesses, shell commands, DNS, privileged ports, `INADDR_ANY`, or fixed ports. Tests communicate only over kernel-local socket pairs and a `127.0.0.1` listener assigned ephemeral port `0`, with bounded timeouts on Linux/macOS POSIX systems. Production hardening such as authentication, encryption, rate limiting, multi-client concurrency, and unbounded frame sizes is intentionally excluded.
 
 An explicit non-goal is building a general-purpose or internet-facing echo daemon. The fixed-capacity, one-connection server exists only to make framing and lifecycle behavior observable and deterministic.
+<!-- COURSE_COMPONENT:stream-sockets-safety END -->
 
 ## Linux implementation connection
 

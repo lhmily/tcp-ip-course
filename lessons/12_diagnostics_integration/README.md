@@ -1,4 +1,7 @@
+<!-- COURSE_COMPONENT:diagnostics-integration-hero START -->
 # Lesson 12: Diagnostics integration
+<!-- COURSE_COMPONENT:diagnostics-integration-hero END -->
+<!-- COURSE_COMPONENT:diagnostics-integration-prerequisites-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can combine link-, network-, transport-, and application-layer parsing into one bounded diagnostic pipeline. You will preserve layer order, distinguish structural failure from an unsupported protocol, validate Internet checksums, and produce a deterministic summary without allocating memory. The emphasis is integration: each decoder must consume only the byte range established by its parent protocol.
@@ -6,6 +9,7 @@ By the end of this lesson, you can combine link-, network-, transport-, and appl
 ## Prerequisites
 
 This lesson builds on the byte readers, Ethernet and ARP parsing, IPv4 validation, checksum arithmetic, UDP and DNS parsing, TCP interpretation, and HTTP recognition introduced in lessons 2, 3, 5, 6, 9, and 10. Familiarity with `size_t`, fixed-width integers, bit masks, and caller-owned output buffers is expected.
+<!-- COURSE_COMPONENT:diagnostics-integration-prerequisites-outcomes END -->
 
 ## Mental model
 
@@ -89,6 +93,7 @@ if ((report.diagnostics & TCPIP_L12_DIAG_CHECKSUM_MISMATCH) != 0U) {
 
 No packed structure, unaligned cast, or host-endian assumption appears here. The implementation reads multibyte values explicitly in network byte order.
 
+<!-- COURSE_COMPONENT:diagnostics-integration-exercise-test START -->
 ## Exercise
 
 Complete `exercise.c` so that it matches the contract in `lesson.h`. Start with Ethernet and ARP, then add the IPv4 length window before implementing ICMP, UDP/DNS, and TCP/HTTP. Keep checksum failure orthogonal to structural parsing. Finally, implement formatting with queryable capacity: `(out == NULL, cap == 0)` is a valid size query and returns `TCPIP_L12_CAPACITY` for a nonempty report.
@@ -100,16 +105,19 @@ The starter intentionally validates arguments, initializes outputs, and returns 
 The test suite constructs bytes locally rather than loading captures. It verifies Ethernet→ARP, Ethernet→IPv4→ICMP, Ethernet→IPv4→UDP→DNS, and Ethernet→IPv4→TCP→HTTP paths. Checksums are computed for fixture construction, then one HTTP payload byte is flipped; the expected result stays structurally successful but exposes exactly one invalid checksum. Additional cases require truncation and malformed diagnostics, an unsupported EtherType, exact summary text, and NUL termination for a short output buffer.
 
 Important invariants are: `layer_count <= TCPIP_L12_MAX_LAYERS`; layers are appended only in outer-to-inner order; every read lies within the current protocol window; `checksums_valid <= checksums_checked`; and no diagnostic bit silently changes the meaning of the status code.
+<!-- COURSE_COMPONENT:diagnostics-integration-exercise-test END -->
 
 ## Common mistakes
 
 Do not cast `data` to an Ethernet, IPv4, UDP, or TCP struct. That risks alignment, padding, aliasing, and byte-order errors. Do not use the captured frame length as the UDP or TCP length after IPv4 has declared a shorter total length. Do not treat UDP checksum zero as a mismatch for IPv4, because zero means the sender omitted that checksum. Do not overwrite an earlier diagnostic when adding another bit. Do not append DNS or HTTP merely because bytes resemble text; first establish the relevant transport port and bounded payload.
 
+<!-- COURSE_COMPONENT:diagnostics-integration-safety START -->
 ## Safety and network boundaries
 
 All fixtures are deterministic arrays created in the test process. The code performs no allocation, uses no mutable global state, opens no sockets, and makes no system calls for networking. External network access, raw packet capture, elevated privilege, and privileged interfaces are prohibited for this lesson. Fuzzing, if added, must call the same in-memory API with bounded byte arrays.
 
 An explicit non-goal is production-grade packet inspection. The implementation does not reassemble IPv4 fragments or TCP streams, decrypt TLS, normalize every HTTP variation, recursively resolve arbitrary DNS compression graphs, or verify that Ethernet padding belongs to an upper-layer message. Those features require state and policy beyond a single-frame lesson.
+<!-- COURSE_COMPONENT:diagnostics-integration-safety END -->
 
 ## Linux implementation connection
 

@@ -1,4 +1,7 @@
+<!-- COURSE_COMPONENT:routing-nat-hero START -->
 # Lesson 11: Routing and NAT
+<!-- COURSE_COMPONENT:routing-nat-hero END -->
+<!-- COURSE_COMPONENT:routing-nat-prerequisites-outcomes START -->
 ## Learning objectives
 
 By the end of this lesson, you can select an IPv4 route with longest-prefix matching, resolve equal-prefix routes by metric and stable table order, and model stateful network address and port translation without sockets or allocation. You will validate route structure, keep caller-owned NAT mappings consistent, distinguish a lookup miss from capacity exhaustion, and make output/state updates transactional. The implementation is portable C17 and uses explicit four-byte addresses rather than host-specific networking structures.
@@ -6,6 +9,7 @@ By the end of this lesson, you can select an IPv4 route with longest-prefix matc
 ## Prerequisites
 
 You should understand IPv4 addresses, CIDR prefix lengths, TCP and UDP port numbers, fixed-width integer types, arrays, and `size_t`. Familiarity with the difference between forwarding decisions and packet serialization is useful. This lesson assumes that an IPv4 address is already decoded into four network-order bytes; it does not parse an IPv4 packet.
+<!-- COURSE_COMPONENT:routing-nat-prerequisites-outcomes END -->
 
 ## Mental model
 
@@ -70,6 +74,7 @@ if (tcpip_l11_nat_init(&nat, 40000, public_ip,
 
 The caller owns `mappings` for the entire lifetime of `nat`. No hidden allocation extends that lifetime, and no global table can leak state between tests.
 
+<!-- COURSE_COMPONENT:routing-nat-exercise-test START -->
 ## Exercise
 
 Complete `exercise.c` to match `lesson.h`. The starter validates required pointers, initializes checked outputs, and returns `TCPIP_L11_TODO`. Implement route validation and selection first. Then initialize caller storage, add outbound reuse/allocation, implement reverse-only inbound translation, and finally expiry. Preserve the documented status distinctions. Build tentative outputs and mappings in local variables so a failure cannot expose a half-written tuple or half-created mapping.
@@ -79,16 +84,19 @@ Complete `exercise.c` to match `lesson.h`. The starter validates required pointe
 The tests are deterministic and construct all routes and tuples in memory. They require a specific route to beat the default route, a lower metric to break equal-prefix ties, and earlier table order to break an exact tie. They verify canonical prefixes, no-match behavior, first-port allocation, mapping reuse, public-port uniqueness, remote-endpoint matching, inbound reverse-only behavior, exhaustion, expiry, and reuse after expiry.
 
 Checked outputs have defined failure values: route index becomes `SIZE_MAX`, translated tuples become all zero bytes, and expiry count becomes zero. Validation or capacity failures must not partially change active mappings. Active mappings have supported protocols, nonzero ports, unique public ports, and a public port not below `first_port`. The API permits translation with `tuple == out`; implementations must therefore snapshot input before clearing the checked output.
+<!-- COURSE_COMPONENT:routing-nat-exercise-test END -->
 
 ## Common mistakes
 
 Do not compare an IPv4 address by converting four bytes into a host-endian integer. Do not choose metric before prefix length: a `/24` with a large metric still beats a `/0` with a small metric. Do not mask a noncanonical network silently, because that conceals invalid configuration. Do not key NAT only by private port; two remote endpoints then collide semantically. Do not let inbound traffic create mappings, and do not refresh timestamps on failed lookups. Avoid subtracting unsigned timestamps before proving `now >= last_used`, or backward time appears as enormous idleness.
 
+<!-- COURSE_COMPONENT:routing-nat-safety START -->
 ## Safety and network boundaries
 
 This lesson is a pure in-memory simulation. It performs no system networking, allocation, file access, DNS lookup, or mutable global-state access. External network access, raw packet capture, elevated privilege, and privileged interface configuration are prohibited. Tests must use local arrays and direct function calls only.
 
 An explicit non-goal is implementing a production router, firewall, carrier-grade NAT, or operating-system packet-forwarding path. The model does not rewrite packet bytes or checksums, handle fragments, reserve policy-specific ports, implement hairpinning, synchronize threads, defend against deliberate state exhaustion, or persist mappings.
+<!-- COURSE_COMPONENT:routing-nat-safety END -->
 
 ## Linux implementation connection
 
