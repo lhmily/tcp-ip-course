@@ -33,6 +33,51 @@ Every transmission attempt has a virtual deadline. `DELIVER` schedules a frame i
 The route table follows Lesson 11 semantics: longest prefix wins, then lower metric, then earlier table position. A Lesson 11 no-match result maps to `TCPIP_LINUX_L03_ROUTE_NOT_FOUND`, malformed routes map to `TCPIP_LINUX_L03_MALFORMED`, and invalid route arguments map to `TCPIP_LINUX_L03_INVALID_ARGUMENT`. The solution calls that lesson's reference target rather than maintaining a second routing implementation. It likewise reuses Lesson 03 for IPv4 parsing, Lesson 06 for TCP construction and checksum validation, Lesson 07 for state transitions and reassembly, and Lesson 12 for complete-frame diagnostics. Diagnostics are observational: Lesson 12 application heuristics may report malformed or truncated payloads, especially on HTTP ports with arbitrary bytes, but only IPv4/TCP parsing, checksums, and reassembly govern transfer success. The includes are explicit relative paths because several course units intentionally use the same filename, `lesson.h`; relying on include-directory order would make the lab ambiguous.
 <!-- COURSE_COMPONENT:mini-stack-prerequisites END -->
 
+<!-- COURSE_COMPONENT:mini-stack-fault-timeline START -->
+## Deterministic fault and virtual-time scenarios
+
+| Lane | Virtual time | Event | Outcome |
+|---|---:|---|---|
+| Clean | 0 ms | One 11-byte chunk is delivered immediately | `attempts=1`, `retransmits=0`, `TCPIP_LINUX_L03_OK`, final state `TCPIP_L07_TCP_STATE_ESTABLISHED` |
+| Drop/retry | 0 ms | Attempt 1 consumes `DROP`; no event is queued | The clock advances to the exclusive 100 ms deadline |
+| Drop/retry | 100 ms | Attempt 2 retransmits with `DELIVER` | `attempts=2`, `retransmits=1`, `TCPIP_LINUX_L03_OK`, final state established |
+| Deadline | 100 ms | An original delayed by 100 ms is due exactly at attempt 1's deadline | The exclusive deadline defers it to attempt 2; the transfer ends with `attempts=2`, `retransmits=1`, elapsed 100 ms, final state established |
+| Reorder | 0 ms | For 400 bytes, chunk 1 arrives before chunk 0 | The later sequence range waits in the reassembler |
+| Reorder | 50 ms | Chunk 0 arrives after half the 100 ms RTO | The gap closes and all 400 bytes reassemble with `attempts=1`, `retransmits=0`, final state established |
+| Duplicate | 100 ms | The immediate attempt-2 retransmission arrives before the original delayed to 200 ms | The retransmission supplies the 23 payload bytes |
+| Duplicate | 200 ms | The delayed matching original arrives | It accepts zero new bytes; `attempts=2`, `retransmits=1`, final state established |
+| Exhaustion | 100 ms | First dropped attempt reaches its deadline | RTO doubles before attempt 2 |
+| Exhaustion | 300 ms | Second dropped attempt reaches its deadline | RTO doubles before attempt 3 |
+| Exhaustion | 700 ms | Third dropped attempt reaches its deadline | `attempts=3`, `retransmits=2`, `TCPIP_LINUX_L03_RETRY_EXHAUSTED`; established state is preserved |
+<!-- COURSE_COMPONENT:mini-stack-fault-timeline END -->
+
+<!-- COURSE_COMPONENT:mini-stack-route-table START -->
+## Mini-stack route selection
+
+| Route | Network | Next hop | Interface | Metric |
+|---:|---|---|---:|---:|
+| 0 | `0.0.0.0/0` | `0.0.0.0` | 1 | 100 |
+| 1 | `198.51.100.0/24` | `0.0.0.0` | 7 | 10 |
+
+| Case | Status | Selection |
+|---|---|---|
+| `198.51.100.7` with both routes | `TCPIP_LINUX_L03_OK` | Route 1, the `/24` longest-prefix match |
+| `198.51.100.7` with only the default route | `TCPIP_LINUX_L03_OK` | Route 0 |
+| `198.51.100.7` with only `203.0.113.0/24` | `TCPIP_LINUX_L03_ROUTE_NOT_FOUND` | None; Lesson 11 `TCPIP_L11_TRUNCATED` maps to the lab status |
+| `198.51.100.7` with prefix length 33 | `TCPIP_LINUX_L03_MALFORMED` | None; the Lesson 11 route is malformed |
+<!-- COURSE_COMPONENT:mini-stack-route-table END -->
+
+<!-- COURSE_COMPONENT:mini-stack-diagnostics START -->
+## Transfer status versus final-frame diagnostics
+
+| Case | Transfer status | Parsed layers | Diagnostic | Checksums | Final-frame observation |
+|---|---|---|---|---:|---|
+| Clean 11-byte payload to port 443 | `TCPIP_LINUX_L03_OK` | Ethernet → IPv4 → TCP | `TCPIP_L12_DIAG_UNSUPPORTED` (`0x00000002`) | 2/2 valid | The 65-byte frame is internally valid; no supported application parser applies |
+| Arbitrary 20 bytes to HTTP port 80 | `TCPIP_LINUX_L03_OK` | Ethernet → IPv4 → TCP → HTTP | `TCPIP_L12_DIAG_MALFORMED` (`0x00000004`) | 2/2 valid | Lesson 12 reports malformed HTTP, but the lab transfer and reassembly remain successful |
+| Reordered 400-byte transfer | `TCPIP_LINUX_L03_OK` | Ethernet → IPv4 → TCP | `TCPIP_L12_DIAG_UNSUPPORTED` (`0x00000002`) | 2/2 valid | Chunk 0 is the final delivered frame at 50 ms after chunk 1 arrived first |
+| Delayed duplicate, 23-byte payload | `TCPIP_LINUX_L03_OK` | Ethernet → IPv4 → TCP | `TCPIP_L12_DIAG_UNSUPPORTED` (`0x00000002`) | 2/2 valid | The original arrives at 200 ms after the retransmission and accepts no new bytes |
+<!-- COURSE_COMPONENT:mini-stack-diagnostics END -->
+
 ## Contract at a glance
 
 | Input or result | Rule | Why it matters |

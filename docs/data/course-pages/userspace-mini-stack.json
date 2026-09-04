@@ -39,6 +39,198 @@
       }
     },
     {
+      "id": "mini-stack-fault-timeline",
+      "type": "socket_timeline",
+      "heading": "Deterministic fault and virtual-time scenarios",
+      "payload": {
+        "lanes": [
+          {"id": "clean", "label": "Clean"},
+          {"id": "drop", "label": "Drop/retry"},
+          {"id": "deadline", "label": "Deadline"},
+          {"id": "reorder", "label": "Reorder"},
+          {"id": "duplicate", "label": "Duplicate"},
+          {"id": "exhaustion", "label": "Exhaustion"}
+        ],
+        "events": [
+          {
+            "lane": "clean",
+            "label": "Immediate first-attempt delivery",
+            "detail": "The 11-byte clean frame uses one chunk and the implicit DELIVER action: attempts=1, retransmits=0, virtual_elapsed_ms=0."
+          },
+          {
+            "lane": "drop",
+            "label": "Drop attempt 1",
+            "detail": "DROP schedules no event; the clock jumps from 0 to the exclusive 100 ms attempt deadline."
+          },
+          {
+            "lane": "drop",
+            "label": "Retransmit at 100 ms",
+            "detail": "Attempt 2 consumes DELIVER, succeeds at virtual time 100, and records attempts=2 and retransmits=1."
+          },
+          {
+            "lane": "deadline",
+            "label": "Event due exactly at deadline is excluded",
+            "detail": "DELAY 100 creates a due time equal to attempt 1's deadline, so it is not delivered during that attempt."
+          },
+          {
+            "lane": "deadline",
+            "label": "Attempt 2 begins at 100 ms",
+            "detail": "The queued original and immediate retransmission are both eligible before the new 300 ms deadline; success remains attempts=2, retransmits=1, elapsed=100."
+          },
+          {
+            "lane": "reorder",
+            "label": "Second chunk arrives first",
+            "detail": "For a 400-byte payload, chunk 0 is postponed by half the 100 ms RTO while chunk 1 is delivered at time 0."
+          },
+          {
+            "lane": "reorder",
+            "label": "First chunk closes the gap",
+            "detail": "Chunk 0 arrives at 50 ms; reassembly yields all 400 original bytes with virtual_elapsed_ms=50."
+          },
+          {
+            "lane": "duplicate",
+            "label": "Retransmission precedes delayed original",
+            "detail": "The original is delayed to 200 ms, attempt 1 expires at 100 ms, and an immediate attempt-2 retransmission supplies the bytes first."
+          },
+          {
+            "lane": "duplicate",
+            "label": "Delayed duplicate is idempotent",
+            "detail": "The matching original arrives at 200 ms and accepts zero new bytes; attempts=2, retransmits=1, virtual_elapsed_ms=200."
+          },
+          {
+            "lane": "exhaustion",
+            "label": "Three consecutive drops",
+            "detail": "Deadlines advance through 100, 300, and 700 ms as the RTO doubles; attempts=3, retransmits=2, status is TCPIP_LINUX_L03_RETRY_EXHAUSTED."
+          },
+          {
+            "lane": "exhaustion",
+            "label": "Established state is preserved",
+            "detail": "After the conceptual handshake, retry exhaustion leaves final_state equal to TCPIP_L07_TCP_STATE_ESTABLISHED."
+          }
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/03_userspace_mini_stack/lab.h", "symbol": "tcpip_linux_l03_fault_action"},
+        {"path": "linux_labs/03_userspace_mini_stack/solution.c", "symbol": "tcpip_linux_l03_next_event"},
+        {"path": "linux_labs/03_userspace_mini_stack/solution.c", "symbol": "tcpip_linux_l03_run"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_drop_retransmit"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_deadline_is_exclusive"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_reorder"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_duplicate"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_exhaustion"}
+      ]
+    },
+    {
+      "id": "mini-stack-route-table",
+      "type": "routing_table",
+      "heading": "Mini-stack route selection",
+      "payload": {
+        "routes": [
+          {
+            "network": "0.0.0.0",
+            "prefix": 0,
+            "next_hop": "0.0.0.0",
+            "interface": 1,
+            "metric": 100
+          },
+          {
+            "network": "198.51.100.0",
+            "prefix": 24,
+            "next_hop": "0.0.0.0",
+            "interface": 7,
+            "metric": 10
+          }
+        ],
+        "cases": [
+          {
+            "destination": "198.51.100.7",
+            "status": "TCPIP_LINUX_L03_OK",
+            "selected": "route 1: /24 longest-prefix match"
+          },
+          {
+            "destination": "198.51.100.7 with only the default route",
+            "status": "TCPIP_LINUX_L03_OK",
+            "selected": "route 0"
+          },
+          {
+            "destination": "198.51.100.7 with only 203.0.113.0/24",
+            "status": "TCPIP_LINUX_L03_ROUTE_NOT_FOUND",
+            "selected": "none; Lesson 11 TCPIP_L11_TRUNCATED is mapped to the lab status"
+          },
+          {
+            "destination": "198.51.100.7 with prefix length 33",
+            "status": "TCPIP_LINUX_L03_MALFORMED",
+            "selected": "none; malformed Lesson 11 route"
+          }
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/11_routing_nat/lesson.h", "symbol": "tcpip_l11_route"},
+        {"path": "lessons/11_routing_nat/lesson.h", "symbol": "tcpip_l11_longest_prefix"},
+        {"path": "linux_labs/03_userspace_mini_stack/solution.c", "symbol": "tcpip_linux_l03_run"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_route"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_route_error_mapping"}
+      ]
+    },
+    {
+      "id": "mini-stack-diagnostics",
+      "type": "diagnostics_explorer",
+      "heading": "Transfer status versus final-frame diagnostics",
+      "payload": {
+        "cases": [
+          {
+            "id": "clean-port-443",
+            "label": "Clean payload to port 443",
+            "status": "TCPIP_LINUX_L03_OK",
+            "layers": ["ethernet", "ipv4", "tcp"],
+            "diagnostics": ["TCPIP_L12_DIAG_UNSUPPORTED"],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "The 65-byte final frame is internally valid; its 11-byte payload has no supported application parser, so the Lesson 12 mask is 0x00000002."
+          },
+          {
+            "id": "http-observational",
+            "label": "Arbitrary bytes sent to HTTP port 80",
+            "status": "TCPIP_LINUX_L03_OK",
+            "layers": ["ethernet", "ipv4", "tcp", "http"],
+            "diagnostics": ["TCPIP_L12_DIAG_MALFORMED"],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "The 20 payload bytes reassemble successfully and transfer status remains OK, while Lesson 12 returns TCPIP_L12_MALFORMED because the payload lacks an HTTP prefix; mask 0x00000004."
+          },
+          {
+            "id": "reordered-final-frame",
+            "label": "Out-of-order two-chunk delivery",
+            "status": "TCPIP_LINUX_L03_OK",
+            "layers": ["ethernet", "ipv4", "tcp"],
+            "diagnostics": ["TCPIP_L12_DIAG_UNSUPPORTED"],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "Chunk 1 arrives first and chunk 0 becomes the final delivered frame at 50 ms; all 400 bytes reassemble and the final TCP frame has diagnostics mask 0x00000002."
+          },
+          {
+            "id": "delayed-duplicate",
+            "label": "Delayed original after retransmission",
+            "status": "TCPIP_LINUX_L03_OK",
+            "layers": ["ethernet", "ipv4", "tcp"],
+            "diagnostics": ["TCPIP_L12_DIAG_UNSUPPORTED"],
+            "checksums_checked": 2,
+            "checksums_valid": 2,
+            "summary": "The retransmission supplies the 23 payload bytes first; the matching original arrives at 200 ms, accepts no new bytes, and remains the final valid TCP diagnostic with mask 0x00000002."
+          }
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/03_userspace_mini_stack/lab.h", "symbol": "tcpip_linux_l03_result"},
+        {"path": "lessons/12_diagnostics_integration/lesson.h", "symbol": "tcpip_l12_report"},
+        {"path": "linux_labs/03_userspace_mini_stack/solution.c", "symbol": "tcpip_linux_l03_deliver"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_clean"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_reorder"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_duplicate"},
+        {"path": "linux_labs/03_userspace_mini_stack/test.c", "symbol": "tcpip_linux_l03_test_http_diagnostics_observational"}
+      ]
+    },
+    {
       "id": "mini-stack-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise workflow and tests",
