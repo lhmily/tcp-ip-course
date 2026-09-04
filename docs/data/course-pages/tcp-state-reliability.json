@@ -70,6 +70,123 @@
       ]
     },
     {
+      "id": "tcp-state-reliability-state-machine",
+      "type": "state_machine",
+      "heading": "Focused TCP state machine",
+      "payload": {
+        "initial": "closed",
+        "states": [
+          {"id": "closed", "label": "CLOSED"},
+          {"id": "listen", "label": "LISTEN"},
+          {"id": "syn-sent", "label": "SYN_SENT"},
+          {"id": "syn-received", "label": "SYN_RECEIVED"},
+          {"id": "established", "label": "ESTABLISHED"},
+          {"id": "fin-wait-1", "label": "FIN_WAIT_1"},
+          {"id": "fin-wait-2", "label": "FIN_WAIT_2"},
+          {"id": "close-wait", "label": "CLOSE_WAIT"},
+          {"id": "last-ack", "label": "LAST_ACK"},
+          {"id": "time-wait", "label": "TIME_WAIT"}
+        ],
+        "events": [
+          {"id": "passive-open", "label": "Passive open"},
+          {"id": "active-open", "label": "Active open"},
+          {"id": "receive-syn", "label": "Receive SYN"},
+          {"id": "receive-syn-ack", "label": "Receive SYN+ACK"},
+          {"id": "receive-ack", "label": "Receive ACK"},
+          {"id": "app-close", "label": "Application close"},
+          {"id": "receive-fin", "label": "Receive FIN"},
+          {"id": "receive-fin-ack", "label": "Receive FIN+ACK"},
+          {"id": "timeout", "label": "Timeout"}
+        ],
+        "transitions": [
+          {"from": "closed", "event": "passive-open", "to": "listen"},
+          {"from": "closed", "event": "active-open", "to": "syn-sent"},
+          {"from": "listen", "event": "receive-syn", "to": "syn-received"},
+          {"from": "listen", "event": "app-close", "to": "closed"},
+          {"from": "syn-sent", "event": "receive-syn", "to": "syn-received"},
+          {"from": "syn-sent", "event": "receive-syn-ack", "to": "established"},
+          {"from": "syn-received", "event": "receive-ack", "to": "established"},
+          {"from": "established", "event": "app-close", "to": "fin-wait-1"},
+          {"from": "established", "event": "receive-fin", "to": "close-wait"},
+          {"from": "fin-wait-1", "event": "receive-ack", "to": "fin-wait-2"},
+          {"from": "fin-wait-1", "event": "receive-fin-ack", "to": "time-wait"},
+          {"from": "fin-wait-2", "event": "receive-fin", "to": "time-wait"},
+          {"from": "close-wait", "event": "app-close", "to": "last-ack"},
+          {"from": "last-ack", "event": "receive-ack", "to": "closed"},
+          {"from": "time-wait", "event": "timeout", "to": "closed"}
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_tcp_state"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_tcp_event"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_transition"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/test.c",
+          "symbol": "test_transitions"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/test.c",
+          "symbol": "cases"
+        }
+      ]
+    },
+    {
+      "id": "tcp-state-reliability-transition-table",
+      "type": "transition_table",
+      "heading": "Valid state transitions",
+      "payload": {
+        "columns": ["From state", "Event", "To state"],
+        "rows": [
+          ["CLOSED", "Passive open", "LISTEN"],
+          ["CLOSED", "Active open", "SYN_SENT"],
+          ["LISTEN", "Receive SYN", "SYN_RECEIVED"],
+          ["LISTEN", "Application close", "CLOSED"],
+          ["SYN_SENT", "Receive SYN", "SYN_RECEIVED"],
+          ["SYN_SENT", "Receive SYN+ACK", "ESTABLISHED"],
+          ["SYN_RECEIVED", "Receive ACK", "ESTABLISHED"],
+          ["ESTABLISHED", "Application close", "FIN_WAIT_1"],
+          ["ESTABLISHED", "Receive FIN", "CLOSE_WAIT"],
+          ["FIN_WAIT_1", "Receive ACK", "FIN_WAIT_2"],
+          ["FIN_WAIT_1", "Receive FIN+ACK", "TIME_WAIT"],
+          ["FIN_WAIT_2", "Receive FIN", "TIME_WAIT"],
+          ["CLOSE_WAIT", "Application close", "LAST_ACK"],
+          ["LAST_ACK", "Receive ACK", "CLOSED"],
+          ["TIME_WAIT", "Timeout", "CLOSED"]
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_tcp_state"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_tcp_event"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/lesson.h",
+          "symbol": "tcpip_l07_transition"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/test.c",
+          "symbol": "test_transitions"
+        },
+        {
+          "path": "lessons/07_tcp_state_reliability/test.c",
+          "symbol": "cases"
+        }
+      ]
+    },
+    {
       "id": "tcp-state-reliability-exercise-test",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

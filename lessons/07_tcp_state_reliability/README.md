@@ -16,12 +16,14 @@ You should understand unsigned integers, arrays, pointers with explicit lengths,
 
 TCP combines two related mechanisms. A finite-state machine records where a connection is in its lifetime. A byte-oriented sequence space records where payload belongs, independent of packet arrival order. This lesson deliberately keeps both models small enough to inspect.
 
+<!-- COURSE_COMPONENT:tcp-state-reliability-state-machine START -->
 ```mermaid
 stateDiagram-v2
     [*] --> CLOSED
     CLOSED --> LISTEN: passive open
     CLOSED --> SYN_SENT: active open
     LISTEN --> SYN_RECEIVED: SYN
+    LISTEN --> CLOSED: application closes
     SYN_SENT --> SYN_RECEIVED: SYN (simultaneous)
     SYN_SENT --> ESTABLISHED: SYN+ACK
     SYN_RECEIVED --> ESTABLISHED: ACK
@@ -34,6 +36,7 @@ stateDiagram-v2
     LAST_ACK --> CLOSED: ACK
     TIME_WAIT --> CLOSED: timeout
 ```
+<!-- COURSE_COMPONENT:tcp-state-reliability-state-machine END -->
 
 ## Wire format or API
 
@@ -49,6 +52,30 @@ There is no packet parser here. The public API accepts semantic events and paylo
 | `TCPIP_L07_TODO` | Starter implementation still needs work |
 
 ## Algorithm and state transitions
+
+<!-- COURSE_COMPONENT:tcp-state-reliability-transition-table START -->
+### Valid state transitions
+
+The initial state is `CLOSED`. The table contains every valid transition in this focused model; every other pairing of the ten states and nine events is malformed.
+
+| From state | Event | To state |
+|---|---|---|
+| `CLOSED` | Passive open | `LISTEN` |
+| `CLOSED` | Active open | `SYN_SENT` |
+| `LISTEN` | Receive SYN | `SYN_RECEIVED` |
+| `LISTEN` | Application close | `CLOSED` |
+| `SYN_SENT` | Receive SYN | `SYN_RECEIVED` |
+| `SYN_SENT` | Receive SYN+ACK | `ESTABLISHED` |
+| `SYN_RECEIVED` | Receive ACK | `ESTABLISHED` |
+| `ESTABLISHED` | Application close | `FIN_WAIT_1` |
+| `ESTABLISHED` | Receive FIN | `CLOSE_WAIT` |
+| `FIN_WAIT_1` | Receive ACK | `FIN_WAIT_2` |
+| `FIN_WAIT_1` | Receive FIN+ACK | `TIME_WAIT` |
+| `FIN_WAIT_2` | Receive FIN | `TIME_WAIT` |
+| `CLOSE_WAIT` | Application close | `LAST_ACK` |
+| `LAST_ACK` | Receive ACK | `CLOSED` |
+| `TIME_WAIT` | Timeout | `CLOSED` |
+<!-- COURSE_COMPONENT:tcp-state-reliability-transition-table END -->
 
 For transitions, validate both enum values, initialize `out_state`, then match the pair against the diagram. An unsupported pair is malformed rather than silently retaining the old state.
 
