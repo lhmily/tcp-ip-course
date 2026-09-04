@@ -201,6 +201,97 @@ def render_checksum_view(component: Component) -> str:
     return _section(component, body, "checksum")
 
 
+def render_state_machine(component: Component) -> str:
+    payload = component.payload
+    state_labels = {item["id"]: item["label"] for item in payload["states"]}
+    event_labels = {item["id"]: item["label"] for item in payload["events"]}
+    states = "".join(
+        f'<li data-state-id="{html.escape(item["id"], quote=True)}" '
+        f'class="{"is-initial" if item["id"] == payload["initial"] else ""}">'
+        f"<strong>{html.escape(item['label'])}</strong></li>"
+        for item in payload["states"]
+    )
+    transitions = "".join(
+        f"<li><span>{html.escape(state_labels[item['from']])}</span>"
+        f"<strong>{html.escape(event_labels[item['event']])}</strong>"
+        f"<span>{html.escape(state_labels[item['to']])}</span></li>"
+        for item in payload["transitions"]
+    )
+    body = (
+        f'<ol class="state-nodes" aria-label="States">{states}</ol>'
+        f'<ol class="state-transitions" aria-label="Transitions">{transitions}</ol>'
+    )
+    return _section(component, body, "state-machine")
+
+
+def render_transition_table(component: Component) -> str:
+    columns = "".join(
+        f'<th scope="col">{html.escape(value)}</th>' for value in component.payload["columns"]
+    )
+    rows = "".join(
+        "<tr>" + "".join(f"<td>{html.escape(value)}</td>" for value in row) + "</tr>"
+        for row in component.payload["rows"]
+    )
+    body = (
+        '<div class="component-table" role="region" aria-label="Transition table" tabindex="0">'
+        f"<table><thead><tr>{columns}</tr></thead><tbody>{rows}</tbody></table></div>"
+    )
+    return _section(component, body, "transition-table")
+
+
+def render_socket_timeline(component: Component) -> str:
+    lane_labels = {item["id"]: item["label"] for item in component.payload["lanes"]}
+    events = "".join(
+        f'<li data-lane="{html.escape(item["lane"], quote=True)}">'
+        f"<span>{html.escape(lane_labels[item['lane']])}</span>"
+        f"<strong>{html.escape(item['label'])}</strong><p>{html.escape(item['detail'])}</p></li>"
+        for item in component.payload["events"]
+    )
+    return _section(component, f'<ol class="socket-timeline">{events}</ol>', "timeline")
+
+
+def render_routing_table(component: Component) -> str:
+    routes = "".join(
+        f"<tr><td><code>{html.escape(item['network'])}/{item['prefix']}</code></td>"
+        f"<td><code>{html.escape(item['next_hop'])}</code></td>"
+        f"<td>{html.escape(str(item['interface']))}</td><td>{item['metric']}</td></tr>"
+        for item in component.payload["routes"]
+    )
+    cases = "".join(
+        f"<li><code>{html.escape(str(item.get('destination', '')))}</code>"
+        f"<span>{html.escape(str(item.get('status', '')))}</span>"
+        f"<strong>{html.escape(str(item.get('selected', 'none')))}</strong></li>"
+        for item in component.payload["cases"]
+    )
+    body = (
+        '<div class="component-table" role="region" aria-label="Routing table" tabindex="0">'
+        "<table><thead><tr><th>Network</th><th>Next hop</th>"
+        "<th>Interface</th><th>Metric</th></tr></thead>"
+        f'<tbody>{routes}</tbody></table></div><ol class="routing-cases">{cases}</ol>'
+    )
+    return _section(component, body, "routing")
+
+
+def render_nat_table(component: Component) -> str:
+    steps = "".join(
+        f"<tr><td>{index}</td><td>{html.escape(item['action'])}</td>"
+        f"<td><code>{html.escape(item['input'])}</code></td>"
+        f"<td><code>{html.escape(item['output'])}</code></td>"
+        f"<td>{html.escape(item['status'])}</td></tr>"
+        for index, item in enumerate(component.payload["steps"], 1)
+    )
+    public_ip = html.escape(component.payload["public_ip"])
+    first_port = component.payload["first_port"]
+    body = (
+        f'<p class="nat-summary">Public address <code>{public_ip}</code>, '
+        f"first translated port <code>{first_port}</code>.</p>"
+        '<div class="component-table" role="region" aria-label="NAT lifecycle" tabindex="0">'
+        "<table><thead><tr><th>Step</th><th>Action</th><th>Input</th><th>Output</th><th>Status</th></tr></thead>"
+        f"<tbody>{steps}</tbody></table></div>"
+    )
+    return _section(component, body, "nat")
+
+
 RENDERERS: dict[str, Callable[[Component], str]] = {
     "page_hero": render_page_hero,
     "prerequisites_outcomes": render_prerequisites_outcomes,
@@ -208,6 +299,11 @@ RENDERERS: dict[str, Callable[[Component], str]] = {
     "protocol_fields": render_protocol_fields,
     "byte_inspector": render_byte_inspector,
     "checksum_view": render_checksum_view,
+    "state_machine": render_state_machine,
+    "transition_table": render_transition_table,
+    "socket_timeline": render_socket_timeline,
+    "routing_table": render_routing_table,
+    "nat_table": render_nat_table,
     "exercise_test_contract": render_exercise_test_contract,
     "safety_boundary": render_safety_boundary,
 }

@@ -115,12 +115,14 @@
       "component_ids": [
         "http-hero",
         "http-prerequisites-outcomes",
+        "http-timeline",
         "http-exercise-test",
         "http-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "socket_timeline",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -207,12 +209,20 @@
       "component_ids": [
         "routing-nat-hero",
         "routing-nat-prerequisites-outcomes",
+        "routing-nat-route-table",
+        "routing-nat-mapping-table",
+        "routing-nat-reverse-table",
+        "routing-nat-expiry-table",
         "routing-nat-exercise-test",
         "routing-nat-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "routing_table",
+        "nat_table",
+        "nat_table",
+        "nat_table",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -223,12 +233,14 @@
       "component_ids": [
         "stream-sockets-hero",
         "stream-sockets-prerequisites-outcomes",
+        "stream-sockets-timeline",
         "stream-sockets-exercise-test",
         "stream-sockets-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "socket_timeline",
         "exercise_test_contract",
         "safety_boundary"
       ]
@@ -277,12 +289,16 @@
       "component_ids": [
         "tcp-state-reliability-hero",
         "tcp-state-reliability-prerequisites-outcomes",
+        "tcp-state-reliability-state-machine",
+        "tcp-state-reliability-transition-table",
         "tcp-state-reliability-exercise-test",
         "tcp-state-reliability-safety"
       ],
       "component_types": [
         "page_hero",
         "prerequisites_outcomes",
+        "state_machine",
+        "transition_table",
         "exercise_test_contract",
         "safety_boundary"
       ]

@@ -165,6 +165,111 @@ def _validate_protocol_payload(component_type: str, payload: dict[str, Any], lab
             _nonempty_string(region["role"], f"{item_label}.role")
 
 
+def _labeled_items(value: object, label: str) -> set[str]:
+    if not isinstance(value, list) or not value:
+        raise ComponentModelError(f"{label} must be a non-empty array")
+    ids: set[str] = set()
+    for index, item in enumerate(value):
+        item_label = f"{label}[{index}]"
+        if not isinstance(item, dict):
+            raise ComponentModelError(f"{item_label} must be an object")
+        _exact_keys(item, {"id", "label"}, item_label)
+        item_id = _nonempty_string(item["id"], f"{item_label}.id")
+        if item_id in ids:
+            raise ComponentModelError(f"{label}: duplicate id {item_id!r}")
+        _nonempty_string(item["label"], f"{item_label}.label")
+        ids.add(item_id)
+    return ids
+
+
+def _validate_decision_payload(component_type: str, payload: dict[str, Any], label: str) -> None:
+    if component_type == "state_machine":
+        _exact_keys(payload, {"initial", "states", "events", "transitions"}, f"{label}.payload")
+        states = _labeled_items(payload["states"], f"{label}.payload.states")
+        events = _labeled_items(payload["events"], f"{label}.payload.events")
+        if payload["initial"] not in states:
+            raise ComponentModelError(f"{label}.payload.initial must name a state")
+        transitions = payload["transitions"]
+        if not isinstance(transitions, list) or not transitions:
+            raise ComponentModelError(f"{label}.payload.transitions must be a non-empty array")
+        for index, transition in enumerate(transitions):
+            item_label = f"{label}.payload.transitions[{index}]"
+            if not isinstance(transition, dict):
+                raise ComponentModelError(f"{item_label} must be an object")
+            _exact_keys(transition, {"from", "event", "to"}, item_label)
+            if transition["from"] not in states or transition["to"] not in states:
+                raise ComponentModelError(f"{item_label} references an unknown state")
+            if transition["event"] not in events:
+                raise ComponentModelError(f"{item_label} references an unknown event")
+    elif component_type == "transition_table":
+        _exact_keys(payload, {"columns", "rows"}, f"{label}.payload")
+        columns = payload["columns"]
+        rows = payload["rows"]
+        if (
+            not isinstance(columns, list)
+            or not columns
+            or not all(isinstance(item, str) for item in columns)
+        ):
+            raise ComponentModelError(f"{label}.payload.columns must be string array")
+        if not isinstance(rows, list) or not rows:
+            raise ComponentModelError(f"{label}.payload.rows must be non-empty array")
+        for index, row in enumerate(rows):
+            if not isinstance(row, list) or len(row) != len(columns):
+                raise ComponentModelError(f"{label}.payload.rows[{index}] width mismatch")
+            for value in row:
+                _nonempty_string(value, f"{label}.payload.rows[{index}] value")
+    elif component_type == "socket_timeline":
+        _exact_keys(payload, {"lanes", "events"}, f"{label}.payload")
+        lanes = _labeled_items(payload["lanes"], f"{label}.payload.lanes")
+        events = payload["events"]
+        if not isinstance(events, list) or not events:
+            raise ComponentModelError(f"{label}.payload.events must be non-empty array")
+        for index, event in enumerate(events):
+            item_label = f"{label}.payload.events[{index}]"
+            if not isinstance(event, dict):
+                raise ComponentModelError(f"{item_label} must be an object")
+            _exact_keys(event, {"lane", "label", "detail"}, item_label)
+            if event["lane"] not in lanes:
+                raise ComponentModelError(f"{item_label}.lane references unknown lane")
+            _nonempty_string(event["label"], f"{item_label}.label")
+            _nonempty_string(event["detail"], f"{item_label}.detail")
+    elif component_type == "routing_table":
+        _exact_keys(payload, {"routes", "cases"}, f"{label}.payload")
+        if not isinstance(payload["routes"], list) or not payload["routes"]:
+            raise ComponentModelError(f"{label}.payload.routes must be non-empty array")
+        for index, route in enumerate(payload["routes"]):
+            item_label = f"{label}.payload.routes[{index}]"
+            if not isinstance(route, dict):
+                raise ComponentModelError(f"{item_label} must be object")
+            _exact_keys(route, {"network", "prefix", "next_hop", "interface", "metric"}, item_label)
+            _integer(route["prefix"], f"{item_label}.prefix", maximum=32)
+            _integer(route["metric"], f"{item_label}.metric")
+            _nonempty_string(route["network"], f"{item_label}.network")
+            _nonempty_string(route["next_hop"], f"{item_label}.next_hop")
+            if not isinstance(route["interface"], (str, int)) or isinstance(
+                route["interface"], bool
+            ):
+                raise ComponentModelError(f"{item_label}.interface must be a string or integer")
+        if not isinstance(payload["cases"], list) or not payload["cases"]:
+            raise ComponentModelError(f"{label}.payload.cases must be non-empty array")
+    elif component_type == "nat_table":
+        _exact_keys(payload, {"public_ip", "first_port", "steps"}, f"{label}.payload")
+        _nonempty_string(payload["public_ip"], f"{label}.payload.public_ip")
+        _integer(payload["first_port"], f"{label}.payload.first_port", minimum=1, maximum=65535)
+        steps = payload["steps"]
+        if not isinstance(steps, list) or not steps:
+            raise ComponentModelError(f"{label}.payload.steps must be non-empty array")
+        for index, step in enumerate(steps):
+            item_label = f"{label}.payload.steps[{index}]"
+            if not isinstance(step, dict):
+                raise ComponentModelError(f"{item_label} must be object")
+            _exact_keys(step, {"action", "input", "output", "status"}, item_label)
+            _nonempty_string(step["action"], f"{item_label}.action")
+            _nonempty_string(step["input"], f"{item_label}.input")
+            _nonempty_string(step["output"], f"{item_label}.output")
+            _nonempty_string(step["status"], f"{item_label}.status")
+
+
 def load_page_model(path: Path, *, root: Path, catalog_keys: set[str]) -> PageModel:
     """Load and validate one versioned page-component model."""
     try:
@@ -204,6 +309,14 @@ def load_page_model(path: Path, *, root: Path, catalog_keys: set[str]) -> PageMo
             raise ComponentModelError(f"{label}.payload must be an object")
         if component_type in {"protocol_fields", "byte_inspector", "checksum_view"}:
             _validate_protocol_payload(component_type, item["payload"], label)
+        if component_type in {
+            "state_machine",
+            "transition_table",
+            "socket_timeline",
+            "routing_table",
+            "nat_table",
+        }:
+            _validate_decision_payload(component_type, item["payload"], label)
         components.append(
             Component(
                 id=component_id,

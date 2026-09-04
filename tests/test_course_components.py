@@ -175,6 +175,44 @@ def test_protocol_models_match_vetted_native_vectors():
             assert checksum_payload["expected"] == checksum
 
 
+def test_state_timeline_and_routing_models_match_native_contracts():
+    state = component_payload("tcp-state-reliability", "state_machine")
+    transitions = component_payload("tcp-state-reliability", "transition_table")
+    assert len(state["states"]) == 10
+    assert len(state["events"]) == 9
+    assert len(state["transitions"]) == 15
+    assert len(transitions["rows"]) == 15
+    assert {row["from"] for row in state["transitions"]} >= {"closed", "established"}
+    assert {(row["from"], row["event"], row["to"]) for row in state["transitions"]} >= {
+        ("listen", "app-close", "closed"),
+        ("time-wait", "timeout", "closed"),
+    }
+
+    stream = component_payload("stream-sockets", "socket_timeline")
+    http = component_payload("http", "socket_timeline")
+    assert len(stream["events"]) >= 9
+    assert any("stream" in event["detail"] for event in stream["events"])
+    assert any("Content-Length" in event["detail"] for event in http["events"])
+    assert any("TRUNCATED" in event["detail"] for event in http["events"])
+
+    routes = component_payload("routing-nat", "routing_table")
+    assert len(routes["routes"]) == 6
+    assert routes["routes"][0] == {
+        "network": "0.0.0.0",
+        "prefix": 0,
+        "next_hop": "192.0.2.1",
+        "interface": 1,
+        "metric": 100,
+    }
+    selected_by_destination = {case["destination"]: case["selected"] for case in routes["cases"]}
+    assert selected_by_destination["10.23.42.99"].startswith("route 5")
+    assert selected_by_destination["10.23.7.9"].startswith("route 3")
+    model = json.loads((MODELS / "routing-nat.json").read_text())
+    nat_components = [item for item in model["components"] if item["type"] == "nat_table"]
+    assert len(nat_components) == 3
+    assert {item["payload"]["first_port"] for item in nat_components} == {40000, 45000, 50000}
+
+
 def test_component_manifest_is_current():
     assert OUTPUT.is_file()
     assert OUTPUT.read_bytes() == expected_manifest()
