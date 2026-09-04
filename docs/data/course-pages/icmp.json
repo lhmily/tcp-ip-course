@@ -40,6 +40,60 @@
       ]
     },
     {
+      "id": "icmp-fields",
+      "type": "protocol_fields",
+      "heading": "ICMP echo protocol fields",
+      "payload": {
+        "fixture": "0800bbfd123400076162636465",
+        "fields": [
+          {"id": "type", "label": "Type", "offset": 0, "length": 1, "value": "8", "meaning": "Echo request message"},
+          {"id": "code", "label": "Code", "offset": 1, "length": 1, "value": "0", "meaning": "Required code for an echo request"},
+          {"id": "checksum", "label": "Checksum", "offset": 2, "length": 2, "value": "0xbbfd", "meaning": "One's-complement checksum over the complete message"},
+          {"id": "identifier", "label": "Identifier", "offset": 4, "length": 2, "value": "0x1234", "meaning": "Echo identifier preserved in the reply"},
+          {"id": "sequence", "label": "Sequence number", "offset": 6, "length": 2, "value": "7", "meaning": "Echo sequence preserved in the reply"},
+          {"id": "payload", "label": "Payload", "offset": 8, "length": 5, "value": "abcde", "meaning": "Odd-length payload covered by the ICMP checksum"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/test.c", "symbol": "tcpip_l04_request"}
+      ]
+    },
+    {
+      "id": "icmp-bytes",
+      "type": "byte_inspector",
+      "heading": "ICMP echo byte inspector",
+      "payload": {
+        "fixture": "0800bbfd123400076162636465",
+        "bytes_per_row": 8,
+        "annotations": [
+          {"offset": 0, "length": 1, "label": "Type"},
+          {"offset": 1, "length": 1, "label": "Code"},
+          {"offset": 2, "length": 2, "label": "Checksum"},
+          {"offset": 4, "length": 2, "label": "Identifier"},
+          {"offset": 6, "length": 2, "label": "Sequence number"},
+          {"offset": 8, "length": 5, "label": "Payload"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/test.c", "symbol": "tcpip_l04_request"}
+      ]
+    },
+    {
+      "id": "icmp-checksum",
+      "type": "checksum_view",
+      "heading": "ICMP message checksum",
+      "payload": {
+        "fixture": "08000000123400076162636465",
+        "regions": [
+          {"offset": 0, "length": 13, "role": "Complete ICMP message with checksum field zeroed"}
+        ],
+        "expected": 48125
+      },
+      "provenance": [
+        {"path": "lessons/04_icmp/test.c", "symbol": "tcpip_l04_request"}
+      ]
+    },
+    {
       "id": "icmp-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

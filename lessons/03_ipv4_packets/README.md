@@ -50,6 +50,50 @@ flowchart TD
 
 Options are zero to forty octets and must be a multiple of four because IHL counts complete 32-bit words. The parser reports option and payload spans as offsets and lengths; it does not expose borrowed pointers.
 
+<!-- COURSE_COMPONENT:ipv4-packets-fields START -->
+## IPv4 protocol fields
+
+| Offset | Bytes | Field | Value | Meaning |
+|---:|---:|---|---|---|
+| 0 | 1 | Version + IHL | `version=4,ihl=5` | IPv4 with a five-word, 20-byte header |
+| 1 | 1 | DSCP + ECN | `0x2e` | Traffic-class and congestion bits |
+| 2 | 2 | Total length | `24` | Twenty header bytes plus four payload bytes |
+| 4 | 2 | Identification | `0x1234` | Datagram identifier used by fragmentation logic |
+| 6 | 2 | Flags + fragment offset | `0x4000` | Don't Fragment is set and the fragment offset is zero |
+| 8 | 1 | TTL | `64` | Hop limit before a router-style decrement |
+| 9 | 1 | Protocol | `17` | The payload protocol number denotes UDP |
+| 10 | 2 | Header checksum | `0x3c3c` | One's-complement checksum of the 20-byte header |
+| 12 | 4 | Source address | `192.0.2.1` | Documentation source IPv4 address |
+| 16 | 4 | Destination address | `198.51.100.2` | Documentation destination IPv4 address |
+| 20 | 4 | Payload | `deadbeef` | Four bytes outside the IPv4 header checksum |
+<!-- COURSE_COMPONENT:ipv4-packets-fields END -->
+
+<!-- COURSE_COMPONENT:ipv4-packets-bytes START -->
+## IPv4 byte inspector
+
+The 24-byte fixture, shown eight bytes per row, is:
+
+```text
+45 2e 00 18 12 34 40 00
+40 11 3c 3c c0 00 02 01
+c6 33 64 02 de ad be ef
+```
+
+Bytes 0–19 form the IPv4 header. Bytes 20–23 are the payload, so the payload is present in the packet fixture but excluded from the header checksum.
+<!-- COURSE_COMPONENT:ipv4-packets-bytes END -->
+
+<!-- COURSE_COMPONENT:ipv4-packets-checksum START -->
+## IPv4 header checksum
+
+For checksum construction, set header bytes 10–11 to zero and checksum the complete 20-byte header:
+
+```text
+45 2e 00 18 12 34 40 00 40 11 00 00 c0 00 02 01 c6 33 64 02
+```
+
+The expected one's-complement checksum is decimal `15420`, or hexadecimal `0x3c3c`. The four payload bytes are not part of this checksum region.
+<!-- COURSE_COMPONENT:ipv4-packets-checksum END -->
+
 ## Algorithm and state transitions
 
 First require the fixed 20-octet prefix. Split byte zero into version and IHL, multiply IHL by four, and prove that many bytes are available. Decode total length and flags only after their octets are known to exist, rejecting the reserved high flag bit. Reject a total shorter than the header and report truncation when the declared packet extends beyond the supplied span. Compute the one's-complement checksum over exactly the header length; a valid stored checksum makes the result zero.

@@ -40,6 +40,70 @@
       ]
     },
     {
+      "id": "ipv4-packets-fields",
+      "type": "protocol_fields",
+      "heading": "IPv4 protocol fields",
+      "payload": {
+        "fixture": "452e00181234400040113c3cc0000201c6336402deadbeef",
+        "fields": [
+          {"id": "version-ihl", "label": "Version + IHL", "offset": 0, "length": 1, "value": "version=4,ihl=5", "meaning": "IPv4 with a five-word, 20-byte header"},
+          {"id": "dscp-ecn", "label": "DSCP + ECN", "offset": 1, "length": 1, "value": "0x2e", "meaning": "Traffic-class and congestion bits"},
+          {"id": "total-length", "label": "Total length", "offset": 2, "length": 2, "value": "24", "meaning": "Twenty header bytes plus four payload bytes"},
+          {"id": "identification", "label": "Identification", "offset": 4, "length": 2, "value": "0x1234", "meaning": "Datagram identifier used by fragmentation logic"},
+          {"id": "flags-fragment", "label": "Flags + fragment offset", "offset": 6, "length": 2, "value": "0x4000", "meaning": "Don't Fragment is set and the fragment offset is zero"},
+          {"id": "ttl", "label": "TTL", "offset": 8, "length": 1, "value": "64", "meaning": "Hop limit before a router-style decrement"},
+          {"id": "protocol", "label": "Protocol", "offset": 9, "length": 1, "value": "17", "meaning": "The payload protocol number denotes UDP"},
+          {"id": "header-checksum", "label": "Header checksum", "offset": 10, "length": 2, "value": "0x3c3c", "meaning": "One's-complement checksum of the 20-byte header"},
+          {"id": "source", "label": "Source address", "offset": 12, "length": 4, "value": "192.0.2.1", "meaning": "Documentation source IPv4 address"},
+          {"id": "destination", "label": "Destination address", "offset": 16, "length": 4, "value": "198.51.100.2", "meaning": "Documentation destination IPv4 address"},
+          {"id": "payload", "label": "Payload", "offset": 20, "length": 4, "value": "deadbeef", "meaning": "Four bytes outside the IPv4 header checksum"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/test.c", "symbol": "tcpip_l03_packet"}
+      ]
+    },
+    {
+      "id": "ipv4-packets-bytes",
+      "type": "byte_inspector",
+      "heading": "IPv4 byte inspector",
+      "payload": {
+        "fixture": "452e00181234400040113c3cc0000201c6336402deadbeef",
+        "bytes_per_row": 8,
+        "annotations": [
+          {"offset": 0, "length": 1, "label": "Version + IHL"},
+          {"offset": 1, "length": 1, "label": "DSCP + ECN"},
+          {"offset": 2, "length": 2, "label": "Total length"},
+          {"offset": 4, "length": 2, "label": "Identification"},
+          {"offset": 6, "length": 2, "label": "Flags + fragment offset"},
+          {"offset": 8, "length": 1, "label": "TTL"},
+          {"offset": 9, "length": 1, "label": "Protocol"},
+          {"offset": 10, "length": 2, "label": "Header checksum"},
+          {"offset": 12, "length": 4, "label": "Source address"},
+          {"offset": 16, "length": 4, "label": "Destination address"},
+          {"offset": 20, "length": 4, "label": "Payload"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/test.c", "symbol": "tcpip_l03_packet"}
+      ]
+    },
+    {
+      "id": "ipv4-packets-checksum",
+      "type": "checksum_view",
+      "heading": "IPv4 header checksum",
+      "payload": {
+        "fixture": "452e00181234400040110000c0000201c6336402",
+        "regions": [
+          {"offset": 0, "length": 20, "role": "IPv4 header with checksum field zeroed"}
+        ],
+        "expected": 15420
+      },
+      "provenance": [
+        {"path": "lessons/03_ipv4_packets/test.c", "symbol": "tcpip_l03_packet"}
+      ]
+    },
+    {
       "id": "ipv4-packets-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

@@ -51,6 +51,44 @@ sequenceDiagram
 
 An ICMP checksum does not use the IPv4 pseudo-header. A complete valid message produces a zero result when the same one's-complement computation includes its stored checksum.
 
+<!-- COURSE_COMPONENT:icmp-fields START -->
+## ICMP echo protocol fields
+
+| Offset | Bytes | Field | Value | Meaning |
+|---:|---:|---|---|---|
+| 0 | 1 | Type | `8` | Echo request message |
+| 1 | 1 | Code | `0` | Required code for an echo request |
+| 2 | 2 | Checksum | `0xbbfd` | One's-complement checksum over the complete message |
+| 4 | 2 | Identifier | `0x1234` | Echo identifier preserved in the reply |
+| 6 | 2 | Sequence number | `7` | Echo sequence preserved in the reply |
+| 8 | 5 | Payload | `abcde` | Odd-length payload covered by the ICMP checksum |
+<!-- COURSE_COMPONENT:icmp-fields END -->
+
+<!-- COURSE_COMPONENT:icmp-bytes START -->
+## ICMP echo byte inspector
+
+The 13-byte echo-request fixture, shown eight bytes per row, is:
+
+```text
+08 00 bb fd 12 34 00 07
+61 62 63 64 65
+```
+
+The first four bytes are the common ICMP prefix, bytes 4–7 are the echo identifier and sequence number, and bytes 8–12 are the five-byte payload.
+<!-- COURSE_COMPONENT:icmp-bytes END -->
+
+<!-- COURSE_COMPONENT:icmp-checksum START -->
+## ICMP message checksum
+
+For checksum construction, set message bytes 2–3 to zero and checksum all 13 bytes:
+
+```text
+08 00 00 00 12 34 00 07 61 62 63 64 65
+```
+
+The expected one's-complement checksum is decimal `48125`, or hexadecimal `0xbbfd`. The odd final byte `0x65` occupies the high half of the final 16-bit checksum word; its low half is implicitly zero.
+<!-- COURSE_COMPONENT:icmp-checksum END -->
+
 ## Algorithm and state transitions
 
 The parser initializes its output, validates pointers, requires four octets, and computes the checksum over the complete supplied span. Only after a zero verification result does it publish type, code, checksum, and body bounds. It intentionally accepts valid non-echo error messages.
