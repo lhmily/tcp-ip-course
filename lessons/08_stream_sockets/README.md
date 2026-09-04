@@ -30,6 +30,23 @@ stateDiagram-v2
 
 **What to notice:** readiness is permission to try an operation, not a guarantee that the whole logical message can be transferred.
 
+<!-- COURSE_COMPONENT:stream-sockets-timeline START -->
+### Loopback framed stream timeline
+
+| Order | Lane | Event | Detail |
+|---:|---|---|---|
+| 1 | Deadline | Start 1000 ms deadline | The loopback exchange uses one absolute monotonic deadline for accept, receive, echo send, and client receive. |
+| 2 | Client | Connect to loopback :0 | The client connects to the kernel-selected `127.0.0.1` port after `listen` has established the local server. |
+| 3 | TCP stream | Write length prefix fragment | The first fragment is three bytes, `00 00 00`, so the receiver cannot decode the six-byte payload length yet. |
+| 4 | TCP stream | Write boundary-crossing fragment | The second fragment is `06 73 74`, completing the length prefix and starting payload bytes `st`. |
+| 5 | TCP stream | Write payload fragment | The third fragment is `72 65 61`, continuing the payload as `rea` without creating an application message boundary. |
+| 6 | TCP stream | Write final payload byte | The final one-byte fragment `6d` completes the payload `stream`. |
+| 7 | Server | `recv_frame` length 6 | The server receives exactly the four-byte prefix, decodes length 6, then uses `recv_exact` for `stream`. |
+| 8 | Server | Echo validated frame | `serve_one` sends a new length-prefixed frame only after the complete payload has arrived. |
+| 9 | Client | Receive OK echo | The client `recv_frame` succeeds and returns the echoed payload `stream`. |
+| 10 | Deadline | Timeout stays bounded | A 20 ms empty listener or `recv_exact` timeout must finish well under 500 ms instead of restarting after waits. |
+<!-- COURSE_COMPONENT:stream-sockets-timeline END -->
+
 ## Wire format or API
 
 A frame is a four-byte unsigned payload length in network byte order followed by exactly that many payload bytes. Empty frames are valid.

@@ -70,6 +70,101 @@
       ]
     },
     {
+      "id": "stream-sockets-timeline",
+      "type": "socket_timeline",
+      "heading": "Loopback framed stream timeline",
+      "payload": {
+        "lanes": [
+          {
+            "id": "deadline",
+            "label": "Deadline"
+          },
+          {
+            "id": "client",
+            "label": "Client"
+          },
+          {
+            "id": "stream",
+            "label": "TCP stream"
+          },
+          {
+            "id": "server",
+            "label": "Server"
+          }
+        ],
+        "events": [
+          {
+            "lane": "deadline",
+            "label": "Start 1000 ms deadline",
+            "detail": "The loopback exchange uses one absolute monotonic deadline for accept, receive, echo send, and client receive."
+          },
+          {
+            "lane": "client",
+            "label": "Connect to loopback :0",
+            "detail": "The client connects to the kernel-selected 127.0.0.1 port after listen has established the local server."
+          },
+          {
+            "lane": "stream",
+            "label": "Write length prefix fragment",
+            "detail": "The first fragment is three bytes, 00 00 00, so the receiver cannot decode the six-byte payload length yet."
+          },
+          {
+            "lane": "stream",
+            "label": "Write boundary-crossing fragment",
+            "detail": "The second fragment is 06 73 74, completing the length prefix and starting payload bytes st."
+          },
+          {
+            "lane": "stream",
+            "label": "Write payload fragment",
+            "detail": "The third fragment is 72 65 61, continuing the payload as rea without creating an application message boundary."
+          },
+          {
+            "lane": "stream",
+            "label": "Write final payload byte",
+            "detail": "The final one-byte fragment 6d completes the payload stream."
+          },
+          {
+            "lane": "server",
+            "label": "recv_frame length 6",
+            "detail": "The server receives exactly the four-byte prefix, decodes length 6, then uses recv_exact for stream."
+          },
+          {
+            "lane": "server",
+            "label": "Echo validated frame",
+            "detail": "serve_one sends a new length-prefixed frame only after the complete payload has arrived."
+          },
+          {
+            "lane": "client",
+            "label": "Receive OK echo",
+            "detail": "The client recv_frame succeeds and returns the echoed payload stream."
+          },
+          {
+            "lane": "deadline",
+            "label": "Timeout stays bounded",
+            "detail": "A 20 ms empty listener or recv_exact timeout must finish well under 500 ms instead of restarting after waits."
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/08_stream_sockets/lesson.h",
+          "symbol": "tcpip_l08_send_frame"
+        },
+        {
+          "path": "lessons/08_stream_sockets/lesson.h",
+          "symbol": "tcpip_l08_recv_frame"
+        },
+        {
+          "path": "lessons/08_stream_sockets/test.c",
+          "symbol": "test_fragmented_loopback_echo"
+        },
+        {
+          "path": "lessons/08_stream_sockets/test.c",
+          "symbol": "test_bounded_timeouts"
+        }
+      ]
+    },
+    {
       "id": "stream-sockets-exercise-test",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

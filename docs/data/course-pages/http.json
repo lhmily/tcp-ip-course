@@ -70,6 +70,105 @@
       ]
     },
     {
+      "id": "http-timeline",
+      "type": "socket_timeline",
+      "heading": "HTTP stream framing timeline",
+      "payload": {
+        "lanes": [
+          {
+            "id": "deadline",
+            "label": "Deadline"
+          },
+          {
+            "id": "client",
+            "label": "Client"
+          },
+          {
+            "id": "server",
+            "label": "Server"
+          },
+          {
+            "id": "parser",
+            "label": "Parser"
+          }
+        ],
+        "events": [
+          {
+            "lane": "deadline",
+            "label": "Share one deadline",
+            "detail": "send_message, recv_message, and serve_one preserve partial progress without refreshing the operation timeout."
+          },
+          {
+            "lane": "client",
+            "label": "Fragment POST /demo",
+            "detail": "The client sends POST /demo with Content-Length: 4 and body ping in two-byte chunks."
+          },
+          {
+            "lane": "parser",
+            "label": "Find header terminator",
+            "detail": "Parsing waits for the CRLF CRLF boundary inside the header limit before trusting Content-Length."
+          },
+          {
+            "lane": "parser",
+            "label": "Read Content-Length body",
+            "detail": "The four declared request body bytes must all arrive before the request view is complete."
+          },
+          {
+            "lane": "server",
+            "label": "Send fixed 200 response",
+            "detail": "serve_one replies with HTTP/1.1 200 OK, Content-Length: 2, and body OK."
+          },
+          {
+            "lane": "server",
+            "label": "Fragment response bytes",
+            "detail": "A separate receive fixture fragments a 200 response in three-byte writes while declaring Content-Length: 5."
+          },
+          {
+            "lane": "client",
+            "label": "Assemble hello body",
+            "detail": "recv_message succeeds only after all five Content-Length bytes for hello are present."
+          },
+          {
+            "lane": "parser",
+            "label": "Reject premature EOF",
+            "detail": "A response declaring Content-Length: 4 but delivering only ab before close returns TRUNCATED."
+          },
+          {
+            "lane": "parser",
+            "label": "Reject chunked coding",
+            "detail": "Transfer-Encoding: chunked is MALFORMED because chunked framing is a non-goal."
+          },
+          {
+            "lane": "parser",
+            "label": "Keep TLS out of scope",
+            "detail": "TLS is not modeled; this lesson stays on plaintext bounded localhost streams."
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/10_http/lesson.h",
+          "symbol": "tcpip_l10_build_request"
+        },
+        {
+          "path": "lessons/10_http/lesson.h",
+          "symbol": "tcpip_l10_recv_message"
+        },
+        {
+          "path": "lessons/10_http/test.c",
+          "symbol": "tcpip_l10_test_serve_one"
+        },
+        {
+          "path": "lessons/10_http/test.c",
+          "symbol": "tcpip_l10_test_fragmented_receive"
+        },
+        {
+          "path": "lessons/10_http/test.c",
+          "symbol": "tcpip_l10_test_premature_eof"
+        }
+      ]
+    },
+    {
       "id": "http-exercise-test",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

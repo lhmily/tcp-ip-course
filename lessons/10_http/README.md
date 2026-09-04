@@ -48,6 +48,23 @@ First, initialize every output. The parser searches only within the header bound
 
 After headers, compute `header_bytes + content_length` with overflow protection. Fewer bytes means `TRUNCATED`; enough bytes yields a body span and `message_length`. Network functions repeatedly call `poll` and then `send` or `recv`. They derive one absolute deadline from `CLOCK_MONOTONIC`, so retries and fragmented delivery cannot restart the timeout. `serve_one` shares one deadline across both receive and send phases.
 
+<!-- COURSE_COMPONENT:http-timeline START -->
+### HTTP stream framing timeline
+
+| Order | Lane | Event | Detail |
+|---:|---|---|---|
+| 1 | Deadline | Share one deadline | `send_message`, `recv_message`, and `serve_one` preserve partial progress without refreshing the operation timeout. |
+| 2 | Client | Fragment POST /demo | The client sends `POST /demo` with `Content-Length: 4` and body `ping` in two-byte chunks. |
+| 3 | Parser | Find header terminator | Parsing waits for the `\r\n\r\n` boundary inside the header limit before trusting `Content-Length`. |
+| 4 | Parser | Read Content-Length body | The four declared request body bytes must all arrive before the request view is complete. |
+| 5 | Server | Send fixed 200 response | `serve_one` replies with `HTTP/1.1 200 OK`, `Content-Length: 2`, and body `OK`. |
+| 6 | Server | Fragment response bytes | A separate receive fixture fragments a 200 response in three-byte writes while declaring `Content-Length: 5`. |
+| 7 | Client | Assemble hello body | `recv_message` succeeds only after all five `Content-Length` bytes for `hello` are present. |
+| 8 | Parser | Reject premature EOF | A response declaring `Content-Length: 4` but delivering only `ab` before close returns `TRUNCATED`. |
+| 9 | Parser | Reject chunked coding | `Transfer-Encoding: chunked` is `MALFORMED` because chunked framing is a non-goal. |
+| 10 | Parser | Keep TLS out of scope | TLS is not modeled; this lesson stays on plaintext bounded localhost streams. |
+<!-- COURSE_COMPONENT:http-timeline END -->
+
 ## Worked C example
 
 ```c
