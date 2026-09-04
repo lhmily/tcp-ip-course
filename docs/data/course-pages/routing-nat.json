@@ -70,6 +70,264 @@
       ]
     },
     {
+      "id": "routing-nat-route-table",
+      "type": "routing_table",
+      "heading": "Route selection fixture",
+      "payload": {
+        "routes": [
+          {
+            "network": "0.0.0.0",
+            "prefix": 0,
+            "next_hop": "192.0.2.1",
+            "interface": 1,
+            "metric": 100
+          },
+          {
+            "network": "10.0.0.0",
+            "prefix": 8,
+            "next_hop": "192.0.2.2",
+            "interface": 2,
+            "metric": 20
+          },
+          {
+            "network": "10.23.0.0",
+            "prefix": 16,
+            "next_hop": "192.0.2.3",
+            "interface": 3,
+            "metric": 40
+          },
+          {
+            "network": "10.23.0.0",
+            "prefix": 16,
+            "next_hop": "192.0.2.4",
+            "interface": 4,
+            "metric": 10
+          },
+          {
+            "network": "10.23.0.0",
+            "prefix": 16,
+            "next_hop": "192.0.2.5",
+            "interface": 5,
+            "metric": 10
+          },
+          {
+            "network": "10.23.42.0",
+            "prefix": 24,
+            "next_hop": "192.0.2.6",
+            "interface": 6,
+            "metric": 500
+          }
+        ],
+        "cases": [
+          {
+            "destination": "10.23.42.99",
+            "status": "TCPIP_L11_OK",
+            "selected": "route 5: /24 longest-prefix match"
+          },
+          {
+            "destination": "10.23.7.9",
+            "status": "TCPIP_L11_OK",
+            "selected": "route 3: metric 10 beats route 2, then stable order beats route 4"
+          },
+          {
+            "destination": "203.0.113.7",
+            "status": "TCPIP_L11_OK",
+            "selected": "route 0: default route"
+          },
+          {
+            "destination": "10.1.2.3 with only 192.168.0.0/16",
+            "status": "TCPIP_L11_TRUNCATED",
+            "selected": "none; output index is SIZE_MAX"
+          },
+          {
+            "destination": "10.1.2.3 with noncanonical 10.1.0.1/24",
+            "status": "TCPIP_L11_MALFORMED",
+            "selected": "none; output index is SIZE_MAX"
+          },
+          {
+            "destination": "10.1.2.3 with prefix length 33",
+            "status": "TCPIP_L11_MALFORMED",
+            "selected": "none; output index is SIZE_MAX"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/test.c",
+          "symbol": "tcpip_l11_test_route_selection"
+        },
+        {
+          "path": "lessons/11_routing_nat/lesson.h",
+          "symbol": "tcpip_l11_route"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-mapping-table",
+      "type": "nat_table",
+      "heading": "NAT mapping fixture",
+      "payload": {
+        "public_ip": "198.51.100.9",
+        "first_port": 40000,
+        "steps": [
+          {
+            "action": "init",
+            "input": "capacity=4 first_port=40000 public_ip=198.51.100.9",
+            "output": "storage[0..3] active=0",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound allocate",
+            "input": "t=10 TCP 10.0.0.2:51000 -> 203.0.113.10:443",
+            "output": "198.51.100.9:40000 -> 203.0.113.10:443; storage[0] active last_used=10",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound reuse with alias",
+            "input": "t=20 same TCP tuple, tuple == out",
+            "output": "reuse public port 40000; storage[0] last_used=20; storage[1] inactive",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound stale timestamp reuse",
+            "input": "t=15 same TCP tuple after last_used=20",
+            "output": "reuse public port 40000 without moving last_used backward",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound second flow",
+            "input": "t=21 UDP 10.0.0.3:51000 -> 203.0.113.11:53",
+            "output": "198.51.100.9:40001 -> 203.0.113.11:53; public ports remain unique",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound endpoint-dependent flow",
+            "input": "t=22 TCP 10.0.0.2:51000 -> 203.0.113.11:443",
+            "output": "198.51.100.9:40002 -> 203.0.113.11:443",
+            "status": "TCPIP_L11_OK"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/test.c",
+          "symbol": "tcpip_l11_test_outbound_reuse_and_collision"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-reverse-table",
+      "type": "nat_table",
+      "heading": "NAT inbound fixture",
+      "payload": {
+        "public_ip": "198.51.100.20",
+        "first_port": 45000,
+        "steps": [
+          {
+            "action": "init",
+            "input": "capacity=2 first_port=45000 public_ip=198.51.100.20",
+            "output": "storage[0..1] active=0",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "inbound before mapping",
+            "input": "t=1 TCP 203.0.113.80:443 -> 198.51.100.20:45000",
+            "output": "zero translated tuple; storage[0] inactive",
+            "status": "TCPIP_L11_TRUNCATED"
+          },
+          {
+            "action": "outbound creates reverse mapping",
+            "input": "t=2 TCP 10.4.0.7:52000 -> 203.0.113.80:443",
+            "output": "198.51.100.20:45000 -> 203.0.113.80:443",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "inbound reverse hit",
+            "input": "t=3 TCP 203.0.113.80:443 -> 198.51.100.20:45000",
+            "output": "203.0.113.80:443 -> 10.4.0.7:52000; storage[0] last_used=3",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "inbound stale timestamp hit",
+            "input": "t=1 TCP 203.0.113.80:443 -> 198.51.100.20:45000 after last_used=3",
+            "output": "reverse translation succeeds; storage[0] last_used stays 3",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "inbound stranger miss",
+            "input": "t=4 TCP 203.0.113.81:443 -> 198.51.100.20:45000",
+            "output": "zero translated tuple; storage[0] last_used stays 3",
+            "status": "TCPIP_L11_TRUNCATED"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/test.c",
+          "symbol": "tcpip_l11_test_reverse_only"
+        }
+      ]
+    },
+    {
+      "id": "routing-nat-expiry-table",
+      "type": "nat_table",
+      "heading": "NAT expiry fixture",
+      "payload": {
+        "public_ip": "192.0.2.90",
+        "first_port": 50000,
+        "steps": [
+          {
+            "action": "init",
+            "input": "capacity=2 first_port=50000 public_ip=192.0.2.90",
+            "output": "storage[0..1] active=0",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound first allocation",
+            "input": "t=100 TCP 10.8.0.2:3000 -> 203.0.113.1:80",
+            "output": "192.0.2.90:50000 -> 203.0.113.1:80",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "outbound second allocation",
+            "input": "t=105 TCP 10.8.0.2:3001 -> 203.0.113.2:80",
+            "output": "192.0.2.90:50001 -> 203.0.113.2:80",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "expire before threshold",
+            "input": "now=109 idle=10",
+            "output": "0 expired; both mappings stay active",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "expire at threshold",
+            "input": "now=110 idle=10",
+            "output": "1 expired; first inactive, second active",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "reuse after expiry",
+            "input": "t=111 TCP 10.8.0.2:3000 -> 203.0.113.1:80",
+            "output": "192.0.2.90:50000 -> 203.0.113.1:80",
+            "status": "TCPIP_L11_OK"
+          },
+          {
+            "action": "expire with backward time",
+            "input": "now=100 idle=1 after reuse at 111",
+            "output": "0 expired; backward time does not clear mapping",
+            "status": "TCPIP_L11_OK"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "path": "lessons/11_routing_nat/test.c",
+          "symbol": "tcpip_l11_test_expiry_and_reuse"
+        }
+      ]
+    },
+    {
       "id": "routing-nat-exercise-test",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

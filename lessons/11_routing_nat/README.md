@@ -45,13 +45,81 @@ There is no wire parser in this lesson. `tcpip_l11_route` stores a four-byte net
 
 **What to notice:** `TRUNCATED` consistently means the available table does not contain the state needed to complete a lookup. `CAPACITY` instead means valid new state was requested but bounded storage or the public-port range cannot represent it.
 
+<!-- COURSE_COMPONENT:routing-nat-route-table START -->
+### Route selection fixture
+
+| Index | Network | Prefix | Next hop | Interface | Metric |
+|---:|---|---:|---|---:|---:|
+| 0 | `0.0.0.0` | 0 | `192.0.2.1` | 1 | 100 |
+| 1 | `10.0.0.0` | 8 | `192.0.2.2` | 2 | 20 |
+| 2 | `10.23.0.0` | 16 | `192.0.2.3` | 3 | 40 |
+| 3 | `10.23.0.0` | 16 | `192.0.2.4` | 4 | 10 |
+| 4 | `10.23.0.0` | 16 | `192.0.2.5` | 5 | 10 |
+| 5 | `10.23.42.0` | 24 | `192.0.2.6` | 6 | 500 |
+
+| Destination and table | Status | Selected result |
+|---|---|---|
+| `10.23.42.99`, full table | `TCPIP_L11_OK` | Index 5: the `/24` beats every shorter prefix despite metric 500. |
+| `10.23.7.9`, full table | `TCPIP_L11_OK` | Index 3: metric 10 beats index 2, then stable order beats index 4. |
+| `203.0.113.7`, full table | `TCPIP_L11_OK` | Index 0: the default route. |
+| `10.1.2.3`, only `192.168.0.0/16` | `TCPIP_L11_TRUNCATED` | No route; output index is `SIZE_MAX`. |
+| `10.1.2.3`, noncanonical `10.1.0.1/24` | `TCPIP_L11_MALFORMED` | No selection; output index is `SIZE_MAX`. |
+| `10.1.2.3`, prefix length 33 | `TCPIP_L11_MALFORMED` | No selection; output index is `SIZE_MAX`. |
+<!-- COURSE_COMPONENT:routing-nat-route-table END -->
+
 ## Algorithm and state transitions
 
 For routing, first validate every prefix length and require canonical networks: bits beyond the prefix must be zero. Validating the entire table before selecting prevents a later malformed entry from turning an apparently successful result into table-order-dependent behavior. Scan matching routes and prefer the greatest prefix length. For equal lengths, prefer the smallest metric. If both tie, retain the first entry.
 
 Outbound NAT lookup uses the complete endpoint-dependent key: protocol, private address and port, and remote address and port. An exact mapping reuses its public port and refreshes `last_used`. Otherwise, find a free mapping slot and the lowest unused port at or above `first_port`; build the result and candidate mapping locally; then commit both only after all checks succeed. Public ports are unique across active mappings, including across TCP and UDP, which makes reverse lookup deterministic.
 
+<!-- COURSE_COMPONENT:routing-nat-mapping-table START -->
+### Outbound mapping fixture
+
+Public address: `198.51.100.9`; first public port: `40000`.
+
+| Action | Input | Output | Status |
+|---|---|---|---|
+| initialize | Capacity 4, first port `40000`, public IP `198.51.100.9` | All four mappings inactive | `TCPIP_L11_OK` |
+| allocate TCP | t=10, `10.0.0.2:51000 -> 203.0.113.10:443` | Source becomes `198.51.100.9:40000`; slot 0 active, `last_used=10` | `TCPIP_L11_OK` |
+| reuse with alias | t=20, same tuple with `tuple == out` | Port `40000` reused; `last_used=20`; slot 1 remains inactive | `TCPIP_L11_OK` |
+| reuse with older time | t=15, same tuple after `last_used=20` | Port `40000` reused without moving `last_used` backward | `TCPIP_L11_OK` |
+| allocate UDP | t=21, `10.0.0.3:51000 -> 203.0.113.11:53` | Source becomes `198.51.100.9:40001`; public ports stay unique | `TCPIP_L11_OK` |
+| allocate changed endpoint | t=22, `10.0.0.2:51000 -> 203.0.113.11:443` | Source becomes `198.51.100.9:40002` because the remote endpoint is part of the key | `TCPIP_L11_OK` |
+<!-- COURSE_COMPONENT:routing-nat-mapping-table END -->
+
 Inbound translation requires the configured public destination address, public destination port, protocol, and the original remote source address and port. A miss does not allocate anything. Expiry clears an active mapping when `now >= last_used` and `now - last_used >= idle`. If time appears to move backward, that mapping is retained.
+
+<!-- COURSE_COMPONENT:routing-nat-reverse-table START -->
+### Inbound reverse-only fixture
+
+Public address: `198.51.100.20`; first public port: `45000`.
+
+| Action | Input | Output | Status |
+|---|---|---|---|
+| initialize | Capacity 2, first port `45000`, public IP `198.51.100.20` | Both mappings inactive | `TCPIP_L11_OK` |
+| inbound before mapping | t=1, `203.0.113.80:443 -> 198.51.100.20:45000` | Zero output tuple; no mapping created | `TCPIP_L11_TRUNCATED` |
+| outbound creates mapping | t=2, `10.4.0.7:52000 -> 203.0.113.80:443` | Source becomes `198.51.100.20:45000` | `TCPIP_L11_OK` |
+| inbound reverse hit | t=3, `203.0.113.80:443 -> 198.51.100.20:45000` | Destination restored to `10.4.0.7:52000`; `last_used=3` | `TCPIP_L11_OK` |
+| inbound older time | t=1, same valid reply after `last_used=3` | Translation succeeds without moving `last_used` backward | `TCPIP_L11_OK` |
+| inbound stranger miss | t=4, `203.0.113.81:443 -> 198.51.100.20:45000` | Zero output tuple; `last_used` remains 3 | `TCPIP_L11_TRUNCATED` |
+<!-- COURSE_COMPONENT:routing-nat-reverse-table END -->
+
+<!-- COURSE_COMPONENT:routing-nat-expiry-table START -->
+### Expiry and port-reuse fixture
+
+Public address: `192.0.2.90`; first public port: `50000`.
+
+| Action | Input | Output | Status |
+|---|---|---|---|
+| initialize | Capacity 2, first port `50000`, public IP `192.0.2.90` | Both mappings inactive | `TCPIP_L11_OK` |
+| allocate first | t=100, `10.8.0.2:3000 -> 203.0.113.1:80` | Source becomes `192.0.2.90:50000` | `TCPIP_L11_OK` |
+| allocate second | t=105, `10.8.0.2:3001 -> 203.0.113.2:80` | Source becomes `192.0.2.90:50001` | `TCPIP_L11_OK` |
+| expire before threshold | `now=109`, `idle=10` | 0 expired; both mappings active | `TCPIP_L11_OK` |
+| expire at threshold | `now=110`, `idle=10` | 1 expired; first inactive, second active | `TCPIP_L11_OK` |
+| reuse after expiry | t=111, first flow again | Lowest free port `50000` is allocated again | `TCPIP_L11_OK` |
+| expire with backward time | `now=100`, `idle=1` after use at 111 | 0 expired; mapping retained | `TCPIP_L11_OK` |
+<!-- COURSE_COMPONENT:routing-nat-expiry-table END -->
 
 ## Worked C example
 
