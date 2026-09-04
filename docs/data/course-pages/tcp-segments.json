@@ -40,6 +40,139 @@
       ]
     },
     {
+      "id": "tcp-segments-fields",
+      "type": "protocol_fields",
+      "heading": "TCP field map",
+      "payload": {
+        "fixture": "c000005012345678000000007002faf072fa0000020405b401010402",
+        "fields": [
+          {
+            "id": "source-port",
+            "label": "Source port",
+            "offset": 0,
+            "length": 2,
+            "value": "49152",
+            "meaning": "Client endpoint port"
+          },
+          {
+            "id": "destination-port",
+            "label": "Destination port",
+            "offset": 2,
+            "length": 2,
+            "value": "80",
+            "meaning": "Server endpoint port"
+          },
+          {
+            "id": "sequence-number",
+            "label": "Sequence number",
+            "offset": 4,
+            "length": 4,
+            "value": "0x12345678",
+            "meaning": "Initial sequence number"
+          },
+          {
+            "id": "acknowledgment-number",
+            "label": "Acknowledgment number",
+            "offset": 8,
+            "length": 4,
+            "value": "0",
+            "meaning": "Unused because ACK is clear"
+          },
+          {
+            "id": "data-offset-ns",
+            "label": "Data offset and NS",
+            "offset": 12,
+            "length": 1,
+            "value": "offset 7, NS 0",
+            "meaning": "Twenty-eight-byte header and clear NS flag"
+          },
+          {
+            "id": "flags",
+            "label": "Flags",
+            "offset": 13,
+            "length": 1,
+            "value": "SYN",
+            "meaning": "Synchronize sequence numbers"
+          },
+          {
+            "id": "window",
+            "label": "Window",
+            "offset": 14,
+            "length": 2,
+            "value": "64240",
+            "meaning": "Advertised receive window"
+          },
+          {
+            "id": "checksum",
+            "label": "Checksum",
+            "offset": 16,
+            "length": 2,
+            "value": "0x72fa",
+            "meaning": "IPv4 pseudo-header checksum"
+          },
+          {
+            "id": "urgent-pointer",
+            "label": "Urgent pointer",
+            "offset": 18,
+            "length": 2,
+            "value": "0",
+            "meaning": "Unused because URG is clear"
+          },
+          {
+            "id": "options",
+            "label": "Options",
+            "offset": 20,
+            "length": 8,
+            "value": "02 04 05 b4 01 01 04 02",
+            "meaning": "MSS 1460, two NOPs, and SACK permitted"
+          }
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/test.c", "symbol": "tcpip_l06_test_syn"}
+      ]
+    },
+    {
+      "id": "tcp-segments-byte-inspector",
+      "type": "byte_inspector",
+      "heading": "TCP byte inspector",
+      "payload": {
+        "fixture": "c000005012345678000000007002faf072fa0000020405b401010402",
+        "bytes_per_row": 8,
+        "annotations": [
+          {"offset": 0, "length": 2, "label": "Source port"},
+          {"offset": 2, "length": 2, "label": "Destination port"},
+          {"offset": 4, "length": 4, "label": "Sequence number"},
+          {"offset": 8, "length": 4, "label": "Acknowledgment number"},
+          {"offset": 12, "length": 1, "label": "Data offset and NS"},
+          {"offset": 13, "length": 1, "label": "Flags"},
+          {"offset": 14, "length": 2, "label": "Window"},
+          {"offset": 16, "length": 2, "label": "Checksum"},
+          {"offset": 18, "length": 2, "label": "Urgent pointer"},
+          {"offset": 20, "length": 8, "label": "Options"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/test.c", "symbol": "tcpip_l06_test_syn"}
+      ]
+    },
+    {
+      "id": "tcp-segments-checksum",
+      "type": "checksum_view",
+      "heading": "TCP checksum view",
+      "payload": {
+        "fixture": "c0000201c63364020006001cc000005012345678000000007002faf000000000020405b401010402",
+        "regions": [
+          {"offset": 0, "length": 12, "role": "IPv4 pseudo-header"},
+          {"offset": 12, "length": 28, "role": "TCP segment with zeroed checksum"}
+        ],
+        "expected": 29434
+      },
+      "provenance": [
+        {"path": "lessons/06_tcp_segments/test.c", "symbol": "tcpip_l06_test_checksum"}
+      ]
+    },
+    {
       "id": "tcp-segments-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

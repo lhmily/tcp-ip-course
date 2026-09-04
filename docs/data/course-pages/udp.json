@@ -40,6 +40,94 @@
       ]
     },
     {
+      "id": "udp-fields",
+      "type": "protocol_fields",
+      "heading": "UDP field map",
+      "payload": {
+        "fixture": "30390035000db9676162636465",
+        "fields": [
+          {
+            "id": "source-port",
+            "label": "Source port",
+            "offset": 0,
+            "length": 2,
+            "value": "12345",
+            "meaning": "Sender endpoint port"
+          },
+          {
+            "id": "destination-port",
+            "label": "Destination port",
+            "offset": 2,
+            "length": 2,
+            "value": "53",
+            "meaning": "Receiver endpoint port"
+          },
+          {
+            "id": "length",
+            "label": "Length",
+            "offset": 4,
+            "length": 2,
+            "value": "13",
+            "meaning": "Eight-byte header plus five-byte payload"
+          },
+          {
+            "id": "checksum",
+            "label": "Checksum",
+            "offset": 6,
+            "length": 2,
+            "value": "0xb967",
+            "meaning": "IPv4 pseudo-header checksum"
+          },
+          {
+            "id": "payload",
+            "label": "Payload",
+            "offset": 8,
+            "length": 5,
+            "value": "abcde",
+            "meaning": "Five application bytes"
+          }
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/test.c", "symbol": "tcpip_l05_test_datagram"}
+      ]
+    },
+    {
+      "id": "udp-byte-inspector",
+      "type": "byte_inspector",
+      "heading": "UDP byte inspector",
+      "payload": {
+        "fixture": "30390035000db9676162636465",
+        "bytes_per_row": 8,
+        "annotations": [
+          {"offset": 0, "length": 2, "label": "Source port"},
+          {"offset": 2, "length": 2, "label": "Destination port"},
+          {"offset": 4, "length": 2, "label": "Length"},
+          {"offset": 6, "length": 2, "label": "Checksum"},
+          {"offset": 8, "length": 5, "label": "Payload: abcde"}
+        ]
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/test.c", "symbol": "tcpip_l05_test_datagram"}
+      ]
+    },
+    {
+      "id": "udp-checksum",
+      "type": "checksum_view",
+      "heading": "UDP checksum view",
+      "payload": {
+        "fixture": "c0000201c63364020011000d30390035000d00006162636465",
+        "regions": [
+          {"offset": 0, "length": 12, "role": "IPv4 pseudo-header"},
+          {"offset": 12, "length": 13, "role": "UDP datagram with zeroed checksum"}
+        ],
+        "expected": 47463
+      },
+      "provenance": [
+        {"path": "lessons/05_udp/test.c", "symbol": "tcpip_l05_test_checksum"}
+      ]
+    },
+    {
       "id": "udp-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

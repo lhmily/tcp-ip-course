@@ -50,6 +50,60 @@ TCP multibyte values use network byte order. NS occupies the low bit of byte 12;
 
 `tcpip_l06_segment_fields` includes source and destination IPv4 byte spans because `tcpip_l06_build_segment` always generates a valid checksum. It also carries an options span. The straightforward builder requires options length from 0 through 40 and divisible by four; callers must supply any desired End-of-Option or No-Operation padding explicitly. Options and payload are separate input spans and must not overlap the destination span.
 
+<!-- COURSE_COMPONENT:tcp-segments-fields START -->
+### TCP field map
+
+The deterministic SYN fixture is `c000005012345678000000007002faf072fa0000020405b401010402`.
+
+| Offset | Length | Field | Decoded value | Meaning |
+|---:|---:|---|---|---|
+| 0 | 2 | Source port | 49152 | Client endpoint port |
+| 2 | 2 | Destination port | 80 | Server endpoint port |
+| 4 | 4 | Sequence number | `0x12345678` | Initial sequence number |
+| 8 | 4 | Acknowledgment number | 0 | Unused because ACK is clear |
+| 12 | 1 | Data offset and NS | offset 7, NS 0 | Twenty-eight-byte header and clear NS flag |
+| 13 | 1 | Flags | SYN | Synchronize sequence numbers |
+| 14 | 2 | Window | 64240 | Advertised receive window |
+| 16 | 2 | Checksum | `0x72fa` | IPv4 pseudo-header checksum |
+| 18 | 2 | Urgent pointer | 0 | Unused because URG is clear |
+| 20 | 8 | Options | `02 04 05 b4 01 01 04 02` | MSS 1460, two NOPs, and SACK permitted |
+<!-- COURSE_COMPONENT:tcp-segments-fields END -->
+
+<!-- COURSE_COMPONENT:tcp-segments-byte-inspector START -->
+### TCP byte inspector
+
+Read the SYN fixture as bytes before interpreting the offset nibble, NS bit, flags, or options:
+
+```text
+Offset  00 01 02 03 04 05 06 07
+0x0000  c0 00 00 50 12 34 56 78
+0x0008  00 00 00 00 70 02 fa f0
+0x0010  72 fa 00 00 02 04 05 b4
+0x0018  01 01 04 02
+```
+
+Bytes 0–19 are the fixed TCP header. Byte 12 carries data offset 7 in its high nibble and NS 0 in its low bit, byte 13 carries SYN, and bytes 20–27 are the eight option bytes claimed by the data offset.
+<!-- COURSE_COMPONENT:tcp-segments-byte-inspector END -->
+
+<!-- COURSE_COMPONENT:tcp-segments-checksum START -->
+### TCP checksum view
+
+Checksum generation concatenates the twelve-byte IPv4 pseudo-header and the twenty-eight-byte TCP segment with its checksum field zeroed:
+
+```text
+c0 00 02 01 c6 33 64 02 00 06 00 1c
+c0 00 00 50 12 34 56 78 00 00 00 00 70 02 fa f0
+00 00 00 00 02 04 05 b4 01 01 04 02
+```
+
+| Offset | Length | Checksum region |
+|---:|---:|---|
+| 0 | 12 | IPv4 pseudo-header: source, destination, zero, protocol 6, TCP length 28 |
+| 12 | 28 | TCP segment with checksum bytes 16–17 set to zero |
+
+The one's-complement generator result is decimal **29434** (`0x72fa`). Inserting `72 fa` into the segment makes validation over the pseudo-header and complete segment return zero.
+<!-- COURSE_COMPONENT:tcp-segments-checksum END -->
+
 ## Algorithm and state transitions
 
 Parsing first zeros the output, validates pointers, and requires twenty bytes. It extracts the offset nibble and rejects values below five. This contract also rejects nonzero reserved bits while preserving NS. Multiplying a four-bit word count by four is bounded, after which the parser distinguishes a missing claimed header (`TRUNCATED`) from valid options and payload spans. Checksum correctness is not a parsing prerequisite and is checked through `tcpip_l06_ipv4_checksum`.

@@ -48,6 +48,52 @@ All multibyte wire fields are big-endian. The fixed header is exactly eight byte
 
 `tcpip_l05_build_datagram` explicitly takes source and destination IPv4 byte spans. That design is intentional: a correct builder cannot generate the checksum from ports and payload alone. Each address length must be exactly four. The checksum function returns the raw computed result; therefore, a complete valid datagram normally produces zero.
 
+<!-- COURSE_COMPONENT:udp-fields START -->
+### UDP field map
+
+The deterministic fixture is `30390035000db9676162636465`.
+
+| Offset | Length | Field | Decoded value | Meaning |
+|---:|---:|---|---|---|
+| 0 | 2 | Source port | 12345 | Sender endpoint port |
+| 2 | 2 | Destination port | 53 | Receiver endpoint port |
+| 4 | 2 | Length | 13 | Eight-byte header plus five-byte payload |
+| 6 | 2 | Checksum | `0xb967` | IPv4 pseudo-header checksum |
+| 8 | 5 | Payload | `abcde` | Five application bytes |
+<!-- COURSE_COMPONENT:udp-fields END -->
+
+<!-- COURSE_COMPONENT:udp-byte-inspector START -->
+### UDP byte inspector
+
+Read the same fixture as bytes before interpreting any multibyte field:
+
+```text
+Offset  00 01 02 03 04 05 06 07
+0x0000  30 39 00 35 00 0d b9 67
+0x0008  61 62 63 64 65
+```
+
+Bytes 0–1 are the source port, 2–3 the destination port, 4–5 the declared length, 6–7 the checksum, and 8–12 the `abcde` payload. Every offset and length is relative to the first datagram byte.
+<!-- COURSE_COMPONENT:udp-byte-inspector END -->
+
+<!-- COURSE_COMPONENT:udp-checksum START -->
+### UDP checksum view
+
+Checksum generation concatenates the twelve-byte IPv4 pseudo-header and the thirteen-byte datagram with its checksum field zeroed:
+
+```text
+c0 00 02 01 c6 33 64 02 00 11 00 0d
+30 39 00 35 00 0d 00 00 61 62 63 64 65
+```
+
+| Offset | Length | Checksum region |
+|---:|---:|---|
+| 0 | 12 | IPv4 pseudo-header: source, destination, zero, protocol 17, UDP length 13 |
+| 12 | 13 | UDP datagram with checksum bytes 6–7 set to zero |
+
+The one's-complement generator result is decimal **47463** (`0xb967`). Inserting `b9 67` into the datagram makes validation over the pseudo-header and complete datagram return zero.
+<!-- COURSE_COMPONENT:udp-checksum END -->
+
 ## Algorithm and state transitions
 
 Parsing initializes the result first, rejects null pointers, requires eight available bytes, and decodes the declared length. A value below eight is malformed. A declared value larger than the supplied span is truncated. This lesson uses strict framing, so trailing bytes also produce `MALFORMED` rather than being silently ignored.
