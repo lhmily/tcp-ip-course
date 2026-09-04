@@ -140,8 +140,8 @@
           },
           {
             "lane": "deadline",
-            "label": "Timeout stays bounded",
-            "detail": "A 20 ms empty listener or recv_exact timeout must finish well under 500 ms instead of restarting after waits."
+            "label": "EOF and timeout stay distinct",
+            "detail": "A clean close before any byte is EOF and after partial progress is TRUNCATED; a 20 ms empty wait must finish well under 500 ms."
           }
         ]
       },

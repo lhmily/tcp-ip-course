@@ -44,7 +44,7 @@ stateDiagram-v2
 | 7 | Server | `recv_frame` length 6 | The server receives exactly the four-byte prefix, decodes length 6, then uses `recv_exact` for `stream`. |
 | 8 | Server | Echo validated frame | `serve_one` sends a new length-prefixed frame only after the complete payload has arrived. |
 | 9 | Client | Receive OK echo | The client `recv_frame` succeeds and returns the echoed payload `stream`. |
-| 10 | Deadline | Timeout stays bounded | A 20 ms empty listener or `recv_exact` timeout must finish well under 500 ms instead of restarting after waits. |
+| 10 | Deadline | EOF and timeout stay distinct | A clean close before any byte is `EOF` and after partial progress is `TRUNCATED`; a 20 ms empty wait must finish well under 500 ms. |
 <!-- COURSE_COMPONENT:stream-sockets-timeline END -->
 
 ## Wire format or API
