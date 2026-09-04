@@ -39,6 +39,102 @@
       }
     },
     {
+      "id": "epoll-state-machine",
+      "type": "state_machine",
+      "heading": "Echo-loop state machine",
+      "payload": {
+        "initial": "waiting",
+        "states": [
+          {"id": "waiting", "label": "Waiting"},
+          {"id": "reading", "label": "Reading"},
+          {"id": "writing", "label": "Writing"},
+          {"id": "flushing", "label": "Flushing"},
+          {"id": "complete", "label": "Complete"},
+          {"id": "timed-out", "label": "Timed out"}
+        ],
+        "events": [
+          {"id": "epollin", "label": "EPOLLIN"},
+          {"id": "recv-progress", "label": "recv > 0 (edge drain)"},
+          {"id": "read-eagain", "label": "read EAGAIN"},
+          {"id": "pending-output", "label": "pending output"},
+          {"id": "partial-send", "label": "partial send"},
+          {"id": "write-eagain", "label": "send EAGAIN"},
+          {"id": "eof-pending", "label": "EOF with pending output"},
+          {"id": "output-drained", "label": "output drained"},
+          {"id": "deadline", "label": "monotonic deadline"}
+        ],
+        "transitions": [
+          {"from": "waiting", "event": "epollin", "to": "reading"},
+          {"from": "reading", "event": "recv-progress", "to": "reading"},
+          {"from": "reading", "event": "read-eagain", "to": "waiting"},
+          {"from": "reading", "event": "pending-output", "to": "writing"},
+          {"from": "writing", "event": "partial-send", "to": "writing"},
+          {"from": "writing", "event": "write-eagain", "to": "waiting"},
+          {"from": "reading", "event": "eof-pending", "to": "flushing"},
+          {"from": "flushing", "event": "output-drained", "to": "complete"},
+          {"from": "waiting", "event": "deadline", "to": "timed-out"}
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/01_epoll_event_loop/lab.h", "symbol": "tcpip_linux_l01_echo"},
+        {"path": "linux_labs/01_epoll_event_loop/solution.c", "symbol": "tcpip_linux_l01_echo"}
+      ]
+    },
+    {
+      "id": "epoll-large-echo-timeline",
+      "type": "socket_timeline",
+      "heading": "Large echo under backpressure",
+      "payload": {
+        "lanes": [
+          {"id": "test", "label": "Test harness"},
+          {"id": "peer", "label": "Peer thread"},
+          {"id": "kernel", "label": "Kernel readiness"},
+          {"id": "echo", "label": "Echo loop"}
+        ],
+        "events": [
+          {"lane": "test", "label": "Create constrained socketpair", "detail": "test_large_echo creates a local stream socketpair and requests 2048-byte send and receive buffers on both endpoints."},
+          {"lane": "test", "label": "Prepare 256 KiB payload", "detail": "The deterministic TEST_PAYLOAD_SIZE body is much larger than the socket buffers and the echo loop's fixed 16 KiB buffer."},
+          {"lane": "peer", "label": "Start mismatched quanta", "detail": "peer_exchange makes its endpoint nonblocking, sends at most 701 bytes, and receives at most 389 bytes per ready pass."},
+          {"lane": "echo", "label": "Preserve flags and arm deadline", "detail": "tcpip_linux_l01_echo saves the caller's flags, enables O_NONBLOCK if needed, and computes one 5000 ms CLOCK_MONOTONIC deadline."},
+          {"lane": "kernel", "label": "Register read interest", "detail": "The loop creates its own epoll descriptor and registers EPOLLIN plus EPOLLRDHUP, with EPOLLET only for edge-triggered mode."},
+          {"lane": "kernel", "label": "Report readiness", "detail": "epoll_wait returns a readiness event; a signal retries with the remaining time instead of restarting the deadline."},
+          {"lane": "echo", "label": "Read partial stream bytes", "detail": "recv appends bytes without overwriting pending output; edge mode drains toward EAGAIN while level mode spends one bounded read quantum."},
+          {"lane": "echo", "label": "Enable write interest", "detail": "Pending bytes add EPOLLOUT to the interest set while unread capacity and unsent output remain separate state."},
+          {"lane": "echo", "label": "Write partial echo bytes", "detail": "send with MSG_NOSIGNAL advances only by the returned count; backpressure can leave bytes pending for another readiness event."},
+          {"lane": "kernel", "label": "Repeat readiness cycles", "detail": "EAGAIN completes a nonblocking drain, and the read/write cycle repeats until all 262144 bytes cross in both directions."},
+          {"lane": "test", "label": "Verify and clean up", "detail": "The test checks byte-for-byte equality, counters, edge drains, exact flag restoration, and closure of the temporary epoll descriptor."}
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/01_epoll_event_loop/solution.c", "symbol": "tcpip_linux_l01_echo"},
+        {"path": "linux_labs/01_epoll_event_loop/test.c", "symbol": "peer_exchange"},
+        {"path": "linux_labs/01_epoll_event_loop/test.c", "symbol": "test_large_echo"}
+      ]
+    },
+    {
+      "id": "epoll-statistics",
+      "type": "transition_table",
+      "heading": "Observable event-loop statistics",
+      "payload": {
+        "columns": ["Statistic", "Counts", "Contract meaning"],
+        "rows": [
+          ["readiness_events", "epoll events returned", "Shows how often epoll_wait delivered work"],
+          ["read_calls", "all recv calls", "Includes calls that finish a nonblocking drain with EAGAIN"],
+          ["write_calls", "all send calls", "Includes calls that meet backpressure with EAGAIN"],
+          ["bytes_read", "successful received bytes", "Reaches expected_bytes on a successful large echo"],
+          ["bytes_written", "successful echoed bytes", "Reaches expected_bytes only after pending output drains"],
+          ["read_eagain", "read-side EAGAIN results", "Makes completed nonblocking read drains observable"],
+          ["write_eagain", "write-side EAGAIN results", "Makes completed nonblocking write drains observable"],
+          ["drain_passes", "edge-handler passes", "Exposes work performed while draining edge-triggered readiness"]
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/01_epoll_event_loop/lab.h", "symbol": "tcpip_linux_l01_stats"},
+        {"path": "linux_labs/01_epoll_event_loop/solution.c", "symbol": "tcpip_linux_l01_echo"},
+        {"path": "linux_labs/01_epoll_event_loop/test.c", "symbol": "test_large_echo"}
+      ]
+    },
+    {
       "id": "epoll-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

@@ -28,6 +28,7 @@ flowchart TD
     N --> I[Check stable invariants]
 ```
 
+<!-- COURSE_COMPONENT:tcp-info-uapi-view START -->
 ## Snapshot and API contract
 
 `tcpip_linux_l02_capture(fd, snapshot)` initializes the complete output before validation or system calls. On success it copies only these fields: `state`, `ca_state`, `retransmits`, `snd_mss`, `rcv_mss`, `unacked`, `lost`, `rtt_us`, `rttvar_us`, and `total_retrans`. A corresponding `TCPIP_LINUX_L02_HAS_*` bit says whether the returned length covered that kernel member. Callers must test the bit before interpreting the value; zero by itself can be a real observation or merely the initialized representation of an absent field.
@@ -41,10 +42,13 @@ flowchart TD
 | `unacked`, `lost` | `tcpi_unacked`, `tcpi_lost` | segment accounting observations |
 | `rtt_us`, `rttvar_us` | `tcpi_rtt`, `tcpi_rttvar` | microsecond estimators |
 | `total_retrans` | `tcpi_total_retrans` | lifetime retransmission counter |
+<!-- COURSE_COMPONENT:tcp-info-uapi-view END -->
 
+<!-- COURSE_COMPONENT:tcp-info-state-map START -->
 `tcpip_linux_l02_map_state` maps `TCP_ESTABLISHED`, handshake states, close states, `TCP_LISTEN`, and `TCP_CLOSE` to the smaller Lesson 7 model. Linux's `TCP_CLOSING` is folded into the active-close concept and `TCP_NEW_SYN_RECV` into SYN-received because the course model intentionally omits those implementation details. Unknown numeric values return `UNSUPPORTED`, and the output is still initialized to `MODEL_CLOSED`.
 
 `tcpip_linux_l02_check_invariants` reports a bit set and a count. It detects a missing or unknown state, present-but-zero MSS or RTT fields, loss with no observable retransmission count, and unknown presence bits. It does not reject absent optional tail fields. The function's status reports whether checking itself was valid; invariant failures are data in the output rather than a system error.
+<!-- COURSE_COMPONENT:tcp-info-state-map END -->
 
 <!-- COURSE_COMPONENT:tcp-info-contract START -->
 ## Exercise

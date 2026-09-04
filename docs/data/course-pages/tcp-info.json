@@ -39,6 +39,71 @@
       }
     },
     {
+      "id": "tcp-info-uapi-view",
+      "type": "linux_uapi_view",
+      "heading": "Course-owned TCP_INFO snapshot",
+      "payload": {
+        "title": "Each field is copied only when returned socklen_t covers the complete Linux struct tcp_info member; the matching presence bit distinguishes an observed zero from an absent field.",
+        "fields": [
+          {"name": "state", "presence": "TCPIP_LINUX_L02_HAS_STATE", "meaning": "tcpi_state: Linux TCP finite-state-machine value"},
+          {"name": "ca_state", "presence": "TCPIP_LINUX_L02_HAS_CA_STATE", "meaning": "tcpi_ca_state: congestion-control recovery state"},
+          {"name": "retransmits", "presence": "TCPIP_LINUX_L02_HAS_RETRANSMITS", "meaning": "tcpi_retransmits: current RTO retry count"},
+          {"name": "snd_mss", "presence": "TCPIP_LINUX_L02_HAS_SND_MSS", "meaning": "tcpi_snd_mss: current send maximum segment size"},
+          {"name": "rcv_mss", "presence": "TCPIP_LINUX_L02_HAS_RCV_MSS", "meaning": "tcpi_rcv_mss: current receive maximum segment size"},
+          {"name": "unacked", "presence": "TCPIP_LINUX_L02_HAS_UNACKED", "meaning": "tcpi_unacked: currently unacknowledged segment count"},
+          {"name": "lost", "presence": "TCPIP_LINUX_L02_HAS_LOST", "meaning": "tcpi_lost: currently lost segment count"},
+          {"name": "rtt_us", "presence": "TCPIP_LINUX_L02_HAS_RTT_US", "meaning": "tcpi_rtt: smoothed round-trip-time estimate in microseconds"},
+          {"name": "rttvar_us", "presence": "TCPIP_LINUX_L02_HAS_RTTVAR_US", "meaning": "tcpi_rttvar: round-trip-time variation estimate in microseconds"},
+          {"name": "total_retrans", "presence": "TCPIP_LINUX_L02_HAS_TOTAL_RETRANS", "meaning": "tcpi_total_retrans: lifetime retransmission counter"}
+        ],
+        "invariants": [
+          "State must be present and map to a known course state.",
+          "A present send MSS must be nonzero.",
+          "A present receive MSS must be nonzero.",
+          "A present RTT estimate must be nonzero.",
+          "Observed loss requires a present, nonzero current or lifetime retransmission count.",
+          "The presence mask must not contain unknown bits.",
+          "Absent optional tail fields are valid and retain zero values with clear presence bits."
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_snapshot"},
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_presence"},
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_violation_bits"},
+        {"path": "linux_labs/02_tcp_info/solution.c", "symbol": "tcpip_linux_l02_capture"},
+        {"path": "linux_labs/02_tcp_info/solution.c", "symbol": "tcpip_linux_l02_check_invariants"},
+        {"path": "linux_labs/02_tcp_info/test.c", "symbol": "test_synthetic_invariants"}
+      ]
+    },
+    {
+      "id": "tcp-info-state-map",
+      "type": "transition_table",
+      "heading": "Linux-to-course state mapping",
+      "payload": {
+        "columns": ["Linux state", "Course state", "Mapping note"],
+        "rows": [
+          ["TCP_CLOSE", "CLOSED", "Direct mapping"],
+          ["TCP_LISTEN", "LISTEN", "Direct mapping"],
+          ["TCP_SYN_SENT", "SYN_SENT", "Direct mapping"],
+          ["TCP_SYN_RECV", "SYN_RECEIVED", "Course spelling normalizes RECV"],
+          ["TCP_ESTABLISHED", "ESTABLISHED", "Direct mapping"],
+          ["TCP_FIN_WAIT1", "FIN_WAIT_1", "Course spelling separates the suffix"],
+          ["TCP_FIN_WAIT2", "FIN_WAIT_2", "Course spelling separates the suffix"],
+          ["TCP_CLOSE_WAIT", "CLOSE_WAIT", "Direct mapping"],
+          ["TCP_LAST_ACK", "LAST_ACK", "Direct mapping"],
+          ["TCP_TIME_WAIT", "TIME_WAIT", "Direct mapping"],
+          ["TCP_CLOSING", "FIN_WAIT_1", "Folded into the active-close concept"],
+          ["TCP_NEW_SYN_RECV", "SYN_RECEIVED", "Folded into the handshake concept"],
+          ["Unknown numeric value", "CLOSED + UNSUPPORTED", "Output is initialized before rejection"]
+        ]
+      },
+      "provenance": [
+        {"path": "linux_labs/02_tcp_info/lab.h", "symbol": "tcpip_linux_l02_model_state"},
+        {"path": "linux_labs/02_tcp_info/solution.c", "symbol": "tcpip_linux_l02_map_state"},
+        {"path": "linux_labs/02_tcp_info/test.c", "symbol": "test_listen_and_mapping"}
+      ]
+    },
+    {
       "id": "tcp-info-contract",
       "type": "exercise_test_contract",
       "heading": "Exercise and test contract",

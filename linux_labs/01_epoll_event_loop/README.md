@@ -14,6 +14,7 @@ Complete the stream-socket and TCP reliability lessons first. You should underst
 After the lab, you should be able to explain why edge-triggered code must drain an operation to `EAGAIN`, why a level-triggered handler benefits from a bounded work quantum, and why unread input and unsent output are different pieces of state.
 <!-- COURSE_COMPONENT:epoll-prerequisites END -->
 
+<!-- COURSE_COMPONENT:epoll-state-machine START -->
 ```mermaid
 stateDiagram-v2
     [*] --> Waiting
@@ -28,6 +29,7 @@ stateDiagram-v2
     Waiting --> TimedOut: monotonic deadline
     Complete --> [*]
 ```
+<!-- COURSE_COMPONENT:epoll-state-machine END -->
 
 ## Public contract
 
@@ -42,7 +44,15 @@ stateDiagram-v2
 | inspect asynchronous failure | `getsockopt(SO_ERROR)` | handle `EPOLLERR` without guessing |
 | preserve caller state | `fcntl(F_GETFL/F_SETFL)` | restore the exact original flags |
 
+<!-- COURSE_COMPONENT:epoll-large-echo-timeline START -->
+### Large echo under backpressure
+
+The large-echo test creates a local stream `socketpair`, requests 2048-byte socket buffers, and prepares a deterministic 256 KiB payload. Its peer thread sends at most 701 bytes and receives at most 389 bytes per ready pass, while the echo side has one fixed 16 KiB buffer. The echo loop saves the caller's flags, enables nonblocking mode if necessary, computes one 5000 ms monotonic deadline, and registers `EPOLLIN` plus `EPOLLRDHUP` (and `EPOLLET` in edge mode). Each readiness cycle receives without overwriting pending output, enables `EPOLLOUT` only while bytes remain, and sends with `MSG_NOSIGNAL`. Partial calls and `EAGAIN` repeat until all 262144 bytes have crossed in both directions. Finally, the test verifies byte-for-byte equality, counters, edge drains, exact flag restoration, and epoll-descriptor cleanup.
+<!-- COURSE_COMPONENT:epoll-large-echo-timeline END -->
+
+<!-- COURSE_COMPONENT:epoll-statistics START -->
 The statistics are deliberately observable. `readiness_events` counts returned epoll events; read and write call counters include calls that return `EAGAIN`; byte counters count successful transfers; `read_eagain` and `write_eagain` show completed nonblocking drains; and `drain_passes` exposes edge-triggered handler work. These values teach behavior, but callers should not assume an exact call count because kernel buffer sizing and scheduling vary.
+<!-- COURSE_COMPONENT:epoll-statistics END -->
 
 <!-- COURSE_COMPONENT:epoll-contract START -->
 ## Exercise
