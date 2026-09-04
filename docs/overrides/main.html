@@ -11,7 +11,7 @@
       <a class="course-home" href="{{ config.site_url }}" aria-label="Go to TCP/IP Course overview">TCP/IP Course</a>
       <label class="md-header__button md-icon" for="__drawer">{% include ".icons/material/menu.svg" %}</label>
       <div class="header-spacer"></div>
-      {% if "search" in config.plugins %}
+      {% if "material/search" in config.plugins %}
         <label class="md-header__button md-icon" for="__search">{% include ".icons/material/magnify.svg" %}</label>
         {% include "partials/search.html" %}
       {% endif %}

@@ -62,12 +62,20 @@ WALKTHROUGH_EDGE_FIELDS = {
 }
 
 
-def front_matter(title: str, description: str, resource_type: str) -> str:
+def front_matter(
+    title: str,
+    description: str,
+    resource_type: str,
+    *,
+    template: str | None = None,
+) -> str:
     values = {
         "title": title,
         "description": description,
         "learning_resource_type": resource_type,
     }
+    if template is not None:
+        values["template"] = template
     return (
         "---\n"
         + "\n".join(f"{key}: {json.dumps(value)}" for key, value in values.items())
@@ -601,7 +609,16 @@ def _stage_page(
     content = _append_track_navigation(
         content, page=page, pages=pages, overview=overview, label=label
     )
-    destination.write_text(front_matter(page.title, page.description, "LearningResource") + content)
+    template = "kernel-walkthrough.html" if source == WALKTHROUGH_SOURCE else None
+    destination.write_text(
+        front_matter(
+            page.title,
+            page.description,
+            "LearningResource",
+            template=template,
+        )
+        + content
+    )
 
 
 def prepare(output: Path = DEFAULT_OUTPUT) -> None:

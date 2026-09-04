@@ -88,7 +88,22 @@ body { background: var(--course-bg); }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-/* Linux lab 04: progressively enhanced kernel source walkthrough. */
+/* Linux lab 04: dedicated visual application shell. */
+.md-main__inner:has(> .md-content--kernel-walkthrough) {
+  max-width: none;
+}
+.md-content--kernel-walkthrough { min-width: 0; }
+.kernel-walkthrough-page { --kw-narrative-width: 48rem; }
+.kernel-walkthrough-page > :not(.kernel-walkthrough):not(.kernel-walkthrough-figure):not(.kernel-source-table) {
+  width: min(100%, var(--kw-narrative-width));
+  margin-right: auto;
+  margin-left: auto;
+}
+.kernel-walkthrough-page > :is(.kernel-walkthrough, .kernel-walkthrough-figure, .kernel-source-table) {
+  width: 100%;
+  max-width: none;
+}
+
 .kernel-walkthrough-figure {
   margin: 1.4rem 0;
   overflow-x: auto;
@@ -132,7 +147,7 @@ body { background: var(--course-bg); }
 
 .kernel-walkthrough {
   --kw-panel: color-mix(in srgb, var(--course-surface) 92%, var(--course-blue) 8%);
-  margin: 1.25rem calc(50% - 50vw + 1rem) 2rem;
+  margin: 1.25rem 0 2rem;
   padding: clamp(.8rem, 2vw, 1.4rem);
   border: 1px solid var(--course-line);
   border-left: .3rem solid var(--course-blue);
@@ -280,6 +295,7 @@ body { background: var(--course-bg); }
 .kernel-source-table td:last-child code { white-space: nowrap; }
 
 @media screen and (max-width: 60em) {
+  .kernel-walkthrough-page { --kw-narrative-width: 100%; }
   .kernel-walkthrough { margin-right: 0; margin-left: 0; }
   .kw-explorer-layout { grid-template-columns: 1fr; }
   .kw-detail { position: static; }

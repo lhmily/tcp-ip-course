@@ -287,6 +287,28 @@ def test_kernel_walkthrough_visual_explorer_and_source_table(tmp_path):
     model = json.loads((ROOT / "docs" / "data" / "linux-v6.6-walkthrough.json").read_text())
     page = output / "linux-labs" / "kernel-source-walkthrough" / "index.html"
     text = page.read_text()
+    staged_walkthrough = DEFAULT_OUTPUT / "linux-labs" / "kernel-source-walkthrough" / "index.md"
+    staged_lesson = DEFAULT_OUTPUT / "lessons" / LESSONS[0].slug / "index.md"
+
+    assert 'template: "kernel-walkthrough.html"' in staged_walkthrough.read_text()
+    assert 'template: "kernel-walkthrough.html"' not in staged_lesson.read_text()
+    assert text.count('id="__drawer"') == 1
+    assert text.count('data-md-component="header"') == 1
+    assert 'data-md-component="search"' in text
+    assert text.count('data-md-type="navigation"') == 1
+    assert "md-sidebar--secondary" not in text
+    assert "md-content--kernel-walkthrough" in text
+    assert "kernel-walkthrough-page" in text
+    assert text.count('<footer class="md-footer">') == 1
+    assert f'<link rel="canonical" href="{SITE_URL}linux-labs/kernel-source-walkthrough/">' in text
+    assert '<meta property="og:title" content="Kernel Source Walkthrough">' in text
+    assert '<meta name="twitter:title" content="Kernel Source Walkthrough">' in text
+
+    ordinary = (output / "lessons" / LESSONS[0].slug / "index.html").read_text()
+    assert "md-content--kernel-walkthrough" not in ordinary
+    assert "kernel-walkthrough-page" not in ordinary
+    assert "md-sidebar--secondary" in ordinary
+    assert 'data-md-component="search"' in ordinary
 
     assert "L04_INTERACTIVE_EXPLORER" not in text
     assert "L04_SOURCE_TABLE" not in text
@@ -328,6 +350,20 @@ def test_kernel_walkthrough_visual_explorer_and_source_table(tmp_path):
         if other_page == page:
             continue
         assert "kernel-walkthrough.js" not in other_page.read_text()
+
+    search_index = json.loads((output / "search" / "search_index.json").read_text())
+    walkthrough_entries = [
+        entry
+        for entry in search_index["docs"]
+        if "linux-labs/kernel-source-walkthrough/" in entry.get("location", "")
+    ]
+    indexed_text = " ".join(
+        f"{entry.get('title', '')} {entry.get('text', '')}" for entry in walkthrough_entries
+    )
+    assert walkthrough_entries
+    assert "tcp_ack" in indexed_text
+    assert "ip_rcv" in indexed_text
+    assert "Ownership" in indexed_text
 
 
 def test_cloudflare_analytics_is_optional_and_escaped(tmp_path):
