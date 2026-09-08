@@ -26,17 +26,24 @@
 .course-component--hero {
   display: grid;
   min-height: 0;
+  max-width: min(100%, 58rem);
   align-items: center;
-  border-left: .28rem solid var(--course-blue);
+  border-left: .22rem solid var(--course-blue);
 }
 .course-component--hero > h2 { display: none; }
 .course-component--hero h1 {
-  margin: 0 0 .45rem;
-  font-size: clamp(2rem, 4.6vw, 3.35rem);
-  line-height: 1;
-  letter-spacing: -.035em;
+  max-width: 24ch;
+  margin: 0 0 .3rem;
+  font-size: clamp(1.45rem, 2.4vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -.02em;
 }
-.course-component--hero p { max-width: 64ch; margin: .45rem 0; }
+.course-component--hero p {
+  max-width: 60ch;
+  margin: .35rem 0;
+  font-size: .94rem;
+  line-height: 1.55;
+}
 .md-typeset ul.course-badges,
 .md-typeset .course-card ul {
   display: flex;
@@ -211,6 +218,19 @@
 .course-contract pre { margin: .5rem 0 0; }
 @media screen and (max-width: 60em) {
   .course-page { --component-measure: 100%; }
+  .course-component { margin: .7rem auto; padding: .75rem; }
+  .course-component--hero h1 { font-size: 1.65rem; }
+  .course-component--hero p { font-size: 15px; line-height: 1.45; }
+  .md-typeset ul.course-badges {
+    flex-wrap: nowrap;
+    gap: .25rem;
+    margin-top: .4rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .course-badges > li { font-size: .62rem; white-space: nowrap; }
+  .course-actions { gap: .4rem; margin-top: .55rem; }
+  .course-actions a { min-height: 44px; padding: .35rem .6rem; font-size: .82rem; }
   .course-two-column,
   .course-safety,
   .course-contract { grid-template-columns: 1fr; }
