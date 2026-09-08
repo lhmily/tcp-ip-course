@@ -36,12 +36,13 @@
   width: min(100%, var(--component-measure));
   min-width: 0;
   max-width: var(--component-measure);
-  margin: 1rem auto;
-  padding: clamp(.8rem, 1.5vw, 1.15rem);
-  border: 1px solid var(--course-line);
-  border-radius: .55rem;
-  background: var(--course-surface);
-  box-shadow: 0 .35rem 1.2rem rgb(7 17 31 / 6%);
+  margin: 1.15rem auto;
+  padding: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--course-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .course-component:is(
   .course-component--protocol-fields,
@@ -57,6 +58,11 @@
 ) {
   width: 100%;
   max-width: min(100%, 72rem);
+  padding: clamp(.8rem, 1.4vw, 1.1rem);
+  border: 1px solid var(--course-line);
+  border-radius: .55rem;
+  background: var(--course-surface);
+  box-shadow: 0 .3rem 1rem rgb(7 17 31 / 5%);
 }
 .course-component > h2 {
   margin: 0 0 .6rem;
@@ -66,9 +72,13 @@
 .course-component--hero {
   display: grid;
   min-height: 0;
-  max-width: min(100%, var(--component-measure));
+  max-width: var(--component-measure);
+  margin-top: .2rem;
+  padding: .75rem 0 .9rem 1rem;
   align-items: center;
-  border-left: .22rem solid var(--course-blue);
+  border-top: 0;
+  border-bottom: 1px solid var(--course-line);
+  border-left: .18rem solid var(--course-blue);
 }
 .course-component--hero > h2 { display: none; }
 .course-component--hero h1 {

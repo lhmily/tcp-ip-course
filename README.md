@@ -111,12 +111,7 @@ A deliberate non-goal is production networking software. The examples teach prot
 
 ## Optional Linux implementation track
 
-The portable core above remains complete and unchanged on Linux and macOS. Linux learners may continue with four optional, unprivileged labs:
-
-1. [epoll Event Loop](linux_labs/01_epoll_event_loop/README.md)
-2. [TCP_INFO](linux_labs/02_tcp_info/README.md)
-3. [Userspace Mini-Stack](linux_labs/03_userspace_mini_stack/README.md)
-4. [Kernel Source Walkthrough](linux_labs/04_kernel_source_walkthrough/README.md)
+The portable core above remains complete and unchanged on Linux and macOS. Linux learners may continue with the optional, unprivileged labs shown in the track cards.
 
 On Linux, build them with `linux-student`, `linux-reference`, or `linux-sanitize`. They require ordinary Linux UAPI headers but no root access, network namespaces, TUN/TAP devices, raw sockets, packet capture, or external network access. See the [Linux track overview](linux_labs/README.md) for exact commands and prerequisites.
 

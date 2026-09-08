@@ -139,12 +139,16 @@ def test_relative_links_and_images_resolve_locally():
             assert resolved.exists(), (document, target)
 
 
-def test_root_links_to_all_tracks_in_catalog_order():
-    text = (ROOT / "README.md").read_text()
-    linked = re.findall(r"\(lessons/(\d{2}_[^/]+)/README\.md\)", text)
+def test_overviews_link_tracks_in_catalog_order():
+    root_text = (ROOT / "README.md").read_text()
+    linked = re.findall(r"\(lessons/(\d{2}_[^/]+)/README\.md\)", root_text)
     assert linked == [lesson.source for lesson in LESSONS]
-    linux_linked = re.findall(r"\(linux_labs/(\d{2}_[^/]+)/README\.md\)", text)
-    assert linux_linked == [lab.source for lab in LINUX_LABS]
+    assert "(linux_labs/README.md)" in root_text
+    assert not re.findall(r"\(linux_labs/(\d{2}_[^/]+)/README\.md\)", root_text)
+
+    linux_text = (ROOT / "linux_labs" / "README.md").read_text()
+    positions = [linux_text.index(f"({lab.source}/README.md)") for lab in LINUX_LABS]
+    assert positions == sorted(positions)
 
 
 def test_generated_assets_are_reproducible_and_accessible():
