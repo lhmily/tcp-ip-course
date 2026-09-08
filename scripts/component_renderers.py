@@ -167,8 +167,8 @@ def render_byte_inspector(component: Component) -> str:
         label = annotation["label"] if annotation is not None else "unlabeled"
         labels.append(label)
         cells.append(
-            f'<li data-byte-group="{html.escape(label, quote=True)}"><span>{offset:02x}</span>'
-            f"<code>{value:02x}</code><small>{html.escape(label)}</small></li>"
+            f'<li data-byte-group="{html.escape(label, quote=True)}" title="{html.escape(label, quote=True)}">'
+            f"<span>{offset:02x}</span><code>{value:02x}</code></li>"
         )
     legend = "".join(f"<li>{html.escape(label)}</li>" for label in dict.fromkeys(labels))
     body = (
